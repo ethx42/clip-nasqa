@@ -5,6 +5,8 @@ import { CopyButton } from './copy-button';
 interface SnippetHeroProps {
   snippet: Snippet;
   snippetNumber: number;
+  /** Pre-rendered Shiki HTML, if available (passed from ClipboardPanel Server wrapper or SSR). */
+  highlightedHtml?: string;
 }
 
 function formatRelativeTime(createdAt: number): string {
@@ -24,8 +26,9 @@ function formatRelativeTime(createdAt: number): string {
  * Server Component — displays the latest snippet as a full-width hero card.
  * Uses ShikiBlock for dual-theme syntax highlighting (code only).
  * Line numbers shown for code snippets, not for plain text.
+ * Also accepts pre-rendered highlightedHtml for use from Client Component parents.
  */
-export async function SnippetHero({ snippet, snippetNumber }: SnippetHeroProps) {
+export async function SnippetHero({ snippet, snippetNumber, highlightedHtml }: SnippetHeroProps) {
   const lang = snippet.language ?? 'text';
   const isCode = lang !== 'text';
   const relativeTime = formatRelativeTime(snippet.createdAt);
@@ -49,11 +52,18 @@ export async function SnippetHero({ snippet, snippetNumber }: SnippetHeroProps) 
 
       {/* Code / text block */}
       <div className="max-h-[30rem] overflow-y-auto rounded-lg bg-muted/30">
-        <ShikiBlock
-          code={snippet.content}
-          lang={lang}
-          showLineNumbers={isCode}
-        />
+        {highlightedHtml ? (
+          <div
+            className={`shiki-wrapper overflow-x-auto text-sm leading-relaxed ${isCode ? 'shiki-line-numbers' : ''}`}
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
+        ) : (
+          <ShikiBlock
+            code={snippet.content}
+            lang={lang}
+            showLineNumbers={isCode}
+          />
+        )}
       </div>
     </div>
   );
