@@ -1,6 +1,7 @@
 'use client';
 
 interface NewContentBannerProps {
+  /** Message to show, e.g. "New snippet from speaker" or "2 new questions". */
   message: string;
   visible: boolean;
   onTap: () => void;
