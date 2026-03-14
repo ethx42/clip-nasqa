@@ -7,13 +7,13 @@
 
 ### Session
 
-- [ ] **SESS-01**: User can create a session by entering a title (max 50 chars), receiving a slug (kebab-case) and hostSecret (UUIDv4)
+- [x] **SESS-01**: User can create a session by entering a title (max 50 chars), receiving a slug (kebab-case) and hostSecret (UUIDv4)
 - [ ] **SESS-02**: Host secret is displayed on the creation page for copying before navigating away
-- [ ] **SESS-03**: Host secret is hashed (SHA-256) before storage in DynamoDB; raw secret returned once
+- [x] **SESS-03**: Host secret is hashed (SHA-256) before storage in DynamoDB; raw secret returned once
 - [ ] **SESS-04**: Host URL uses hash fragment (`#secret=...`) to avoid server log leakage
 - [ ] **SESS-05**: QR code is generated for the session URL so participants can scan to join
-- [ ] **SESS-06**: All records (Session, Snippet, Question, Reply) have expiresAt TTL (current epoch + 86400)
-- [ ] **SESS-07**: Read paths filter expired items at application layer (DynamoDB TTL can delay up to 48h)
+- [x] **SESS-06**: All records (Session, Snippet, Question, Reply) have expiresAt TTL (current epoch + 86400)
+- [x] **SESS-07**: Read paths filter expired items at application layer (DynamoDB TTL can delay up to 48h)
 
 ### Clipboard
 
@@ -57,7 +57,7 @@
 - [x] **UI-02**: Light mode theme: Background White, Text Zinc-900, Borders Zinc-200
 - [x] **UI-03**: Accent color Emerald-500 for active/live elements
 - [x] **UI-04**: Theme toggle via next-themes with no layout shift
-- [ ] **UI-05**: Marketing landing page explaining Nasqa Live with CTA to create session
+- [x] **UI-05**: Marketing landing page explaining Nasqa Live with CTA to create session
 
 ### i18n
 
@@ -115,13 +115,13 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | Phase 2 | Pending |
+| SESS-01 | Phase 2 | Complete |
 | SESS-02 | Phase 2 | Pending |
-| SESS-03 | Phase 2 | Pending |
+| SESS-03 | Phase 2 | Complete |
 | SESS-04 | Phase 2 | Pending |
 | SESS-05 | Phase 2 | Pending |
-| SESS-06 | Phase 2 | Pending |
-| SESS-07 | Phase 2 | Pending |
+| SESS-06 | Phase 2 | Complete |
+| SESS-07 | Phase 2 | Complete |
 | CLIP-01 | Phase 3 | Pending |
 | CLIP-02 | Phase 3 | Pending |
 | CLIP-03 | Phase 3 | Pending |
@@ -150,7 +150,7 @@
 | UI-02 | Phase 2 | Complete |
 | UI-03 | Phase 2 | Complete |
 | UI-04 | Phase 2 | Complete |
-| UI-05 | Phase 2 | Pending |
+| UI-05 | Phase 2 | Complete |
 | I18N-01 | Phase 4 | Pending |
 | I18N-02 | Phase 4 | Pending |
 | I18N-03 | Phase 4 | Pending |

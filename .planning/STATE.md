@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 2 of 4 (Session and View Shell)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Active
-Last activity: 2026-03-14 — 02-01 complete (theme system, i18n routing, SST table link)
+Last activity: 2026-03-14 — 02-02 complete (createSession action, getSession, landing page)
 
-Progress: [███░░░░░░░] 25%
+Progress: [████░░░░░░] 37%
 
 ## Performance Metrics
 
@@ -28,15 +28,16 @@ Progress: [███░░░░░░░] 25%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-infrastructure | 2 | 10 min | 5 min |
-| 02-session-and-view-shell | 1 | 3 min | 3 min |
+| 02-session-and-view-shell | 2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (2 min), 02-01 (3 min)
-- Trend: —
+- Last 5 plans: 01-01 (8 min), 01-02 (2 min), 02-01 (3 min), 02-02 (2 min)
+- Trend: stable
 
 *Updated after each plan completion*
 | Phase 01-infrastructure P03 | 1 | 1 tasks | 0 files |
 | Phase 02-session-and-view-shell P01 | 3 | 2 tasks | 13 files |
+| Phase 02-session-and-view-shell P02 | 2 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -59,6 +60,9 @@ Recent decisions affecting current work:
 - [Phase 02-session-and-view-shell Plan 01]: ThemeProvider must be in providers.tsx client wrapper — RSC root layouts cannot use hooks
 - [Phase 02-session-and-view-shell Plan 01]: useSyncExternalStore pattern for mounted state (avoids react-hooks/set-state-in-effect)
 - [Phase 02-session-and-view-shell Plan 01]: NasqaSite Nextjs SST resource linked to DynamoDB table (siteUrl in sst outputs)
+- [Phase 02-session-and-view-shell Plan 02]: redirect() called outside try/catch in createSession — NEXT_REDIRECT must not be swallowed
+- [Phase 02-session-and-view-shell Plan 02]: ConditionalCheckFailedException imported from @aws-sdk/client-dynamodb for correct instanceof check
+- [Phase 02-session-and-view-shell Plan 02]: tableName() reads SST_NasqaTable_name first, then NASQA_TABLE_NAME, then 'NasqaTable'
 
 ### Pending Todos
 
@@ -73,5 +77,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 02-01-PLAN.md (theme system, i18n routing, SST table link — all tasks complete)
+Stopped at: Completed 02-02-PLAN.md (createSession action, getSession utility, landing page — all tasks complete)
 Resume file: None
