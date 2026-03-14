@@ -26,7 +26,7 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
 }
 
 export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, text, fingerprint } = args;
+  const { sessionSlug, text, fingerprint, authorName } = args;
 
   if (text.length > 500) {
     throw new Error("Question text exceeds 500 character limit");
@@ -36,7 +36,7 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
   const now = Math.floor(Date.now() / 1000);
   const ttl = now + 24 * 60 * 60;
 
-  const question = {
+  const question: Record<string, unknown> = {
     PK: `SESSION#${sessionSlug}`,
     SK: `QUESTION#${id}`,
     id,
@@ -52,6 +52,10 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
     TTL: ttl,
   };
 
+  if (authorName) {
+    question.authorName = authorName;
+  }
+
   await docClient.send(
     new PutCommand({
       TableName: tableName(),
@@ -62,7 +66,7 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
   return {
     eventType: "QUESTION_ADDED" as SessionEventType,
     sessionSlug,
-    payload: JSON.stringify({ id, sessionSlug, text, fingerprint, upvoteCount: 0, downvoteCount: 0, isHidden: false, isFocused: false, isBanned: false, createdAt: now, TTL: ttl }),
+    payload: JSON.stringify({ id, sessionSlug, text, fingerprint, authorName: authorName ?? null, upvoteCount: 0, downvoteCount: 0, isHidden: false, isFocused: false, isBanned: false, createdAt: now, TTL: ttl }),
   };
 }
 
@@ -116,7 +120,7 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
 }
 
 export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
-  const { sessionSlug, questionId, text, fingerprint, isHostReply } = args;
+  const { sessionSlug, questionId, text, fingerprint, isHostReply, authorName } = args;
 
   if (text.length > 500) {
     throw new Error("Reply text exceeds 500 character limit");
@@ -126,7 +130,7 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
   const now = Math.floor(Date.now() / 1000);
   const ttl = now + 24 * 60 * 60;
 
-  const reply = {
+  const reply: Record<string, unknown> = {
     PK: `SESSION#${sessionSlug}`,
     SK: `REPLY#${id}`,
     id,
@@ -139,6 +143,10 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
     TTL: ttl,
   };
 
+  if (authorName) {
+    reply.authorName = authorName;
+  }
+
   await docClient.send(
     new PutCommand({
       TableName: tableName(),
@@ -149,7 +157,7 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
   return {
     eventType: "REPLY_ADDED" as SessionEventType,
     sessionSlug,
-    payload: JSON.stringify({ id, questionId, sessionSlug, text, isHostReply, fingerprint, createdAt: now, TTL: ttl }),
+    payload: JSON.stringify({ id, questionId, sessionSlug, text, isHostReply, fingerprint, authorName: authorName ?? null, createdAt: now, TTL: ttl }),
   };
 }
 

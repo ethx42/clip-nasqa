@@ -126,8 +126,24 @@ export interface AppSyncResolverContext<TArgs = Record<string, unknown>> {
 export interface PushSnippetArgs { sessionSlug: string; hostSecretHash: string; content: string; type: string; language?: string; }
 export interface DeleteSnippetArgs { sessionSlug: string; hostSecretHash: string; snippetId: string; }
 export interface ClearClipboardArgs { sessionSlug: string; hostSecretHash: string; }
-export interface AddQuestionArgs { sessionSlug: string; text: string; fingerprint: string; }
+export interface AddQuestionArgs { sessionSlug: string; text: string; fingerprint: string; authorName?: string; }
 export interface UpvoteQuestionArgs { sessionSlug: string; questionId: string; fingerprint: string; remove?: boolean; }
-export interface AddReplyArgs { sessionSlug: string; questionId: string; text: string; fingerprint: string; isHostReply: boolean; }
+export interface AddReplyArgs { sessionSlug: string; questionId: string; text: string; fingerprint: string; isHostReply: boolean; authorName?: string; }
 export interface FocusQuestionArgs { sessionSlug: string; hostSecretHash: string; questionId?: string; }
 export interface GetSessionDataArgs { sessionSlug: string; }
+
+// Moderation mutation argument interfaces
+export interface BanQuestionArgs { sessionSlug: string; hostSecretHash: string; questionId: string; }
+export interface BanParticipantArgs { sessionSlug: string; hostSecretHash: string; fingerprint: string; }
+export interface DownvoteQuestionArgs { sessionSlug: string; questionId: string; fingerprint: string; remove?: boolean; }
+export interface RestoreQuestionArgs { sessionSlug: string; hostSecretHash: string; questionId: string; }
+
+// BAN item interface
+export interface BanItem {
+  PK: string; // SESSION#slug
+  SK: string; // BAN#fingerprint
+  fingerprint: string;
+  isBanned: boolean;
+  bannedPostCount: number;
+  TTL: number;
+}

@@ -80,6 +80,10 @@ export default $config({
     api.addResolver("Mutation upvoteQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Mutation addReply", { dataSource: lambdaDS.name });
     api.addResolver("Mutation focusQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation banQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation banParticipant", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation downvoteQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation restoreQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Query getSessionData", { dataSource: lambdaDS.name });
 
     // 10. Next.js site linked to DynamoDB table — passes AppSync config as env vars

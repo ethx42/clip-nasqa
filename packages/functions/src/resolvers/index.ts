@@ -3,6 +3,7 @@ import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { AppSyncResolverContext, GetSessionDataArgs } from "@nasqa/core";
 import { pushSnippet, deleteSnippet, clearClipboard } from "./clipboard";
 import { addQuestion, upvoteQuestion, addReply, focusQuestion } from "./qa";
+import { handleBanQuestion, handleBanParticipant, handleDownvoteQuestion, handleRestoreQuestion } from "./moderation";
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION ?? "us-east-1" });
 export const docClient = DynamoDBDocumentClient.from(client);
@@ -84,6 +85,10 @@ export const handler = async (event: AppSyncResolverContext): Promise<unknown> =
     case "upvoteQuestion": return upvoteQuestion(args);
     case "addReply": return addReply(args);
     case "focusQuestion": return focusQuestion(args);
+    case "banQuestion": return handleBanQuestion(args);
+    case "banParticipant": return handleBanParticipant(args);
+    case "downvoteQuestion": return handleDownvoteQuestion(args);
+    case "restoreQuestion": return handleRestoreQuestion(args);
     case "getSessionData": return getSessionData(args);
     default:
       throw new Error(`Unhandled field: ${fieldName}`);

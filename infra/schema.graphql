@@ -80,13 +80,17 @@ type Mutation {
   pushSnippet(sessionSlug: String!, hostSecretHash: String!, content: String!, type: String!, language: String): SessionUpdate!
   deleteSnippet(sessionSlug: String!, hostSecretHash: String!, snippetId: String!): SessionUpdate!
   clearClipboard(sessionSlug: String!, hostSecretHash: String!): SessionUpdate!
-  addQuestion(sessionSlug: String!, text: String!, fingerprint: String!): SessionUpdate!
+  addQuestion(sessionSlug: String!, text: String!, fingerprint: String!, authorName: String): SessionUpdate!
   upvoteQuestion(sessionSlug: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
-  addReply(sessionSlug: String!, questionId: String!, text: String!, fingerprint: String!, isHostReply: Boolean!): SessionUpdate!
+  addReply(sessionSlug: String!, questionId: String!, text: String!, fingerprint: String!, isHostReply: Boolean!, authorName: String): SessionUpdate!
   focusQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String): SessionUpdate!
+  banQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
+  banParticipant(sessionSlug: String!, hostSecretHash: String!, fingerprint: String!): SessionUpdate!
+  downvoteQuestion(sessionSlug: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
+  restoreQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
 }
 
 type Subscription {
   onSessionUpdate(sessionSlug: String!): SessionUpdate
-    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion"])
+    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion"])
 }
