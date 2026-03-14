@@ -61,7 +61,15 @@ Plans:
   3. Participant submits a question anonymously and it appears in the Q&A feed; upvotes sort the feed in real-time across all connected clients
   4. Host can delete a snippet or clear the entire clipboard and changes propagate immediately to all participants
   5. Initial page JS payload is under 80kB gzipped; optimistic UI updates appear within 100ms before the server confirms
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — GraphQL mutations, Lambda resolver handlers (clipboard + Q&A), SST wiring, Amplify client config
+- [ ] 03-02-PLAN.md — Shiki SSR dual-theme block, snippet hero/history cards, host input composer with live preview
+- [ ] 03-03-PLAN.md — Q&A components: question cards with upvoting, reply threads, input with character counter
+- [ ] 03-04-PLAN.md — AppSync subscription provider, session state reducer, optimistic mutations, page wiring
+- [ ] 03-05-PLAN.md — Host delete/clear/focus actions, liveness indicators, animations, bundle size verification
+- [ ] 03-06-PLAN.md — Human verification checkpoint for complete real-time core
 
 ### Phase 4: Moderation, Identity, and Polish
 **Goal**: Community moderation, host superuser controls, optional participant identity, i18n for en/es/pt, and rate limiting are all active — the product is production-ready
@@ -84,5 +92,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 3/3 | Complete   | 2026-03-14 |
 | 2. Session and View Shell | 3/3 | Complete    | 2026-03-14 |
-| 3. Real-Time Core | TBD | Not started | - |
+| 3. Real-Time Core | 0/6 | Planning complete | - |
 | 4. Moderation, Identity, and Polish | TBD | Not started | - |
