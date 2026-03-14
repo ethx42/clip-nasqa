@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Phase 3 - Real-Time Core
+**Current focus:** Phase 4 - Moderation and Polish
 
 ## Current Position
 
 Phase: 3 of 4 (Real-Time Core)
-Plan: 6 of 6 in current phase
-Status: Active
-Last activity: 2026-03-14 — 03-05 complete (LiveIndicator, NewContentBanner, Framer Motion animations, host delete/clear, CLIPBOARD_CLEARED toast, connection status)
+Plan: 6 of 6 in current phase — COMPLETE
+Status: Phase 3 Complete
+Last activity: 2026-03-14 — 03-06 complete (human verification approved — Phase 3 real-time core complete; fixed animation, sort debounce, Poppins font overhaul)
 
-Progress: [████████░░] 78%
+Progress: [██████████] 100% (Phase 3)
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Progress: [████████░░] 78%
 | Phase 03-real-time-core P02 | 5min | 2 tasks | 10 files |
 | Phase 03-real-time-core P04 | 4min | 2 tasks | 12 files |
 | Phase 03-real-time-core P05 | 6min | 2 tasks | 8 files |
+| Phase 03-real-time-core P06 | human-verify | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -78,7 +79,7 @@ Recent decisions affecting current work:
 - [Phase 03-real-time-core Plan 01]: GraphQL strings as plain constants (not codegen) — simpler, sufficient for this project scale
 - [Phase 03-real-time-core Plan 01]: voters stored as DynamoDB Set, conditional expression prevents duplicate votes via contains/NOT contains
 - [Phase 03-real-time-core]: QAPanel passes stub empty arrays to page routes — Plan 04 SubscriptionProvider will provide real data
-- [Phase 03-real-time-core]: focused state uses ring-2 ring-emerald-500/50 animate-pulse — auto-expands reply thread when isFocused
+- [Phase 03-real-time-core]: focused state uses static emerald glow shadow (replaced animate-pulse) — auto-expands reply thread when isFocused
 - [Phase 03-real-time-core]: ShikiBlock is async RSC with no use client — Shiki stays out of client bundle entirely; renderHighlight Server Action provides live preview to HostInput
 - [Phase 03-real-time-core]: ClipboardPanel is Client Component with inline HeroCard/HistoryCard sub-components — async RSC children cannot be used inside Client Components
 - [Phase 03-real-time-core Plan 04]: useReducer for session state — single dispatch point avoids stale closure issues with subscription callbacks
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [Phase 03-real-time-core Plan 05]: CLIPBOARD_CLEARED toast fires only for non-hosts — host sees their own action inline
 - [Phase 03-real-time-core Plan 05]: AnimatePresence mode=popLayout on hero card — prevents exit/enter race causing layout jump
 - [Phase 03-real-time-core Plan 05]: 80KB bundle target unachievable with aws-amplify subscription library (68KB gz) — documented as known constraint from Phase 3 Plan 01
+- [Phase 03-real-time-core]: Removed animate-pulse from focused question pin — static emerald glow shadow is less distracting during live talks
+- [Phase 03-real-time-core]: Debounced Q&A sort by 1s — prevents chaotic card movement on rapid upvotes while preserving real-time feel
+- [Phase 03-real-time-core]: Switched to Poppins font with increased text sizes — improves legibility on projected screens and mobile
 
 ### Pending Todos
 
@@ -104,5 +108,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 03-05-PLAN.md (LiveIndicator, NewContentBanner, Framer Motion animations, host delete/clear, CLIPBOARD_CLEARED toast, connection status, bundle verification)
+Stopped at: Completed 03-06-PLAN.md (human verification approved — Phase 3 real-time core complete)
 Resume file: None
