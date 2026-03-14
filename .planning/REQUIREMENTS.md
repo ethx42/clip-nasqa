@@ -39,11 +39,11 @@
 ### Moderation
 
 - [ ] **MOD-01**: Each participant is assigned a device fingerprint (localStorage UUIDv4 token) on first visit
-- [ ] **MOD-02**: Host can instantly ban any question or comment (content hidden for all participants)
-- [ ] **MOD-03**: Host can permanently ban a participant by device fingerprint (blocked from posting)
-- [ ] **MOD-04**: Participants can thumbs-down a question/comment
-- [ ] **MOD-05**: Content receiving thumbs-down from >= 50% of connected audience is auto-hidden
-- [ ] **MOD-06**: Participant with 3 banned posts (by audience consensus or host action) is auto-blocked from posting
+- [x] **MOD-02**: Host can instantly ban any question or comment (content hidden for all participants)
+- [x] **MOD-03**: Host can permanently ban a participant by device fingerprint (blocked from posting)
+- [x] **MOD-04**: Participants can thumbs-down a question/comment
+- [x] **MOD-05**: Content receiving thumbs-down from >= 50% of connected audience is auto-hidden
+- [x] **MOD-06**: Participant with 3 banned posts (by audience consensus or host action) is auto-blocked from posting
 
 ### Identity
 
@@ -73,7 +73,7 @@
 - [x] **INFRA-02**: AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session
 - [x] **INFRA-03**: AppSync subscription validates non-null sessionSlug to prevent cross-session leakage
 - [x] **INFRA-04**: SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention
-- [ ] **INFRA-05**: Rate limiting: host 10 snippets/min, public 3 questions/min
+- [x] **INFRA-05**: Rate limiting: host 10 snippets/min, public 3 questions/min
 - [x] **INFRA-06**: Optimistic UI with < 100ms internal state updates
 - [x] **INFRA-07**: Global broadcast latency < 200ms
 - [x] **INFRA-08**: Initial JS payload < 80kB gzipped (Next.js Server Components for session shell)
@@ -138,11 +138,11 @@
 | QA-07 | Phase 3 | Complete |
 | QA-08 | Phase 3 | Complete |
 | MOD-01 | Phase 4 | Pending |
-| MOD-02 | Phase 4 | Pending |
-| MOD-03 | Phase 4 | Pending |
-| MOD-04 | Phase 4 | Pending |
-| MOD-05 | Phase 4 | Pending |
-| MOD-06 | Phase 4 | Pending |
+| MOD-02 | Phase 4 | Complete |
+| MOD-03 | Phase 4 | Complete |
+| MOD-04 | Phase 4 | Complete |
+| MOD-05 | Phase 4 | Complete |
+| MOD-06 | Phase 4 | Complete |
 | IDENT-01 | Phase 4 | Pending |
 | IDENT-02 | Phase 4 | Pending |
 | IDENT-03 | Phase 4 | Pending |
@@ -160,7 +160,7 @@
 | INFRA-02 | Phase 3 | Complete |
 | INFRA-03 | Phase 3 | Complete |
 | INFRA-04 | Phase 1 | Complete |
-| INFRA-05 | Phase 4 | Pending |
+| INFRA-05 | Phase 4 | Complete |
 | INFRA-06 | Phase 3 | Complete |
 | INFRA-07 | Phase 3 | Complete |
 | INFRA-08 | Phase 3 | Complete |

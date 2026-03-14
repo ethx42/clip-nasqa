@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 
 ## Current Position
 
-Phase: 3 of 4 (Real-Time Core)
-Plan: 6 of 6 in current phase — COMPLETE
-Status: Phase 3 Complete
-Last activity: 2026-03-14 — 03-06 complete (human verification approved — Phase 3 real-time core complete; fixed animation, sort debounce, Poppins font overhaul)
+Phase: 4 of 4 (Moderation and Polish)
+Plan: 1 of 3 in current phase — COMPLETE
+Status: In Progress
+Last activity: 2026-03-14 — 04-01 complete (moderation backend: ban/downvote mutations, rate limiting, ban enforcement)
 
-Progress: [██████████] 100% (Phase 3)
+Progress: [█████████▒] 90% (Phase 4 started)
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Progress: [██████████] 100% (Phase 3)
 | Phase 03-real-time-core P04 | 4min | 2 tasks | 12 files |
 | Phase 03-real-time-core P05 | 6min | 2 tasks | 8 files |
 | Phase 03-real-time-core P06 | human-verify | 1 tasks | 4 files |
+| Phase 04-moderation-identity-and-polish P01 | 3 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase 03-real-time-core]: Removed animate-pulse from focused question pin — static emerald glow shadow is less distracting during live talks
 - [Phase 03-real-time-core]: Debounced Q&A sort by 1s — prevents chaotic card movement on rapid upvotes while preserving real-time feel
 - [Phase 03-real-time-core]: Switched to Poppins font with increased text sizes — improves legibility on projected screens and mobile
+- [Phase 04-moderation-identity-and-polish Plan 01]: BAN item uses if_not_exists(isBanned, false) so first bannedPostCount increment does not immediately ban
+- [Phase 04-moderation-identity-and-polish Plan 01]: downvoteQuestion removes from voters set atomically in same UpdateCommand — DELETE on non-existent DynamoDB set member is a no-op
+- [Phase 04-moderation-identity-and-polish Plan 01]: checkNotBanned called before checkRateLimit in addQuestion — banned users get clear error rather than burning rate limit quota
+- [Phase 04-moderation-identity-and-polish Plan 01]: authorName written conditionally to DynamoDB items (only if truthy) to avoid null pollution
 
 ### Pending Todos
 
@@ -108,5 +113,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 03-06-PLAN.md (human verification approved — Phase 3 real-time core complete)
+Stopped at: Completed 04-01-PLAN.md (moderation backend — ban/downvote mutations, rate limiting, ban enforcement in resolvers)
 Resume file: None
