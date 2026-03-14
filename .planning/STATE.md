@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 2 of 4 (Session and View Shell)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Active
-Last activity: 2026-03-14 — 02-02 complete (createSession action, getSession, landing page)
+Last activity: 2026-03-14 — 02-03 complete (success page, participant/host view shells, QR code)
 
-Progress: [████░░░░░░] 37%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -38,6 +38,7 @@ Progress: [████░░░░░░] 37%
 | Phase 01-infrastructure P03 | 1 | 1 tasks | 0 files |
 | Phase 02-session-and-view-shell P01 | 3 | 2 tasks | 13 files |
 | Phase 02-session-and-view-shell P02 | 2 | 2 tasks | 5 files |
+| Phase 02-session-and-view-shell P03 | 15 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,10 @@ Recent decisions affecting current work:
 - [Phase 02-session-and-view-shell Plan 02]: redirect() called outside try/catch in createSession — NEXT_REDIRECT must not be swallowed
 - [Phase 02-session-and-view-shell Plan 02]: ConditionalCheckFailedException imported from @aws-sdk/client-dynamodb for correct instanceof check
 - [Phase 02-session-and-view-shell Plan 02]: tableName() reads SST_NasqaTable_name first, then NASQA_TABLE_NAME, then 'NasqaTable'
+- [Phase 02-session-and-view-shell Plan 03]: QRCodeDisplay generates SVG server-side via qrcode package — no client-side canvas bundle cost
+- [Phase 02-session-and-view-shell Plan 03]: SessionShell is Client Component for mobile tab state; ClipboardPanel/QAPanel are Server Components passed as slots
+- [Phase 02-session-and-view-shell Plan 03]: Host secret shown once on success page only; page warns it won't be shown again
+- [Phase 02-session-and-view-shell Plan 03]: QR code rendered persistently in host view toolbar for projecting during talks
 
 ### Pending Todos
 
@@ -77,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 02-02-PLAN.md (createSession action, getSession utility, landing page — all tasks complete)
+Stopped at: Completed 02-03-PLAN.md (success page, participant/host view shells, QR code, human-verified)
 Resume file: None

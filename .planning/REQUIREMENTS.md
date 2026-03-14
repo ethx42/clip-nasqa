@@ -8,10 +8,10 @@
 ### Session
 
 - [x] **SESS-01**: User can create a session by entering a title (max 50 chars), receiving a slug (kebab-case) and hostSecret (UUIDv4)
-- [ ] **SESS-02**: Host secret is displayed on the creation page for copying before navigating away
+- [x] **SESS-02**: Host secret is displayed on the creation page for copying before navigating away
 - [x] **SESS-03**: Host secret is hashed (SHA-256) before storage in DynamoDB; raw secret returned once
-- [ ] **SESS-04**: Host URL uses hash fragment (`#secret=...`) to avoid server log leakage
-- [ ] **SESS-05**: QR code is generated for the session URL so participants can scan to join
+- [x] **SESS-04**: Host URL uses hash fragment (`#secret=...`) to avoid server log leakage
+- [x] **SESS-05**: QR code is generated for the session URL so participants can scan to join
 - [x] **SESS-06**: All records (Session, Snippet, Question, Reply) have expiresAt TTL (current epoch + 86400)
 - [x] **SESS-07**: Read paths filter expired items at application layer (DynamoDB TTL can delay up to 48h)
 
@@ -116,10 +116,10 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SESS-01 | Phase 2 | Complete |
-| SESS-02 | Phase 2 | Pending |
+| SESS-02 | Phase 2 | Complete |
 | SESS-03 | Phase 2 | Complete |
-| SESS-04 | Phase 2 | Pending |
-| SESS-05 | Phase 2 | Pending |
+| SESS-04 | Phase 2 | Complete |
+| SESS-05 | Phase 2 | Complete |
 | SESS-06 | Phase 2 | Complete |
 | SESS-07 | Phase 2 | Complete |
 | CLIP-01 | Phase 3 | Pending |
