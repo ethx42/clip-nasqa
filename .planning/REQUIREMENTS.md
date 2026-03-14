@@ -22,8 +22,8 @@
 - [x] **CLIP-03**: Code snippets are syntax-highlighted using Shiki (server-side rendering only, never in client bundle)
 - [x] **CLIP-04**: Shiki supports dual themes (light/dark) via CSS variables to prevent layout shift on theme toggle
 - [x] **CLIP-05**: Clipboard feed displays in reverse-chronological order with the latest snippet as the "Hero"
-- [ ] **CLIP-06**: Host can delete individual snippets (authenticated by hostSecret)
-- [ ] **CLIP-07**: Host can clear the entire clipboard (authenticated by hostSecret)
+- [x] **CLIP-06**: Host can delete individual snippets (authenticated by hostSecret)
+- [x] **CLIP-07**: Host can clear the entire clipboard (authenticated by hostSecret)
 
 ### Q&A
 
@@ -74,9 +74,9 @@
 - [x] **INFRA-03**: AppSync subscription validates non-null sessionSlug to prevent cross-session leakage
 - [x] **INFRA-04**: SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention
 - [ ] **INFRA-05**: Rate limiting: host 10 snippets/min, public 3 questions/min
-- [ ] **INFRA-06**: Optimistic UI with < 100ms internal state updates
+- [x] **INFRA-06**: Optimistic UI with < 100ms internal state updates
 - [x] **INFRA-07**: Global broadcast latency < 200ms
-- [ ] **INFRA-08**: Initial JS payload < 80kB gzipped (Next.js Server Components for session shell)
+- [x] **INFRA-08**: Initial JS payload < 80kB gzipped (Next.js Server Components for session shell)
 - [x] **INFRA-09**: ULID for sortable DynamoDB sort keys (reverse-chronological feeds)
 
 ## v2 Requirements
@@ -127,8 +127,8 @@
 | CLIP-03 | Phase 3 | Complete |
 | CLIP-04 | Phase 3 | Complete |
 | CLIP-05 | Phase 3 | Complete |
-| CLIP-06 | Phase 3 | Pending |
-| CLIP-07 | Phase 3 | Pending |
+| CLIP-06 | Phase 3 | Complete |
+| CLIP-07 | Phase 3 | Complete |
 | QA-01 | Phase 3 | Complete |
 | QA-02 | Phase 3 | Complete |
 | QA-03 | Phase 3 | Complete |
@@ -161,9 +161,9 @@
 | INFRA-03 | Phase 3 | Complete |
 | INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 4 | Pending |
-| INFRA-06 | Phase 3 | Pending |
+| INFRA-06 | Phase 3 | Complete |
 | INFRA-07 | Phase 3 | Complete |
-| INFRA-08 | Phase 3 | Pending |
+| INFRA-08 | Phase 3 | Complete |
 | INFRA-09 | Phase 1 | Complete |
 
 **Coverage:**

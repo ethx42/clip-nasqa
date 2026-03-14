@@ -92,5 +92,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 3/3 | Complete   | 2026-03-14 |
 | 2. Session and View Shell | 3/3 | Complete    | 2026-03-14 |
-| 3. Real-Time Core | 4/6 | In Progress|  |
+| 3. Real-Time Core | 5/6 | In Progress|  |
 | 4. Moderation, Identity, and Polish | TBD | Not started | - |

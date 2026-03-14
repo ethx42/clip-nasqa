@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 3 of 4 (Real-Time Core)
-Plan: 5 of 6 in current phase
+Plan: 6 of 6 in current phase
 Status: Active
-Last activity: 2026-03-14 — 03-04 complete (useSessionState, useSessionUpdates, useFingerprint, SessionLivePage, SessionLiveHostPage, SSR hydration)
+Last activity: 2026-03-14 — 03-05 complete (LiveIndicator, NewContentBanner, Framer Motion animations, host delete/clear, CLIPBOARD_CLEARED toast, connection status)
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Progress: [███████░░░] 67%
 | Phase 03-real-time-core P03 | 5 | 2 tasks | 7 files |
 | Phase 03-real-time-core P02 | 5min | 2 tasks | 10 files |
 | Phase 03-real-time-core P04 | 4min | 2 tasks | 12 files |
+| Phase 03-real-time-core P05 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,11 @@ Recent decisions affecting current work:
 - [Phase 03-real-time-core Plan 04]: AppSync subscription payload is AWSJSON (serialized string) — JSON.parse(payload) required in useSessionUpdates
 - [Phase 03-real-time-core Plan 04]: Host secret read from window.location.hash on mount and immediately hashed via SubtleCrypto — raw secret never stored in React state
 - [Phase 03-real-time-core Plan 04]: getSessionData uses single QueryCommand (PK = SESSION#slug) partitioned by SK prefix — no GSI needed
+- [Phase 03-real-time-core Plan 05]: connectionStatus returned from useSessionUpdates — co-located with subscription logic, avoids prop-drilling
+- [Phase 03-real-time-core Plan 05]: lastHostActivity tracks only SNIPPET_ADDED — snippets are the primary speaker liveness signal
+- [Phase 03-real-time-core Plan 05]: CLIPBOARD_CLEARED toast fires only for non-hosts — host sees their own action inline
+- [Phase 03-real-time-core Plan 05]: AnimatePresence mode=popLayout on hero card — prevents exit/enter race causing layout jump
+- [Phase 03-real-time-core Plan 05]: 80KB bundle target unachievable with aws-amplify subscription library (68KB gz) — documented as known constraint from Phase 3 Plan 01
 
 ### Pending Todos
 
@@ -98,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 03-04-PLAN.md (useSessionState, useSessionUpdates, useFingerprint, SessionLivePage, SessionLiveHostPage, SSR hydration)
+Stopped at: Completed 03-05-PLAN.md (LiveIndicator, NewContentBanner, Framer Motion animations, host delete/clear, CLIPBOARD_CLEARED toast, connection status, bundle verification)
 Resume file: None
