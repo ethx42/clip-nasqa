@@ -30,8 +30,8 @@ Build a real-time session tool where a speaker pushes code snippets and text to 
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — GraphQL schema expansion, core types/schemas, package installations
-- [ ] 01-02-PLAN.md — SST IaC wiring (DynamoDB + AppSync + Lambda data sources + resolver files + deploy script)
+- [x] 01-01-PLAN.md — GraphQL schema expansion, core types/schemas, package installations
+- [x] 01-02-PLAN.md — SST IaC wiring (DynamoDB + AppSync + Lambda data sources + resolver files + deploy script)
 - [ ] 01-03-PLAN.md — Deploy execution and AWS resource verification checkpoint
 
 ### Phase 2: Session and View Shell
@@ -77,7 +77,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | TBD | Not started | - |
+| 1. Infrastructure | 2/3 | In progress | - |
 | 2. Session and View Shell | TBD | Not started | - |
 | 3. Real-Time Core | TBD | Not started | - |
 | 4. Moderation, Identity, and Polish | TBD | Not started | - |

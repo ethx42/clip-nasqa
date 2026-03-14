@@ -72,7 +72,7 @@
 - [x] **INFRA-01**: DynamoDB single-table design (PK: SESSION#slug, SK: METADATA | SNIPPET# | QUESTION# | REPLY#)
 - [x] **INFRA-02**: AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session
 - [x] **INFRA-03**: AppSync subscription validates non-null sessionSlug to prevent cross-session leakage
-- [ ] **INFRA-04**: SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention
+- [x] **INFRA-04**: SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention
 - [ ] **INFRA-05**: Rate limiting: host 10 snippets/min, public 3 questions/min
 - [ ] **INFRA-06**: Optimistic UI with < 100ms internal state updates
 - [ ] **INFRA-07**: Global broadcast latency < 200ms
@@ -159,7 +159,7 @@
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 3 | Complete |
 | INFRA-03 | Phase 3 | Complete |
-| INFRA-04 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 4 | Pending |
 | INFRA-06 | Phase 3 | Pending |
 | INFRA-07 | Phase 3 | Pending |

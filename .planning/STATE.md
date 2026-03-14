@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 1 of 4 (Infrastructure)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-03-14 — Completed 01-01 (schema, types, package setup)
+Last activity: 2026-03-14 — Completed 01-02 (SST IaC — DynamoDB, AppSync, Lambda, resolvers)
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 8 min
-- Total execution time: 0.13 hours
+- Total plans completed: 2
+- Average duration: 5 min
+- Total execution time: 0.17 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-infrastructure | 1 | 8 min | 8 min |
+| 01-infrastructure | 2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min)
+- Last 5 plans: 01-01 (8 min), 01-02 (2 min)
 - Trend: —
 
 *Updated after each plan completion*
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - Tagged union SessionUpdate {eventType, sessionSlug, payload: AWSJSON} over native GraphQL union — AppSync native union in subscriptions is inconsistent
 - Subscription @aws_subscribe(mutations: ["_stub"]) placeholder allows schema to compile before real mutations exist in Phase 3
 - DynamoDB item interfaces (SessionItem etc.) separated from application interfaces (Session etc.) — keeps resolver output clean of PK/SK internals
+- NONE data source for subscription resolver — setSubscriptionFilter handles session isolation without backing resource
+- Removed rootDir from functions tsconfig to allow cross-package @nasqa/core imports in monorepo
+- npm run deploy enforces lint + typecheck + AWS_REGION=us-east-1 before any sst deploy call
 
 ### Pending Todos
 
@@ -63,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 01-01-PLAN.md (schema, types, packages)
+Stopped at: Completed 01-02-PLAN.md (SST IaC — DynamoDB, AppSync, Lambda, resolvers wired)
 Resume file: None
