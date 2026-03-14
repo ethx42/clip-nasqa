@@ -68,19 +68,31 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     }
 
     case 'QUESTION_ADDED': {
-      let questions: Question[];
-      if (action.optimisticId) {
-        const replaced = state.questions.some((q) => q.id === action.optimisticId);
-        questions = replaced
-          ? state.questions.map((q) =>
-              q.id === action.optimisticId ? action.payload : q
-            )
-          : [...state.questions, action.payload];
-      } else {
-        const exists = state.questions.some((q) => q.id === action.payload.id);
-        questions = exists ? state.questions : [...state.questions, action.payload];
-      }
-      return { ...state, questions };
+      const q = action.payload;
+      const exists = state.questions.some((x) => x.id === q.id);
+      if (exists) return state;
+      // Replace optimistic question (_opt_ ID) with the real one from subscription
+      const hasOptimistic = q.id.startsWith('_opt_')
+        ? false
+        : state.questions.some(
+            (x) =>
+              x.id.startsWith('_opt_') &&
+              x.sessionSlug === q.sessionSlug &&
+              x.fingerprint === q.fingerprint &&
+              x.text === q.text
+          );
+      const filtered = hasOptimistic
+        ? state.questions.filter(
+            (x) =>
+              !(
+                x.id.startsWith('_opt_') &&
+                x.sessionSlug === q.sessionSlug &&
+                x.fingerprint === q.fingerprint &&
+                x.text === q.text
+              )
+          )
+        : state.questions;
+      return { ...state, questions: [...filtered, q] };
     }
 
     case 'QUESTION_UPDATED': {
