@@ -27,7 +27,12 @@ Build a real-time session tool where a speaker pushes code snippets and text to 
   3. AppSync GraphQL schema compiles with the full type set (Session, Snippet, Question, Reply, SessionUpdate union) and at least one stub resolver responds
   4. ULID package is available and sortable IDs can be generated in Lambda functions
   5. `@aws-amplify/api-graphql` and `qrcode` packages are installed and importable in their respective packages
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — GraphQL schema expansion, core types/schemas, package installations
+- [ ] 01-02-PLAN.md — SST IaC wiring (DynamoDB + AppSync + Lambda data sources + resolver files + deploy script)
+- [ ] 01-03-PLAN.md — Deploy execution and AWS resource verification checkpoint
 
 ### Phase 2: Session and View Shell
 **Goal**: A host can create a session and share it; participants can navigate to the session URL and see the static view — before any real-time features exist
