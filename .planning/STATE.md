@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 3 of 4 (Real-Time Core)
-Plan: 2 of 6 in current phase
+Plan: 4 of 6 in current phase
 Status: Active
-Last activity: 2026-03-14 — 03-01 complete (GraphQL mutations, Lambda resolvers, Amplify client, GraphQL strings)
+Last activity: 2026-03-14 — 03-03 complete (QuestionCard, ReplyList, QAInput, QAPanel, Q&A Server Actions)
 
 Progress: [██████░░░░] 58%
 
@@ -40,6 +40,8 @@ Progress: [██████░░░░] 58%
 | Phase 02-session-and-view-shell P02 | 2 | 2 tasks | 5 files |
 | Phase 02-session-and-view-shell P03 | 15 | 3 tasks | 8 files |
 | Phase 03-real-time-core P01 | 3 | 2 tasks | 9 files |
+| Phase 03-real-time-core P03 | 5 | 2 tasks | 7 files |
+| Phase 03-real-time-core P02 | 5min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -73,6 +75,10 @@ Recent decisions affecting current work:
 - [Phase 03-real-time-core Plan 01]: aws-amplify full package installed for Amplify.configure SSR mode (ssr:true) — @aws-amplify/api-graphql alone does not expose this
 - [Phase 03-real-time-core Plan 01]: GraphQL strings as plain constants (not codegen) — simpler, sufficient for this project scale
 - [Phase 03-real-time-core Plan 01]: voters stored as DynamoDB Set, conditional expression prevents duplicate votes via contains/NOT contains
+- [Phase 03-real-time-core]: QAPanel passes stub empty arrays to page routes — Plan 04 SubscriptionProvider will provide real data
+- [Phase 03-real-time-core]: focused state uses ring-2 ring-emerald-500/50 animate-pulse — auto-expands reply thread when isFocused
+- [Phase 03-real-time-core]: ShikiBlock is async RSC with no use client — Shiki stays out of client bundle entirely; renderHighlight Server Action provides live preview to HostInput
+- [Phase 03-real-time-core]: ClipboardPanel is Client Component with inline HeroCard/HistoryCard sub-components — async RSC children cannot be used inside Client Components
 
 ### Pending Todos
 
@@ -87,5 +93,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 03-01-PLAN.md (GraphQL mutations, Lambda resolvers, Amplify client, GraphQL strings)
+Stopped at: Completed 03-03-PLAN.md (QuestionCard, ReplyList, QAInput, QAPanel, Q&A Server Actions)
 Resume file: None

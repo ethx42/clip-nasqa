@@ -17,24 +17,24 @@
 
 ### Clipboard
 
-- [ ] **CLIP-01**: Host can push text snippets to the live clipboard feed
-- [ ] **CLIP-02**: Host can push code snippets with a language attribute
-- [ ] **CLIP-03**: Code snippets are syntax-highlighted using Shiki (server-side rendering only, never in client bundle)
-- [ ] **CLIP-04**: Shiki supports dual themes (light/dark) via CSS variables to prevent layout shift on theme toggle
-- [ ] **CLIP-05**: Clipboard feed displays in reverse-chronological order with the latest snippet as the "Hero"
+- [x] **CLIP-01**: Host can push text snippets to the live clipboard feed
+- [x] **CLIP-02**: Host can push code snippets with a language attribute
+- [x] **CLIP-03**: Code snippets are syntax-highlighted using Shiki (server-side rendering only, never in client bundle)
+- [x] **CLIP-04**: Shiki supports dual themes (light/dark) via CSS variables to prevent layout shift on theme toggle
+- [x] **CLIP-05**: Clipboard feed displays in reverse-chronological order with the latest snippet as the "Hero"
 - [ ] **CLIP-06**: Host can delete individual snippets (authenticated by hostSecret)
 - [ ] **CLIP-07**: Host can clear the entire clipboard (authenticated by hostSecret)
 
 ### Q&A
 
-- [ ] **QA-01**: Participant can submit a question anonymously (max 500 chars)
-- [ ] **QA-02**: Participant can upvote questions; votes use DynamoDB atomic increments (ADD)
-- [ ] **QA-03**: Client tracks votes in localStorage to prevent UI-level double-voting
-- [ ] **QA-04**: Questions display sorted by upvote count
-- [ ] **QA-05**: Host or participant can reply to a question (one-level deep threading only)
-- [ ] **QA-06**: Speaker replies are visually distinct with a "Speaker" badge and emerald border
-- [ ] **QA-07**: Host can toggle isFocused on a question, pinning it to the top of all participants' views
-- [ ] **QA-08**: Focused question displays with a pulsing glow animation
+- [x] **QA-01**: Participant can submit a question anonymously (max 500 chars)
+- [x] **QA-02**: Participant can upvote questions; votes use DynamoDB atomic increments (ADD)
+- [x] **QA-03**: Client tracks votes in localStorage to prevent UI-level double-voting
+- [x] **QA-04**: Questions display sorted by upvote count
+- [x] **QA-05**: Host or participant can reply to a question (one-level deep threading only)
+- [x] **QA-06**: Speaker replies are visually distinct with a "Speaker" badge and emerald border
+- [x] **QA-07**: Host can toggle isFocused on a question, pinning it to the top of all participants' views
+- [x] **QA-08**: Focused question displays with a pulsing glow animation
 
 ### Moderation
 
@@ -75,7 +75,7 @@
 - [x] **INFRA-04**: SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention
 - [ ] **INFRA-05**: Rate limiting: host 10 snippets/min, public 3 questions/min
 - [ ] **INFRA-06**: Optimistic UI with < 100ms internal state updates
-- [ ] **INFRA-07**: Global broadcast latency < 200ms
+- [x] **INFRA-07**: Global broadcast latency < 200ms
 - [ ] **INFRA-08**: Initial JS payload < 80kB gzipped (Next.js Server Components for session shell)
 - [x] **INFRA-09**: ULID for sortable DynamoDB sort keys (reverse-chronological feeds)
 
@@ -122,21 +122,21 @@
 | SESS-05 | Phase 2 | Complete |
 | SESS-06 | Phase 2 | Complete |
 | SESS-07 | Phase 2 | Complete |
-| CLIP-01 | Phase 3 | Pending |
-| CLIP-02 | Phase 3 | Pending |
-| CLIP-03 | Phase 3 | Pending |
-| CLIP-04 | Phase 3 | Pending |
-| CLIP-05 | Phase 3 | Pending |
+| CLIP-01 | Phase 3 | Complete |
+| CLIP-02 | Phase 3 | Complete |
+| CLIP-03 | Phase 3 | Complete |
+| CLIP-04 | Phase 3 | Complete |
+| CLIP-05 | Phase 3 | Complete |
 | CLIP-06 | Phase 3 | Pending |
 | CLIP-07 | Phase 3 | Pending |
-| QA-01 | Phase 3 | Pending |
-| QA-02 | Phase 3 | Pending |
-| QA-03 | Phase 3 | Pending |
-| QA-04 | Phase 3 | Pending |
-| QA-05 | Phase 3 | Pending |
-| QA-06 | Phase 3 | Pending |
-| QA-07 | Phase 3 | Pending |
-| QA-08 | Phase 3 | Pending |
+| QA-01 | Phase 3 | Complete |
+| QA-02 | Phase 3 | Complete |
+| QA-03 | Phase 3 | Complete |
+| QA-04 | Phase 3 | Complete |
+| QA-05 | Phase 3 | Complete |
+| QA-06 | Phase 3 | Complete |
+| QA-07 | Phase 3 | Complete |
+| QA-08 | Phase 3 | Complete |
 | MOD-01 | Phase 4 | Pending |
 | MOD-02 | Phase 4 | Pending |
 | MOD-03 | Phase 4 | Pending |
@@ -162,7 +162,7 @@
 | INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 4 | Pending |
 | INFRA-06 | Phase 3 | Pending |
-| INFRA-07 | Phase 3 | Pending |
+| INFRA-07 | Phase 3 | Complete |
 | INFRA-08 | Phase 3 | Pending |
 | INFRA-09 | Phase 1 | Complete |
 
