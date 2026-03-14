@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 4 of 4 (Moderation and Polish)
-Plan: 1 of 3 in current phase — COMPLETE
+Plan: 2 of 3 in current phase — COMPLETE
 Status: In Progress
-Last activity: 2026-03-14 — 04-01 complete (moderation backend: ban/downvote mutations, rate limiting, ban enforcement)
+Last activity: 2026-03-14 — 04-02 complete (i18n routing with persistent cookie, language switcher, complete en/es/pt translations, useIdentity hook, JoinModal, IdentityEditor)
 
-Progress: [█████████▒] 90% (Phase 4 started)
+Progress: [█████████▒] 93% (Phase 4 plan 2/3)
 
 ## Performance Metrics
 
@@ -99,6 +99,10 @@ Recent decisions affecting current work:
 - [Phase 04-moderation-identity-and-polish Plan 01]: downvoteQuestion removes from voters set atomically in same UpdateCommand — DELETE on non-existent DynamoDB set member is a no-op
 - [Phase 04-moderation-identity-and-polish Plan 01]: checkNotBanned called before checkRateLimit in addQuestion — banned users get clear error rather than burning rate limit quota
 - [Phase 04-moderation-identity-and-polish Plan 01]: authorName written conditionally to DynamoDB items (only if truthy) to avoid null pollution
+- [Phase 04-moderation-identity-and-polish Plan 02]: next-intl createNavigation typed router used in language-switcher — locale param is type-safe
+- [Phase 04-moderation-identity-and-polish Plan 02]: shouldShowJoinModal() exported utility from join-modal.tsx — session page checks sessionStorage before controlling open state
+- [Phase 04-moderation-identity-and-polish Plan 02]: Email never included in setIdentity server calls — hook enforces client-only constraint (IDENT-03)
+- [Phase 04-moderation-identity-and-polish Plan 02]: @base-ui/react Dialog for JoinModal (full overlay), Popover for IdentityEditor (lightweight inline trigger)
 
 ### Pending Todos
 
@@ -113,5 +117,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 04-01-PLAN.md (moderation backend — ban/downvote mutations, rate limiting, ban enforcement in resolvers)
+Stopped at: Completed 04-02-PLAN.md (i18n routing, language switcher, translations, useIdentity hook, JoinModal, IdentityEditor)
 Resume file: None
