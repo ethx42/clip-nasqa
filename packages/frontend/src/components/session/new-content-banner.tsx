@@ -26,7 +26,7 @@ export function NewContentBanner({ message, visible, onTap }: NewContentBannerPr
       style={{ position: 'sticky', top: 0, zIndex: 10 }}
       className={`
         cursor-pointer select-none
-        bg-emerald-500 text-white text-xs font-medium text-center py-2 px-4 shadow-md
+        bg-emerald-500 text-white text-sm font-semibold text-center py-2.5 px-5 shadow-md
         transition-all duration-300 ease-in-out
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}
       `}

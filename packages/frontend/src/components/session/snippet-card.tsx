@@ -32,29 +32,29 @@ export async function SnippetCard({ snippet, snippetNumber, expanded = false }: 
   const relativeTime = formatRelativeTime(snippet.createdAt);
 
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
+    <div className="rounded-xl border border-border bg-card px-4 py-3">
       {/* Header row */}
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="rounded-md px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground">
             {isCode ? lang : 'Text'}
           </span>
+          <span className="text-sm font-semibold tabular-nums text-muted-foreground">#{snippetNumber}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{relativeTime}</span>
-          <span className="text-xs text-muted-foreground">#{snippetNumber}</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
           <CopyButton value={snippet.content} label="Copy" />
         </div>
       </div>
 
       {/* Content */}
       {expanded ? (
-        <div className="overflow-x-auto rounded bg-muted/30 text-sm">
+        <div className="overflow-x-auto rounded-lg bg-muted/30 text-sm">
           <ShikiBlock code={snippet.content} lang={lang} showLineNumbers={false} />
         </div>
       ) : (
-        <div className="line-clamp-3 overflow-hidden rounded bg-muted/30 text-xs">
-          <pre className={`whitespace-pre-wrap break-words ${isCode ? 'font-mono' : 'font-sans'} p-2`}>
+        <div className="line-clamp-3 overflow-hidden rounded-lg bg-muted/30 text-sm">
+          <pre className={`whitespace-pre-wrap break-words ${isCode ? 'font-mono' : 'font-sans'} p-3`}>
             {snippet.content}
           </pre>
         </div>

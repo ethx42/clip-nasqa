@@ -5,21 +5,21 @@ export default async function Home() {
   const t = await getTranslations();
 
   return (
-    <div className="flex min-h-[calc(100vh-49px)] flex-col">
+    <div className="flex min-h-[calc(100vh-53px)] flex-col">
       {/* Hero Section */}
-      <section className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
-        <div className="w-full max-w-3xl space-y-6">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
+      <section className="flex flex-1 flex-col items-center justify-center px-5 py-20 text-center">
+        <div className="w-full max-w-3xl space-y-8">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl">
             {t('landing.headline')}
           </h1>
-          <p className="mx-auto max-w-lg text-lg text-muted-foreground">
+          <p className="mx-auto max-w-lg text-lg leading-relaxed text-muted-foreground">
             {t('landing.subtitle')}
           </p>
 
           {/* Inline session creation form */}
           <form
             action={createSession}
-            className="mx-auto mt-8 flex w-full max-w-xl flex-col gap-3 rounded-2xl bg-card p-4 shadow-xl shadow-emerald-500/10 ring-1 ring-border sm:flex-row sm:gap-2"
+            className="mx-auto mt-10 flex w-full max-w-xl flex-col gap-4 rounded-2xl bg-card p-5 shadow-xl shadow-emerald-500/10 ring-1 ring-border sm:flex-row sm:gap-3"
           >
             <input
               name="title"
@@ -27,11 +27,11 @@ export default async function Home() {
               maxLength={50}
               placeholder={t('landing.placeholder')}
               required
-              className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
+              className="flex-1 rounded-xl border border-input bg-background px-5 py-3.5 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
             />
             <button
               type="submit"
-              className="rounded-xl bg-emerald-500 px-6 py-3 text-base font-semibold text-white transition hover:scale-[1.02] hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 active:scale-[0.98]"
+              className="rounded-xl bg-emerald-500 px-7 py-3.5 text-base font-bold text-white transition hover:scale-[1.02] hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 active:scale-[0.98]"
             >
               {t('landing.cta')}
             </button>
@@ -40,20 +40,20 @@ export default async function Home() {
       </section>
 
       {/* Feature highlights */}
-      <section className="border-t border-border px-4 py-12">
+      <section className="border-t border-border px-5 py-16">
         <ul className="mx-auto grid max-w-3xl grid-cols-1 gap-6 sm:grid-cols-3">
           {features.map((feature) => (
             <li
               key={feature.title}
-              className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-500/20 bg-card p-6 text-center shadow-sm"
+              className="flex flex-col items-center gap-4 rounded-2xl border border-emerald-500/20 bg-card p-8 text-center shadow-sm"
             >
-              <span className="text-3xl text-emerald-500" aria-hidden="true">
+              <span className="text-4xl text-emerald-500" aria-hidden="true">
                 {feature.icon}
               </span>
-              <h2 className="text-sm font-semibold text-foreground">
+              <h2 className="text-base font-bold text-foreground">
                 {feature.title}
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>
             </li>

@@ -31,6 +31,11 @@ export default $config({
       schema: "infra/schema.graphql",
     });
 
+    // 2b. Explicit API key for AppSync (required for client auth)
+    const apiKey = new aws.appsync.ApiKey("NasqaApiKey", {
+      apiId: api.id,
+    });
+
     // 3. DynamoDB data source (for stub Query resolver)
     const dynamoDS = api.addDataSource({
       name: "dynamoDS",
@@ -86,21 +91,10 @@ export default $config({
     api.addResolver("Mutation restoreQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Query getSessionData", { dataSource: lambdaDS.name });
 
-    // 10. Next.js site linked to DynamoDB table — passes AppSync config as env vars
-    const site = new sst.aws.Nextjs("NasqaSite", {
-      path: "packages/frontend",
-      link: [table],
-      environment: {
-        NEXT_PUBLIC_APPSYNC_URL: api.url,
-        NEXT_PUBLIC_APPSYNC_API_KEY: api.apiKey,
-        NEXT_PUBLIC_AWS_REGION: "us-east-1",
-      },
-    });
-
     return {
       apiUrl: api.url,
+      apiKey: apiKey.key,
       tableName: table.name,
-      siteUrl: site.url,
     };
   },
 });

@@ -68,21 +68,23 @@ function HeroCard({
   }, [snippet.content, lang, isCode, html]);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          {isCode ? lang : 'Text'}
-        </span>
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">{relativeTime}</span>
-          <span className="text-xs font-medium text-muted-foreground">#{snippetNumber}</span>
+          <span className="rounded-lg bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            {isCode ? lang : 'Text'}
+          </span>
+          <span className="text-base font-bold tabular-nums text-muted-foreground">#{snippetNumber}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
           <CopyButton value={snippet.content} label="Copy" />
           {isHost && onDelete && (
             <button
               type="button"
               title="Delete snippet"
               onClick={onDelete}
-              className="text-xs text-muted-foreground hover:text-destructive transition"
+              className="text-sm text-muted-foreground hover:text-destructive transition"
               aria-label="Delete snippet"
             >
               ···
@@ -90,15 +92,15 @@ function HeroCard({
           )}
         </div>
       </div>
-      <div className="max-h-[30rem] overflow-y-auto rounded-lg bg-muted/30">
+      <div className="max-h-[30rem] overflow-y-auto rounded-xl bg-muted/30">
         {html ? (
           <div
-            className="shiki-wrapper overflow-x-auto text-sm leading-relaxed"
+            className="shiki-wrapper overflow-x-auto text-[15px] leading-relaxed"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         ) : (
           <pre
-            className={`whitespace-pre-wrap break-words p-3 text-sm leading-relaxed ${
+            className={`whitespace-pre-wrap break-words p-4 text-[15px] leading-relaxed ${
               isCode ? 'font-mono' : 'font-sans'
             } text-foreground`}
           >
@@ -140,21 +142,23 @@ function HistoryCard({
   }, [expanded, isCode, html, snippet.content, lang]);
 
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-          {isCode ? lang : 'Text'}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{relativeTime}</span>
-          <span className="text-xs text-muted-foreground">#{snippetNumber}</span>
+    <div className="rounded-xl border border-border bg-card px-4 py-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="rounded-md px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground">
+            {isCode ? lang : 'Text'}
+          </span>
+          <span className="text-sm font-semibold tabular-nums text-muted-foreground">#{snippetNumber}</span>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
           <CopyButton value={snippet.content} label="Copy" />
           {isHost && onDelete && (
             <button
               type="button"
               title="Delete snippet"
               onClick={onDelete}
-              className="text-xs text-muted-foreground hover:text-destructive transition"
+              className="text-sm text-muted-foreground hover:text-destructive transition"
               aria-label="Delete snippet"
             >
               ···
@@ -163,18 +167,18 @@ function HistoryCard({
         </div>
       </div>
       <div
-        className={`overflow-hidden rounded bg-muted/30 ${isLong ? 'cursor-pointer' : ''}`}
+        className={`overflow-hidden rounded-lg bg-muted/30 ${isLong ? 'cursor-pointer' : ''}`}
         onClick={isLong ? () => setExpanded((v) => !v) : undefined}
       >
         {expanded ? (
           html ? (
             <div
-              className="shiki-wrapper overflow-x-auto text-xs leading-relaxed"
+              className="shiki-wrapper overflow-x-auto text-sm leading-relaxed"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           ) : (
             <pre
-              className={`whitespace-pre-wrap break-words p-2 text-xs ${
+              className={`whitespace-pre-wrap break-words p-3 text-sm ${
                 isCode ? 'font-mono' : 'font-sans'
               } text-foreground`}
             >
@@ -183,9 +187,9 @@ function HistoryCard({
           )
         ) : (
           <pre
-            className={`line-clamp-3 whitespace-pre-wrap break-words p-2 text-xs ${
+            className={`line-clamp-3 whitespace-pre-wrap break-words p-3 text-sm ${
               isCode ? 'font-mono' : 'font-sans'
-            } text-foreground`}
+            } text-foreground/80`}
           >
             {snippet.content}
           </pre>
@@ -195,7 +199,7 @@ function HistoryCard({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+          className="mt-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
         >
           {expanded ? 'Collapse' : `Show all ${lineCount} lines`}
         </button>
@@ -291,7 +295,7 @@ export function ClipboardPanel({
     <div
       ref={scrollContainerRef}
       onScroll={handleScroll}
-      className="flex flex-1 flex-col gap-4 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm"
+      className="flex flex-1 flex-col gap-5 overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-sm"
     >
       {/* New snippet banner — sticky at top */}
       <NewContentBanner
@@ -315,7 +319,7 @@ export function ClipboardPanel({
         <div className="flex items-center justify-end">
           <button
             type="button"
-            className="text-xs text-muted-foreground hover:text-destructive transition"
+            className="text-sm font-medium text-muted-foreground hover:text-destructive transition"
             onClick={() => {
               if (window.confirm('Clear all snippets? This cannot be undone.')) {
                 onClearClipboard?.();
@@ -329,13 +333,13 @@ export function ClipboardPanel({
 
       {/* Content area */}
       {snippets.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center p-8 text-center">
-          <p className="animate-pulse text-sm text-muted-foreground">
+        <div className="flex flex-1 items-center justify-center p-10 text-center">
+          <p className="animate-pulse text-base text-muted-foreground">
             Waiting for the speaker...
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {/* Hero (latest snippet) — animated entrance */}
           <AnimatePresence mode="popLayout">
             {heroSnippet && (
@@ -359,8 +363,8 @@ export function ClipboardPanel({
 
           {/* History list */}
           {historySnippets.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-muted-foreground">Previous snippets</p>
+            <div className="flex flex-col gap-3">
+              <p className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/50">History</p>
               <AnimatePresence initial={false}>
                 {historySnippets.map((snippet, idx) => (
                   <motion.div

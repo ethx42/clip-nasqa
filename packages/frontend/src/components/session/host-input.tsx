@@ -128,7 +128,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
   }, []);
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-4">
+    <div className="flex flex-col gap-4 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-5">
       {/* Textarea */}
       <textarea
         ref={textareaRef}
@@ -137,35 +137,35 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
         onKeyDown={handleKeyDown}
         placeholder="Paste or type code/text..."
         rows={3}
-        className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-        style={{ minHeight: '72px', maxHeight: '300px' }}
+        className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 font-mono text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+        style={{ minHeight: '80px', maxHeight: '300px' }}
       />
 
       {/* Controls row */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-3">
         {/* Language chip + dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setShowLangDropdown((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent transition"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-accent transition"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
             {SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang}
             {overrideLang && (
-              <span className="ml-0.5 text-muted-foreground">(manual)</span>
+              <span className="ml-0.5 text-muted-foreground font-normal">(manual)</span>
             )}
           </button>
           {showLangDropdown && (
-            <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-40 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+            <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-44 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg">
               {SUPPORTED_LANGUAGES.map((lang) => (
                 <button
                   key={lang.value}
                   type="button"
                   onClick={() => handleLangSelect(lang.value)}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-accent transition ${
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-accent transition ${
                     activeLang === lang.value
-                      ? 'font-medium text-emerald-600 dark:text-emerald-400'
+                      ? 'font-semibold text-emerald-600 dark:text-emerald-400'
                       : 'text-foreground'
                   }`}
                 >
@@ -181,10 +181,10 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           type="button"
           onClick={() => void handlePush()}
           disabled={!value.trim() || isPushing}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
           {isPushing ? 'Pushing...' : 'Push Snippet'}
-          <kbd className="ml-1 hidden rounded bg-white/20 px-1 text-xs sm:inline">
+          <kbd className="ml-1 hidden rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-medium sm:inline">
             ⌘↵
           </kbd>
         </button>
@@ -193,7 +193,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       {/* Live preview */}
       {previewHtml && (
         <div
-          className="max-h-48 overflow-y-auto overflow-x-auto rounded-lg border border-border bg-background p-2 text-sm"
+          className="max-h-48 overflow-y-auto overflow-x-auto rounded-xl border border-border bg-background p-3 text-[15px]"
           dangerouslySetInnerHTML={{ __html: previewHtml }}
         />
       )}

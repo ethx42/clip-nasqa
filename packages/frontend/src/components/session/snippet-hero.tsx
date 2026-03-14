@@ -34,27 +34,27 @@ export async function SnippetHero({ snippet, snippetNumber, highlightedHtml }: S
   const relativeTime = formatRelativeTime(snippet.createdAt);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
       {/* Header row */}
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           {/* Language badge */}
-          <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="rounded-lg bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
             {isCode ? lang : 'Text'}
           </span>
+          <span className="text-base font-bold tabular-nums text-muted-foreground">#{snippetNumber}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">{relativeTime}</span>
-          <span className="text-xs font-medium text-muted-foreground">#{snippetNumber}</span>
+          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
           <CopyButton value={snippet.content} label="Copy" />
         </div>
       </div>
 
       {/* Code / text block */}
-      <div className="max-h-[30rem] overflow-y-auto rounded-lg bg-muted/30">
+      <div className="max-h-[30rem] overflow-y-auto rounded-xl bg-muted/30">
         {highlightedHtml ? (
           <div
-            className={`shiki-wrapper overflow-x-auto text-sm leading-relaxed ${isCode ? 'shiki-line-numbers' : ''}`}
+            className={`shiki-wrapper overflow-x-auto text-[15px] leading-relaxed ${isCode ? 'shiki-line-numbers' : ''}`}
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}
           />
         ) : (
