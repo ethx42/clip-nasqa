@@ -129,3 +129,25 @@
     @apply font-sans;
   }
 }
+
+/* Shiki dual-theme: switch colors when html.dark is set by next-themes */
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+/* Shiki line numbers via data-line attribute */
+.shiki-line-numbers .shiki code .line::before {
+  content: attr(data-line);
+  display: inline-block;
+  width: 2rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--shiki-token-comment, oklch(0.556 0.009 286.09));
+  user-select: none;
+  flex-shrink: 0;
+}
