@@ -37,31 +37,34 @@ export default $config({
       dynamodb: table.arn,
     });
 
-    // 4. Lambda data source (for mutations — Phase 3 adds real handlers)
-    const lambdaDS = api.addDataSource({
-      name: "lambdaDS",
-      lambda: {
-        handler: "packages/functions/src/resolvers/index.handler",
-        environment: {
-          TABLE_NAME: table.name,
-          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1",
-        },
-        link: [table],
+    // 4. Lambda function for resolvers (created separately to avoid handler bug with inline lambda)
+    const resolverFn = new sst.aws.Function("ResolverFn", {
+      handler: "packages/functions/src/resolvers/index.handler",
+      environment: {
+        TABLE_NAME: table.name,
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1",
       },
+      link: [table],
     });
 
-    // 5. NONE data source (for subscription resolver — no backing resource needed)
+    // 5. Lambda data source referencing the function
+    const lambdaDS = api.addDataSource({
+      name: "lambdaDS",
+      lambda: resolverFn.arn,
+    });
+
+    // 6. NONE data source (for subscription resolver — no backing resource needed)
     const noneDS = api.addDataSource({
       name: "noneDS",
     });
 
-    // 6. Stub resolver for Query._empty (DynamoDB data source — always returns null)
+    // 7. Stub resolver for Query._empty (DynamoDB data source — always returns null)
     api.addResolver("Query _empty", {
       dataSource: dynamoDS.name,
       code: readFileSync("infra/resolvers/query-stub.js", "utf-8"),
     });
 
-    // 7. Subscription resolver — enhanced server-side filter (NONE data source)
+    // 8. Subscription resolver — enhanced server-side filter (NONE data source)
     // CRITICAL: Uses extensions.setSubscriptionFilter for session isolation.
     // Argument-based filtering alone has a null-slug bypass vulnerability.
     api.addResolver("Subscription onSessionUpdate", {
@@ -69,7 +72,7 @@ export default $config({
       code: readFileSync("infra/resolvers/subscription-onSessionUpdate.js", "utf-8"),
     });
 
-    // 8. Mutation resolvers — all routes through Lambda data source
+    // 9. Mutation resolvers — all routes through Lambda data source
     api.addResolver("Mutation pushSnippet", { dataSource: lambdaDS.name });
     api.addResolver("Mutation deleteSnippet", { dataSource: lambdaDS.name });
     api.addResolver("Mutation clearClipboard", { dataSource: lambdaDS.name });
@@ -79,7 +82,7 @@ export default $config({
     api.addResolver("Mutation focusQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Query getSessionData", { dataSource: lambdaDS.name });
 
-    // 9. Next.js site linked to DynamoDB table — passes AppSync config as env vars
+    // 10. Next.js site linked to DynamoDB table — passes AppSync config as env vars
     const site = new sst.aws.Nextjs("NasqaSite", {
       path: "packages/frontend",
       link: [table],
