@@ -12,8 +12,17 @@ export type SessionAction =
   | { type: 'QUESTION_ADDED'; payload: Question; optimisticId?: string }
   | {
       type: 'QUESTION_UPDATED';
-      payload: { questionId: string; upvoteDelta?: number; upvoteCount?: number; isFocused?: boolean };
+      payload: {
+        questionId: string;
+        upvoteDelta?: number;
+        upvoteCount?: number;
+        downvoteCount?: number;
+        isFocused?: boolean;
+        isBanned?: boolean;
+        isHidden?: boolean;
+      };
     }
+  | { type: 'PARTICIPANT_BANNED'; payload: { fingerprint: string } }
   | { type: 'REPLY_ADDED'; payload: Reply }
   | { type: 'ADD_SNIPPET_OPTIMISTIC'; payload: Snippet }
   | { type: 'ADD_QUESTION_OPTIMISTIC'; payload: Question }
@@ -28,6 +37,8 @@ interface SessionState {
   questions: Question[];
   /** All replies; grouped by questionId via repliesByQuestion helper. */
   replies: Reply[];
+  /** Fingerprints of banned participants — used to disable QAInput for banned users. */
+  bannedFingerprints: Set<string>;
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
@@ -96,7 +107,8 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     }
 
     case 'QUESTION_UPDATED': {
-      const { questionId, upvoteDelta, upvoteCount, isFocused } = action.payload;
+      const { questionId, upvoteDelta, upvoteCount, downvoteCount, isFocused, isBanned, isHidden } =
+        action.payload;
       const questions = state.questions.map((q) => {
         if (q.id !== questionId) {
           // If this update sets a different question to focused, un-focus others
@@ -111,10 +123,19 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
               : upvoteDelta !== undefined
                 ? q.upvoteCount + upvoteDelta
                 : q.upvoteCount,
+          downvoteCount: downvoteCount !== undefined ? downvoteCount : q.downvoteCount,
           isFocused: isFocused !== undefined ? isFocused : q.isFocused,
+          isBanned: isBanned !== undefined ? isBanned : q.isBanned,
+          isHidden: isHidden !== undefined ? isHidden : q.isHidden,
         };
       });
       return { ...state, questions };
+    }
+
+    case 'PARTICIPANT_BANNED': {
+      const next = new Set(state.bannedFingerprints);
+      next.add(action.payload.fingerprint);
+      return { ...state, bannedFingerprints: next };
     }
 
     case 'REPLY_ADDED': {
@@ -181,6 +202,8 @@ interface SessionStateResult {
   sortedQuestions: Question[];
   /** Replies for a specific question, sorted by createdAt asc. */
   repliesByQuestion: (questionId: string) => Reply[];
+  /** Fingerprints of banned participants. */
+  bannedFingerprints: Set<string>;
 }
 
 export function useSessionState(initialData: {
@@ -192,6 +215,7 @@ export function useSessionState(initialData: {
     snippets: initialData.snippets,
     questions: initialData.questions,
     replies: initialData.replies,
+    bannedFingerprints: new Set<string>(),
   });
 
   // Derived: sorted questions
@@ -211,5 +235,5 @@ export function useSessionState(initialData: {
     [state.replies]
   );
 
-  return { state, dispatch, sortedQuestions, repliesByQuestion };
+  return { state, dispatch, sortedQuestions, repliesByQuestion, bannedFingerprints: state.bannedFingerprints };
 }

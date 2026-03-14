@@ -8,23 +8,32 @@ function votesKey(sessionSlug: string): string {
   return `votes:${sessionSlug}`;
 }
 
+function downvotesKey(sessionSlug: string): string {
+  return `downvotes:${sessionSlug}`;
+}
+
 interface FingerprintResult {
   fingerprint: string;
   votedIds: Set<string>;
+  downvotedIds: Set<string>;
   addVote: (id: string) => void;
   removeVote: (id: string) => void;
+  addDownvote: (id: string) => void;
+  removeDownvote: (id: string) => void;
 }
 
 /**
  * Provides a stable localStorage UUID fingerprint and per-session vote tracking.
  *
  * - On mount, reads or generates `nasqa_fingerprint` in localStorage.
- * - Reads `votes:{sessionSlug}` as a JSON array of question IDs.
- * - addVote / removeVote persist changes back to localStorage.
+ * - Reads `votes:{sessionSlug}` as a JSON array of upvoted question IDs.
+ * - Reads `downvotes:{sessionSlug}` as a JSON array of downvoted question IDs.
+ * - addVote / removeVote / addDownvote / removeDownvote persist changes back to localStorage.
  */
 export function useFingerprint(sessionSlug: string): FingerprintResult {
   const [fingerprint, setFingerprint] = useState<string>('');
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
+  const [downvotedIds, setDownvotedIds] = useState<Set<string>>(new Set());
 
   // Initialize fingerprint and voted IDs from localStorage on mount
   useEffect(() => {
@@ -43,6 +52,16 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
       } catch {
         // Corrupted data — reset
         localStorage.removeItem(votesKey(sessionSlug));
+      }
+    }
+
+    const rawDownvotes = localStorage.getItem(downvotesKey(sessionSlug));
+    if (rawDownvotes) {
+      try {
+        const parsed = JSON.parse(rawDownvotes) as string[];
+        setDownvotedIds(new Set(parsed));
+      } catch {
+        localStorage.removeItem(downvotesKey(sessionSlug));
       }
     }
   }, [sessionSlug]);
@@ -71,5 +90,29 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
     [sessionSlug]
   );
 
-  return { fingerprint, votedIds, addVote, removeVote };
+  const addDownvote = useCallback(
+    (id: string) => {
+      setDownvotedIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        localStorage.setItem(downvotesKey(sessionSlug), JSON.stringify([...next]));
+        return next;
+      });
+    },
+    [sessionSlug]
+  );
+
+  const removeDownvote = useCallback(
+    (id: string) => {
+      setDownvotedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        localStorage.setItem(downvotesKey(sessionSlug), JSON.stringify([...next]));
+        return next;
+      });
+    },
+    [sessionSlug]
+  );
+
+  return { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote };
 }

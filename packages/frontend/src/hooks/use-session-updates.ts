@@ -131,15 +131,24 @@ export function useSessionUpdates(
               break;
             }
             case 'QUESTION_UPDATED': {
-              const { questionId, upvoteCount, isFocused } = parsed as {
-                questionId: string;
-                upvoteCount?: number;
-                isFocused?: boolean;
-              };
+              const { questionId, upvoteCount, downvoteCount, isFocused, isBanned, isHidden } =
+                parsed as {
+                  questionId: string;
+                  upvoteCount?: number;
+                  downvoteCount?: number;
+                  isFocused?: boolean;
+                  isBanned?: boolean;
+                  isHidden?: boolean;
+                };
               stableDispatch({
                 type: 'QUESTION_UPDATED',
-                payload: { questionId, upvoteCount, isFocused },
+                payload: { questionId, upvoteCount, downvoteCount, isFocused, isBanned, isHidden },
               });
+              break;
+            }
+            case 'PARTICIPANT_BANNED': {
+              const { fingerprint } = parsed as { fingerprint: string };
+              stableDispatch({ type: 'PARTICIPANT_BANNED', payload: { fingerprint } });
               break;
             }
             case 'REPLY_ADDED': {

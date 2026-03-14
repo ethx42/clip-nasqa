@@ -21,6 +21,12 @@ import {
   deleteSnippetAction,
   clearClipboardAction,
 } from '@/actions/snippet';
+import {
+  banQuestionAction,
+  banParticipantAction,
+  downvoteQuestionAction,
+  restoreQuestionAction,
+} from '@/actions/moderation';
 
 interface SessionLiveHostPageProps {
   session: Session;
@@ -60,9 +66,10 @@ export function SessionLiveHostPage({
     }
   }, []);
 
-  const { fingerprint, votedIds, addVote, removeVote } = useFingerprint(sessionSlug);
+  const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
+    useFingerprint(sessionSlug);
 
-  const { state, dispatch, sortedQuestions } = useSessionState({
+  const { state, dispatch, sortedQuestions, bannedFingerprints } = useSessionState({
     snippets: initialSnippets,
     questions: initialQuestions,
     replies: initialReplies,
@@ -192,6 +199,60 @@ export function SessionLiveHostPage({
     }
   }
 
+  async function handleDownvote(questionId: string, remove: boolean) {
+    if (remove) {
+      removeDownvote(questionId);
+    } else {
+      addDownvote(questionId);
+      if (votedIds.has(questionId)) {
+        removeVote(questionId);
+      }
+    }
+
+    const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
+
+    if (!result.ok) {
+      if (remove) {
+        addDownvote(questionId);
+      } else {
+        removeDownvote(questionId);
+      }
+    }
+  }
+
+  async function handleBanQuestion(questionId: string) {
+    // Optimistic: mark banned immediately
+    dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isBanned: true } });
+    const result = await banQuestionAction({ sessionSlug, hostSecretHash, questionId });
+    if (!result.ok) {
+      // Rollback
+      dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isBanned: false } });
+      console.error('banQuestionAction failed:', result.error);
+    }
+  }
+
+  async function handleBanParticipant(participantFingerprint: string) {
+    const result = await banParticipantAction({
+      sessionSlug,
+      hostSecretHash,
+      fingerprint: participantFingerprint,
+    });
+    if (!result.ok) {
+      console.error('banParticipantAction failed:', result.error);
+    }
+  }
+
+  async function handleRestoreQuestion(questionId: string) {
+    dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isHidden: false } });
+    const result = await restoreQuestionAction({ sessionSlug, hostSecretHash, questionId });
+    if (!result.ok) {
+      dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isHidden: true } });
+      console.error('restoreQuestionAction failed:', result.error);
+    }
+  }
+
+  const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
+
   return (
     <SessionShell
       title={session.title}
@@ -223,10 +284,16 @@ export function SessionLiveHostPage({
           replies={state.replies}
           fingerprint={fingerprint}
           votedQuestionIds={votedIds}
+          downvotedQuestionIds={downvotedIds}
+          isUserBanned={isUserBanned}
           onUpvote={handleUpvote}
+          onDownvote={handleDownvote}
           onAddQuestion={handleAddQuestion}
           onReply={handleReply}
           onFocus={handleFocusQuestion}
+          onBanQuestion={handleBanQuestion}
+          onBanParticipant={handleBanParticipant}
+          onRestore={handleRestoreQuestion}
         />
       }
     />

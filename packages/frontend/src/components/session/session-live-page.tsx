@@ -14,6 +14,7 @@ import {
   upvoteQuestionAction,
   addReplyAction,
 } from '@/actions/qa';
+import { downvoteQuestionAction } from '@/actions/moderation';
 
 interface SessionLivePageProps {
   session: Session;
@@ -40,9 +41,10 @@ export function SessionLivePage({
   initialQuestions,
   initialReplies,
 }: SessionLivePageProps) {
-  const { fingerprint, votedIds, addVote, removeVote } = useFingerprint(sessionSlug);
+  const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
+    useFingerprint(sessionSlug);
 
-  const { state, dispatch, sortedQuestions } = useSessionState({
+  const { state, dispatch, sortedQuestions, bannedFingerprints } = useSessionState({
     snippets: initialSnippets,
     questions: initialQuestions,
     replies: initialReplies,
@@ -140,6 +142,31 @@ export function SessionLivePage({
     }
   }
 
+  async function handleDownvote(questionId: string, remove: boolean) {
+    if (remove) {
+      removeDownvote(questionId);
+    } else {
+      addDownvote(questionId);
+      // Mutually exclusive: remove upvote state client-side if downvoting
+      if (votedIds.has(questionId)) {
+        removeVote(questionId);
+      }
+    }
+
+    const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
+
+    if (!result.ok) {
+      // Rollback
+      if (remove) {
+        addDownvote(questionId);
+      } else {
+        removeDownvote(questionId);
+      }
+    }
+  }
+
+  const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
+
   return (
     <SessionShell
       title={session.title}
@@ -163,7 +190,10 @@ export function SessionLivePage({
           replies={state.replies}
           fingerprint={fingerprint}
           votedQuestionIds={votedIds}
+          downvotedQuestionIds={downvotedIds}
+          isUserBanned={isUserBanned}
           onUpvote={handleUpvote}
+          onDownvote={handleDownvote}
           onAddQuestion={handleAddQuestion}
           onReply={handleReply}
         />

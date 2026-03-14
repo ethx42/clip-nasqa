@@ -68,6 +68,46 @@ export const FOCUS_QUESTION = `
   }
 `;
 
+export const BAN_QUESTION = `
+  mutation BanQuestion($sessionSlug: String!, $hostSecretHash: String!, $questionId: String!) {
+    banQuestion(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, questionId: $questionId) {
+      eventType
+      sessionSlug
+      payload
+    }
+  }
+`;
+
+export const BAN_PARTICIPANT = `
+  mutation BanParticipant($sessionSlug: String!, $hostSecretHash: String!, $fingerprint: String!) {
+    banParticipant(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, fingerprint: $fingerprint) {
+      eventType
+      sessionSlug
+      payload
+    }
+  }
+`;
+
+export const DOWNVOTE_QUESTION = `
+  mutation DownvoteQuestion($sessionSlug: String!, $questionId: String!, $fingerprint: String!, $remove: Boolean) {
+    downvoteQuestion(sessionSlug: $sessionSlug, questionId: $questionId, fingerprint: $fingerprint, remove: $remove) {
+      eventType
+      sessionSlug
+      payload
+    }
+  }
+`;
+
+export const RESTORE_QUESTION = `
+  mutation RestoreQuestion($sessionSlug: String!, $hostSecretHash: String!, $questionId: String!) {
+    restoreQuestion(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, questionId: $questionId) {
+      eventType
+      sessionSlug
+      payload
+    }
+  }
+`;
+
 export const GET_SESSION_DATA = `
   query GetSessionData($sessionSlug: String!) {
     getSessionData(sessionSlug: $sessionSlug) {
