@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp, MoreVertical, MessageSquare } from 'lucide-react';
+import { ChevronUp, ThumbsDown, MessageSquare, ShieldX, Ban } from 'lucide-react';
+import { Dialog } from '@base-ui/react/dialog';
+import { useTranslations } from 'next-intl';
 import type { Question, Reply } from '@nasqa/core';
 import { linkifyText } from '@/lib/linkify';
 import { ReplyList } from './reply-list';
@@ -15,9 +17,14 @@ interface QuestionCardProps {
   sessionSlug: string;
   hostSecretHash?: string;
   votedQuestionIds: Set<string>;
+  downvotedQuestionIds: Set<string>;
   onUpvote: (questionId: string, remove: boolean) => void;
+  onDownvote: (questionId: string, remove: boolean) => void;
   onReply: (questionId: string, text: string) => void;
   onFocus?: (questionId: string | undefined) => void;
+  onBanQuestion?: (questionId: string) => void;
+  onBanParticipant?: (fingerprint: string) => void;
+  onRestore?: (questionId: string) => void;
 }
 
 function formatRelativeTime(createdAt: number): string {
@@ -37,22 +44,44 @@ export function QuestionCard({
   fingerprint,
   hostSecretHash,
   votedQuestionIds,
+  downvotedQuestionIds,
   onUpvote,
+  onDownvote,
   onReply,
   onFocus,
+  onBanQuestion,
+  onBanParticipant,
+  onRestore,
 }: QuestionCardProps) {
+  const t = useTranslations('moderation');
   const [showReplies, setShowReplies] = useState(question.isFocused);
-  const [showHostMenu, setShowHostMenu] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [showHiddenContent, setShowHiddenContent] = useState(false);
+  const [banConfirmOpen, setBanConfirmOpen] = useState(false);
 
   const isVoted = votedQuestionIds.has(question.id);
+  const isDownvoted = downvotedQuestionIds.has(question.id);
   const isOwn = question.fingerprint === fingerprint;
   const REPLY_CHAR_LIMIT = 500;
   const REPLY_COUNTER_THRESHOLD = Math.floor(REPLY_CHAR_LIMIT * 0.8);
 
+  void hostSecretHash; // used by parent when calling focusQuestionAction
+
   function handleUpvoteClick() {
+    // Mutually exclusive: clicking upvote when downvoted removes downvote first
+    if (isDownvoted) {
+      onDownvote(question.id, true);
+    }
     onUpvote(question.id, isVoted);
+  }
+
+  function handleDownvoteClick() {
+    // Mutually exclusive: clicking downvote when upvoted removes upvote first
+    if (isVoted) {
+      onUpvote(question.id, true);
+    }
+    onDownvote(question.id, isDownvoted);
   }
 
   function handleReplySubmit() {
@@ -71,7 +100,6 @@ export function QuestionCard({
   }
 
   function handleFocusToggle() {
-    setShowHostMenu(false);
     if (question.isFocused) {
       onFocus?.(undefined);
     } else {
@@ -79,32 +107,75 @@ export function QuestionCard({
     }
   }
 
-  void hostSecretHash; // used by parent when calling focusQuestionAction
+  function handleBanQuestionClick() {
+    onBanQuestion?.(question.id);
+  }
 
+  function handleConfirmBanParticipant() {
+    setBanConfirmOpen(false);
+    onBanParticipant?.(question.fingerprint);
+  }
+
+  // ── Banned state: tombstone ─────────────────────────────────────────────────
+  if (question.isBanned) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-5">
+        <p className="text-sm text-muted-foreground italic">{t('questionRemoved')}</p>
+      </div>
+    );
+  }
+
+  // ── Community-hidden state: collapsed with expand option ───────────────────
+  if (question.isHidden && !showHiddenContent) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{t('hiddenByCommunity')}</span>
+          <button
+            onClick={() => setShowHiddenContent(true)}
+            className="font-semibold text-foreground/70 underline-offset-2 hover:underline"
+          >
+            [{t('show')}]
+          </button>
+          {isHost && (
+            <button
+              onClick={() => onRestore?.(question.id)}
+              className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/10"
+            >
+              Restore
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Normal / expanded hidden state ─────────────────────────────────────────
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-border bg-card p-4 transition-all',
+        'group relative rounded-xl border border-border bg-card p-5 transition-all',
         question.isFocused &&
-          'ring-2 ring-emerald-500/50 animate-pulse border-emerald-500/30'
+          'ring-2 ring-emerald-500/50 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
       )}
     >
       {question.isFocused && (
-        <div className="mb-2 flex items-center gap-1.5">
-          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-emerald-500">
+        <div className="mb-3 flex items-center gap-1.5">
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-500">
             Focused
           </span>
         </div>
       )}
 
-      <div className="flex gap-3">
-        {/* Upvote column */}
-        <div className="flex flex-col items-center gap-0.5 pt-0.5">
+      <div className="flex gap-4">
+        {/* Vote column: upvote + downvote */}
+        <div className="flex flex-col items-center gap-1 pt-0.5">
+          {/* Upvote */}
           <button
             onClick={handleUpvoteClick}
             aria-label={isVoted ? 'Remove upvote' : 'Upvote question'}
             className={cn(
-              'rounded p-1 transition-colors hover:bg-accent',
+              'rounded-lg p-1.5 transition-colors hover:bg-accent',
               isVoted ? 'text-emerald-500' : 'text-muted-foreground'
             )}
           >
@@ -112,67 +183,85 @@ export function QuestionCard({
           </button>
           <span
             className={cn(
-              'text-xs font-semibold tabular-nums',
+              'text-base font-bold tabular-nums',
               isVoted ? 'text-emerald-500' : 'text-muted-foreground'
             )}
           >
             {question.upvoteCount}
           </span>
+
+          {/* Downvote */}
+          <button
+            onClick={handleDownvoteClick}
+            aria-label={isDownvoted ? 'Remove downvote' : 'Downvote question'}
+            className={cn(
+              'mt-1 rounded-lg p-1.5 transition-colors hover:bg-accent',
+              isDownvoted ? 'text-rose-500' : 'text-muted-foreground'
+            )}
+          >
+            <ThumbsDown className="h-4 w-4" />
+          </button>
+          <span
+            className={cn(
+              'text-xs font-semibold tabular-nums',
+              isDownvoted ? 'text-rose-500' : 'text-muted-foreground'
+            )}
+          >
+            {question.downvoteCount}
+          </span>
         </div>
 
         {/* Content column */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="break-words text-sm leading-relaxed text-foreground">
+          <div className="flex items-start justify-between gap-3">
+            <p className="break-words text-base leading-relaxed text-foreground">
               {linkifyText(question.text)}
             </p>
 
-            {/* Host actions menu */}
+            {/* Host inline moderation icons */}
             {isHost && (
-              <div className="relative flex-shrink-0">
+              <div className="flex flex-shrink-0 items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                {/* Focus toggle button */}
                 <button
-                  onClick={() => setShowHostMenu((v) => !v)}
-                  aria-label="Question actions"
-                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  onClick={handleFocusToggle}
+                  aria-label={question.isFocused ? 'Unfocus question' : 'Focus question'}
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  title={question.isFocused ? 'Unfocus' : 'Focus'}
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <span className="text-xs font-bold">{question.isFocused ? '●' : '○'}</span>
                 </button>
 
-                {showHostMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setShowHostMenu(false)}
-                    />
-                    <div className="absolute right-0 top-full z-20 mt-1 min-w-[120px] rounded-lg border border-border bg-popover py-1 shadow-lg">
-                      <button
-                        onClick={handleFocusToggle}
-                        className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-accent"
-                      >
-                        {question.isFocused ? 'Unfocus' : 'Focus'}
-                      </button>
-                      <button
-                        onClick={() => setShowHostMenu(false)}
-                        className="block w-full px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent"
-                        disabled
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </>
-                )}
+                {/* Ban question */}
+                <button
+                  onClick={handleBanQuestionClick}
+                  aria-label={t('banQuestion')}
+                  title={t('banQuestion')}
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <ShieldX className="h-4 w-4" />
+                </button>
+
+                {/* Ban participant — opens confirmation dialog */}
+                <button
+                  onClick={() => setBanConfirmOpen(true)}
+                  aria-label={t('banParticipant')}
+                  title={t('banParticipant')}
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Ban className="h-4 w-4" />
+                </button>
               </div>
             )}
           </div>
 
           {/* Metadata row */}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
             {isOwn && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-0.5 font-semibold text-foreground/70">
                 You
               </span>
             )}
-            <span className="text-xs text-muted-foreground">
+            <span>
               {formatRelativeTime(question.createdAt)}
             </span>
 
@@ -180,9 +269,9 @@ export function QuestionCard({
             {replies.length > 0 && (
               <button
                 onClick={() => setShowReplies((v) => !v)}
-                className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="flex items-center gap-1 transition-colors hover:text-foreground"
               >
-                <MessageSquare className="h-3 w-3" />
+                <MessageSquare className="h-3.5 w-3.5" />
                 {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
               </button>
             )}
@@ -190,15 +279,22 @@ export function QuestionCard({
             {/* Reply button */}
             <button
               onClick={() => setShowReplyInput((v) => !v)}
-              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="font-semibold transition-colors hover:text-foreground"
             >
               Reply
             </button>
+
+            {/* Host: show hidden indicator for expanded hidden questions + focus toggle (text) */}
+            {isHost && question.isHidden && showHiddenContent && (
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500">
+                Hidden
+              </span>
+            )}
           </div>
 
           {/* Inline reply input */}
           {showReplyInput && (
-            <div className="mt-3">
+            <div className="mt-4">
               <div className="relative">
                 <textarea
                   value={replyText}
@@ -207,9 +303,9 @@ export function QuestionCard({
                   placeholder="Write a reply..."
                   rows={2}
                   maxLength={REPLY_CHAR_LIMIT}
-                  className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                  className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
-                <div className="mt-1 flex items-center justify-between">
+                <div className="mt-2 flex items-center justify-between">
                   {replyText.length >= REPLY_COUNTER_THRESHOLD ? (
                     <span
                       className={cn(
@@ -230,7 +326,7 @@ export function QuestionCard({
                         setShowReplyInput(false);
                         setReplyText('');
                       }}
-                      className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+                      className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
                     >
                       Cancel
                     </button>
@@ -240,7 +336,7 @@ export function QuestionCard({
                         !replyText.trim() ||
                         replyText.length > REPLY_CHAR_LIMIT
                       }
-                      className="rounded bg-emerald-600 px-2 py-1 text-xs text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
                     >
                       Send
                     </button>
@@ -252,12 +348,43 @@ export function QuestionCard({
 
           {/* Expanded reply list */}
           {showReplies && replies.length > 0 && (
-            <div className="mt-3">
+            <div className="mt-4">
               <ReplyList replies={replies} isHost={isHost} />
             </div>
           )}
         </div>
       </div>
+
+      {/* Ban participant confirmation dialog */}
+      <Dialog.Root open={banConfirmOpen} onOpenChange={setBanConfirmOpen}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+              <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
+                {t('confirmBan')}
+              </Dialog.Title>
+              <Dialog.Description className="mb-5 text-sm text-muted-foreground">
+                {t('confirmBanQuestion')}
+              </Dialog.Description>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setBanConfirmOpen(false)}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  onClick={handleConfirmBanParticipant}
+                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                >
+                  {t('confirmBan')}
+                </button>
+              </div>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }
