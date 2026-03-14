@@ -7,7 +7,13 @@
   },
   "common": {
     "loading": "Loading...",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "rateLimitExceeded": "Rate limit exceeded",
+    "tryAgain": "Try again in a moment",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "clear": "Clear"
   },
   "session": {
     "waitingForSpeaker": "Waiting for the speaker to share...",
@@ -19,6 +25,41 @@
     "hostUrl": "Host URL",
     "participantUrl": "Participant URL",
     "qrCode": "QR Code",
-    "sessionCreated": "Session Created!"
+    "sessionCreated": "Session Created!",
+    "newContent": "New content",
+    "dismiss": "Dismiss",
+    "liveNow": "Live now",
+    "connectedParticipants": "participants connected",
+    "askQuestion": "Ask a question...",
+    "submitQuestion": "Submit",
+    "upvote": "Upvote",
+    "reply": "Reply",
+    "replyPlaceholder": "Add a reply...",
+    "submitReply": "Reply",
+    "noQuestions": "No questions yet. Be the first to ask!",
+    "clipboardEmpty": "Waiting for the speaker to share code snippets.",
+    "clipboardCleared": "The clipboard was cleared."
+  },
+  "moderation": {
+    "questionRemoved": "This question was removed.",
+    "hiddenByCommunity": "Hidden by community",
+    "show": "Show",
+    "banParticipant": "Ban participant",
+    "banQuestion": "Remove question",
+    "blockedFromPosting": "You've been blocked from posting in this session.",
+    "confirmBan": "Confirm ban",
+    "confirmBanQuestion": "Are you sure you want to ban this participant?",
+    "cancel": "Cancel"
+  },
+  "identity": {
+    "whatsYourName": "What's your name?",
+    "displayName": "Display name (optional)",
+    "email": "Email (optional)",
+    "skip": "Skip",
+    "joinSession": "Join session",
+    "editProfile": "Edit profile",
+    "anonymous": "Anonymous",
+    "save": "Save",
+    "clear": "Clear identity"
   }
 }

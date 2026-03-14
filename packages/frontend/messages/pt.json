@@ -7,7 +7,13 @@
   },
   "common": {
     "loading": "Carregando...",
-    "error": "Algo deu errado"
+    "error": "Algo deu errado",
+    "rateLimitExceeded": "Limite de requisições atingido",
+    "tryAgain": "Tente novamente em um momento",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "clear": "Limpar"
   },
   "session": {
     "waitingForSpeaker": "Aguardando o apresentador compartilhar...",
@@ -19,6 +25,41 @@
     "hostUrl": "URL do Apresentador",
     "participantUrl": "URL do Participante",
     "qrCode": "Código QR",
-    "sessionCreated": "Sessão Criada!"
+    "sessionCreated": "Sessão Criada!",
+    "newContent": "Novo conteúdo",
+    "dismiss": "Fechar",
+    "liveNow": "Ao vivo",
+    "connectedParticipants": "participantes conectados",
+    "askQuestion": "Faça uma pergunta...",
+    "submitQuestion": "Enviar",
+    "upvote": "Votar",
+    "reply": "Responder",
+    "replyPlaceholder": "Adicione uma resposta...",
+    "submitReply": "Responder",
+    "noQuestions": "Sem perguntas ainda. Seja o primeiro a perguntar!",
+    "clipboardEmpty": "Aguardando o apresentador compartilhar trechos de código.",
+    "clipboardCleared": "A área de transferência foi limpa."
+  },
+  "moderation": {
+    "questionRemoved": "Esta pergunta foi removida.",
+    "hiddenByCommunity": "Ocultado pela comunidade",
+    "show": "Mostrar",
+    "banParticipant": "Banir participante",
+    "banQuestion": "Remover pergunta",
+    "blockedFromPosting": "Você foi bloqueado de publicar nesta sessão.",
+    "confirmBan": "Confirmar banimento",
+    "confirmBanQuestion": "Tem certeza de que deseja banir este participante?",
+    "cancel": "Cancelar"
+  },
+  "identity": {
+    "whatsYourName": "Qual é o seu nome?",
+    "displayName": "Nome de exibição (opcional)",
+    "email": "E-mail (opcional)",
+    "skip": "Pular",
+    "joinSession": "Entrar na sessão",
+    "editProfile": "Editar perfil",
+    "anonymous": "Anônimo",
+    "save": "Salvar",
+    "clear": "Limpar identidade"
   }
 }
