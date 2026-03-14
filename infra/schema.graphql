@@ -69,7 +69,7 @@ type Query {
 }
 
 type Mutation {
-  _stub: String
+  _stub: SessionUpdate
 }
 
 type Subscription {

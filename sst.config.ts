@@ -10,6 +10,7 @@ export default $config({
     };
   },
   async run() {
+    const { readFileSync } = await import("fs");
     // 1. DynamoDB single-table — PK/SK composite key, TTL attribute, on-demand billing
     const table = new sst.aws.Dynamo("NasqaTable", {
       fields: {
@@ -33,7 +34,7 @@ export default $config({
     // 3. DynamoDB data source (for stub Query resolver)
     const dynamoDS = api.addDataSource({
       name: "dynamoDS",
-      dynamodb: table,
+      dynamodb: table.arn,
     });
 
     // 4. Lambda data source (for mutations — Phase 3 adds real handlers)
@@ -49,18 +50,23 @@ export default $config({
       },
     });
 
-    // 5. Stub resolver for Query._empty (DynamoDB data source — always returns null)
-    api.addResolver("Query _empty", {
-      dataSource: dynamoDS.name,
-      code: `infra/resolvers/query-stub.js`,
+    // 5. NONE data source (for subscription resolver — no backing resource needed)
+    const noneDS = api.addDataSource({
+      name: "noneDS",
     });
 
-    // 6. Subscription resolver — enhanced server-side filter (NONE data source)
+    // 6. Stub resolver for Query._empty (DynamoDB data source — always returns null)
+    api.addResolver("Query _empty", {
+      dataSource: dynamoDS.name,
+      code: readFileSync("infra/resolvers/query-stub.js", "utf-8"),
+    });
+
+    // 7. Subscription resolver — enhanced server-side filter (NONE data source)
     // CRITICAL: Uses extensions.setSubscriptionFilter for session isolation.
     // Argument-based filtering alone has a null-slug bypass vulnerability.
     api.addResolver("Subscription onSessionUpdate", {
-      dataSource: "NONE",
-      code: `infra/resolvers/subscription-onSessionUpdate.js`,
+      dataSource: noneDS.name,
+      code: readFileSync("infra/resolvers/subscription-onSessionUpdate.js", "utf-8"),
     });
 
     return {
