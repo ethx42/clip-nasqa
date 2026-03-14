@@ -29,8 +29,8 @@ export const CLEAR_CLIPBOARD = `
 `;
 
 export const ADD_QUESTION = `
-  mutation AddQuestion($sessionSlug: String!, $text: String!, $fingerprint: String!) {
-    addQuestion(sessionSlug: $sessionSlug, text: $text, fingerprint: $fingerprint) {
+  mutation AddQuestion($sessionSlug: String!, $text: String!, $fingerprint: String!, $authorName: String) {
+    addQuestion(sessionSlug: $sessionSlug, text: $text, fingerprint: $fingerprint, authorName: $authorName) {
       eventType
       sessionSlug
       payload
@@ -49,8 +49,8 @@ export const UPVOTE_QUESTION = `
 `;
 
 export const ADD_REPLY = `
-  mutation AddReply($sessionSlug: String!, $questionId: String!, $text: String!, $fingerprint: String!, $isHostReply: Boolean!) {
-    addReply(sessionSlug: $sessionSlug, questionId: $questionId, text: $text, fingerprint: $fingerprint, isHostReply: $isHostReply) {
+  mutation AddReply($sessionSlug: String!, $questionId: String!, $text: String!, $fingerprint: String!, $isHostReply: Boolean!, $authorName: String) {
+    addReply(sessionSlug: $sessionSlug, questionId: $questionId, text: $text, fingerprint: $fingerprint, isHostReply: $isHostReply, authorName: $authorName) {
       eventType
       sessionSlug
       payload

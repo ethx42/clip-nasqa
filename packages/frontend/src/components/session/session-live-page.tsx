@@ -1,14 +1,17 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { Session } from '@/lib/session';
 import type { Snippet, Question, Reply } from '@nasqa/core';
 import { useSessionState } from '@/hooks/use-session-state';
 import { useSessionUpdates } from '@/hooks/use-session-updates';
 import { useFingerprint } from '@/hooks/use-fingerprint';
+import { useIdentity } from '@/hooks/use-identity';
 import { SessionShell } from '@/components/session/session-shell';
 import { ClipboardPanel } from '@/components/session/clipboard-panel';
 import { QAPanel } from '@/components/session/qa-panel';
 import { LiveIndicator } from '@/components/session/live-indicator';
+import { JoinModal, shouldShowJoinModal } from '@/components/session/join-modal';
 import {
   addQuestionAction,
   upvoteQuestionAction,
@@ -41,6 +44,16 @@ export function SessionLivePage({
   initialQuestions,
   initialReplies,
 }: SessionLivePageProps) {
+  const { name: authorName } = useIdentity();
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+
+  // Show JoinModal once per session (sessionStorage flag)
+  useEffect(() => {
+    if (shouldShowJoinModal(sessionSlug)) {
+      setJoinModalOpen(true);
+    }
+  }, [sessionSlug]);
+
   const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
     useFingerprint(sessionSlug);
 
@@ -93,6 +106,7 @@ export function SessionLivePage({
       sessionSlug,
       text,
       fingerprint,
+      authorName,
       upvoteCount: 0,
       downvoteCount: 0,
       isHidden: false,
@@ -104,7 +118,7 @@ export function SessionLivePage({
 
     dispatch({ type: 'ADD_QUESTION_OPTIMISTIC', payload: optimisticQuestion });
 
-    const result = await addQuestionAction({ sessionSlug, text, fingerprint });
+    const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
 
     if (!result.ok) {
       dispatch({ type: 'REMOVE_OPTIMISTIC', payload: { id: tempId } });
@@ -134,6 +148,7 @@ export function SessionLivePage({
       text,
       fingerprint,
       isHostReply: false,
+      authorName,
     });
 
     if (!result.ok) {
@@ -168,36 +183,43 @@ export function SessionLivePage({
   const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
 
   return (
-    <SessionShell
-      title={session.title}
-      sessionSlug={sessionSlug}
-      liveIndicator={
-        <LiveIndicator
-          connectionStatus={connectionStatus}
-          lastHostActivity={lastHostActivity}
-        />
-      }
-      clipboardSlot={
-        <ClipboardPanel
-          sessionSlug={sessionSlug}
-          snippets={state.snippets}
-        />
-      }
-      qaSlot={
-        <QAPanel
-          sessionSlug={sessionSlug}
-          questions={sortedQuestions}
-          replies={state.replies}
-          fingerprint={fingerprint}
-          votedQuestionIds={votedIds}
-          downvotedQuestionIds={downvotedIds}
-          isUserBanned={isUserBanned}
-          onUpvote={handleUpvote}
-          onDownvote={handleDownvote}
-          onAddQuestion={handleAddQuestion}
-          onReply={handleReply}
-        />
-      }
-    />
+    <>
+      <JoinModal
+        sessionSlug={sessionSlug}
+        open={joinModalOpen}
+        onClose={() => setJoinModalOpen(false)}
+      />
+      <SessionShell
+        title={session.title}
+        sessionSlug={sessionSlug}
+        liveIndicator={
+          <LiveIndicator
+            connectionStatus={connectionStatus}
+            lastHostActivity={lastHostActivity}
+          />
+        }
+        clipboardSlot={
+          <ClipboardPanel
+            sessionSlug={sessionSlug}
+            snippets={state.snippets}
+          />
+        }
+        qaSlot={
+          <QAPanel
+            sessionSlug={sessionSlug}
+            questions={sortedQuestions}
+            replies={state.replies}
+            fingerprint={fingerprint}
+            votedQuestionIds={votedIds}
+            downvotedQuestionIds={downvotedIds}
+            isUserBanned={isUserBanned}
+            onUpvote={handleUpvote}
+            onDownvote={handleDownvote}
+            onAddQuestion={handleAddQuestion}
+            onReply={handleReply}
+          />
+        }
+      />
+    </>
   );
 }

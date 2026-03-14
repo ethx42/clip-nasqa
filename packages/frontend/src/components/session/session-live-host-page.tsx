@@ -6,6 +6,7 @@ import type { Snippet, Question, Reply } from '@nasqa/core';
 import { useSessionState } from '@/hooks/use-session-state';
 import { useSessionUpdates } from '@/hooks/use-session-updates';
 import { useFingerprint } from '@/hooks/use-fingerprint';
+import { useIdentity } from '@/hooks/use-identity';
 import { hashSecret } from '@/lib/hash-secret';
 import { SessionShell } from '@/components/session/session-shell';
 import { ClipboardPanel } from '@/components/session/clipboard-panel';
@@ -55,6 +56,7 @@ export function SessionLiveHostPage({
   hostToolbar,
 }: SessionLiveHostPageProps) {
   const [hostSecretHash, setHostSecretHash] = useState<string>('');
+  const { name: authorName } = useIdentity();
 
   // Extract and hash the secret from the URL hash fragment on mount
   useEffect(() => {
@@ -154,6 +156,7 @@ export function SessionLiveHostPage({
       sessionSlug,
       text,
       fingerprint,
+      authorName,
       upvoteCount: 0,
       downvoteCount: 0,
       isHidden: false,
@@ -165,7 +168,7 @@ export function SessionLiveHostPage({
 
     dispatch({ type: 'ADD_QUESTION_OPTIMISTIC', payload: optimisticQuestion });
 
-    const result = await addQuestionAction({ sessionSlug, text, fingerprint });
+    const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
     if (!result.ok) {
       dispatch({ type: 'REMOVE_OPTIMISTIC', payload: { id: tempId } });
     }
@@ -192,6 +195,7 @@ export function SessionLiveHostPage({
       text,
       fingerprint,
       isHostReply: true,
+      authorName,
     });
 
     if (!result.ok) {

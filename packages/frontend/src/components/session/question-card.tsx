@@ -54,6 +54,7 @@ export function QuestionCard({
   onRestore,
 }: QuestionCardProps) {
   const t = useTranslations('moderation');
+  const tIdentity = useTranslations('identity');
   const [showReplies, setShowReplies] = useState(question.isFocused);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -259,6 +260,16 @@ export function QuestionCard({
             {isOwn && (
               <span className="rounded-full bg-muted px-2.5 py-0.5 font-semibold text-foreground/70">
                 You
+              </span>
+            )}
+            {!isOwn && question.authorName && (
+              <span className="font-medium text-foreground/70">
+                {question.authorName}
+              </span>
+            )}
+            {!isOwn && !question.authorName && (
+              <span className="text-muted-foreground/60">
+                {tIdentity('anonymous')}
               </span>
             )}
             <span>

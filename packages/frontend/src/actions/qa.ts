@@ -12,6 +12,7 @@ export async function addQuestionAction(args: {
   sessionSlug: string;
   text: string;
   fingerprint: string;
+  authorName?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (args.text.length > 500) {
     return { ok: false, error: 'Question must be 500 characters or fewer' };
@@ -54,6 +55,7 @@ export async function addReplyAction(args: {
   text: string;
   fingerprint: string;
   isHostReply: boolean;
+  authorName?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (args.text.length > 500) {
     return { ok: false, error: 'Reply must be 500 characters or fewer' };

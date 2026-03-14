@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { IdentityEditor } from '@/components/session/identity-editor';
 
 interface SessionShellProps {
   title: string;
@@ -30,27 +32,31 @@ export function SessionShell({
   const [activeTab, setActiveTab] = useState<Tab>('clipboard');
 
   return (
-    <div className="flex h-[calc(100dvh-49px)] flex-col">
+    <div className="flex h-[calc(100dvh-53px)] flex-col">
       {/* Session header */}
-      <div className="border-b border-border px-4 py-3">
+      <div className="border-b border-border px-6 py-5">
         <div className="flex items-center gap-3">
-          <h1 className="truncate text-lg font-semibold text-foreground">
+          <h1 className="truncate text-2xl font-bold tracking-tight text-foreground">
             {title}
           </h1>
           {liveIndicator}
+          <div className="ml-auto flex items-center gap-2">
+            <IdentityEditor />
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
 
       {/* Optional host toolbar */}
       {hostToolbar && (
-        <div className="border-b border-border px-4 py-3">{hostToolbar}</div>
+        <div className="border-b border-border px-6 py-3">{hostToolbar}</div>
       )}
 
       {/* Mobile tab bar (hidden on lg+) */}
       <div className="flex border-b border-border lg:hidden">
         <button
           onClick={() => setActiveTab('clipboard')}
-          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex-1 py-3 text-sm font-semibold transition-colors ${
             activeTab === 'clipboard'
               ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400'
               : 'text-muted-foreground hover:text-foreground'
@@ -60,7 +66,7 @@ export function SessionShell({
         </button>
         <button
           onClick={() => setActiveTab('qa')}
-          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex-1 py-3 text-sm font-semibold transition-colors ${
             activeTab === 'qa'
               ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400'
               : 'text-muted-foreground hover:text-foreground'
@@ -71,11 +77,17 @@ export function SessionShell({
       </div>
 
       {/* Content area */}
-      <div className="flex min-h-0 flex-1 p-4">
+      <div className="flex min-h-0 flex-1 p-5 lg:p-6">
         {/* Desktop: two-column grid */}
-        <div className="hidden w-full gap-4 lg:grid lg:grid-cols-2 lg:gap-6">
-          {clipboardSlot}
-          {qaSlot}
+        <div className="hidden w-full gap-5 lg:grid lg:grid-cols-2 lg:gap-6">
+          <div className="flex min-h-0 flex-col gap-3">
+            <h2 className="text-[13px] font-bold uppercase tracking-widest text-muted-foreground/70">{t('clipboard')}</h2>
+            {clipboardSlot}
+          </div>
+          <div className="flex min-h-0 flex-col gap-3">
+            <h2 className="text-[13px] font-bold uppercase tracking-widest text-muted-foreground/70">{t('qa')}</h2>
+            {qaSlot}
+          </div>
         </div>
 
         {/* Mobile: single panel based on active tab */}
