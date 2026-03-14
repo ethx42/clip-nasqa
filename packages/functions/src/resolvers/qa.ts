@@ -2,6 +2,7 @@ import { GetCommand, PutCommand, UpdateCommand, QueryCommand } from "@aws-sdk/li
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { ulid } from "ulid";
 import { docClient } from "./index";
+import { checkNotBanned, checkRateLimit } from "./rate-limit";
 import type { AddQuestionArgs, UpvoteQuestionArgs, AddReplyArgs, FocusQuestionArgs, SessionUpdate, SessionEventType } from "@nasqa/core";
 
 function tableName(): string {
@@ -27,6 +28,10 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
 
 export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate> {
   const { sessionSlug, text, fingerprint, authorName } = args;
+
+  // Enforce ban and rate limit before any write
+  await checkNotBanned(sessionSlug, fingerprint);
+  await checkRateLimit(fingerprint, 3, 60);
 
   if (text.length > 500) {
     throw new Error("Question text exceeds 500 character limit");
@@ -121,6 +126,9 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
 
 export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
   const { sessionSlug, questionId, text, fingerprint, isHostReply, authorName } = args;
+
+  // Enforce ban before any write (no rate limit on replies per requirements)
+  await checkNotBanned(sessionSlug, fingerprint);
 
   if (text.length > 500) {
     throw new Error("Reply text exceeds 500 character limit");

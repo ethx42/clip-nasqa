@@ -1,6 +1,7 @@
 import { GetCommand, PutCommand, DeleteCommand, QueryCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import { docClient } from "./index";
+import { checkRateLimit } from "./rate-limit";
 import type { PushSnippetArgs, DeleteSnippetArgs, ClearClipboardArgs, SessionUpdate, SessionEventType } from "@nasqa/core";
 
 function tableName(): string {
@@ -27,6 +28,9 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
 export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate> {
   const { sessionSlug, hostSecretHash, content, type, language } = args;
   await verifyHostSecret(sessionSlug, hostSecretHash);
+
+  // Rate limit: 10 snippets per minute per hostSecretHash
+  await checkRateLimit(hostSecretHash, 10, 60);
 
   const id = ulid();
   const now = Math.floor(Date.now() / 1000);
