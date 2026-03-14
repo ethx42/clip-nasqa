@@ -12,7 +12,7 @@ export type SessionAction =
   | { type: 'QUESTION_ADDED'; payload: Question; optimisticId?: string }
   | {
       type: 'QUESTION_UPDATED';
-      payload: { questionId: string; upvoteDelta?: number; isFocused?: boolean };
+      payload: { questionId: string; upvoteDelta?: number; upvoteCount?: number; isFocused?: boolean };
     }
   | { type: 'REPLY_ADDED'; payload: Reply }
   | { type: 'ADD_SNIPPET_OPTIMISTIC'; payload: Snippet }
@@ -84,7 +84,7 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     }
 
     case 'QUESTION_UPDATED': {
-      const { questionId, upvoteDelta, isFocused } = action.payload;
+      const { questionId, upvoteDelta, upvoteCount, isFocused } = action.payload;
       const questions = state.questions.map((q) => {
         if (q.id !== questionId) {
           // If this update sets a different question to focused, un-focus others
@@ -92,8 +92,13 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
         }
         return {
           ...q,
+          // Prefer absolute upvoteCount (from subscription) over delta (from optimistic)
           upvoteCount:
-            upvoteDelta !== undefined ? q.upvoteCount + upvoteDelta : q.upvoteCount,
+            upvoteCount !== undefined
+              ? upvoteCount
+              : upvoteDelta !== undefined
+                ? q.upvoteCount + upvoteDelta
+                : q.upvoteCount,
           isFocused: isFocused !== undefined ? isFocused : q.isFocused,
         };
       });
@@ -101,9 +106,31 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     }
 
     case 'REPLY_ADDED': {
-      const exists = state.replies.some((r) => r.id === action.payload.id);
+      const reply = action.payload;
+      const exists = state.replies.some((r) => r.id === reply.id);
       if (exists) return state;
-      return { ...state, replies: [...state.replies, action.payload] };
+      // Replace optimistic reply (temp _opt_ ID) with real one from subscription
+      const hasOptimistic = reply.id.startsWith('_opt_')
+        ? false
+        : state.replies.some(
+            (r) =>
+              r.id.startsWith('_opt_') &&
+              r.questionId === reply.questionId &&
+              r.fingerprint === reply.fingerprint &&
+              r.text === reply.text
+          );
+      const filtered = hasOptimistic
+        ? state.replies.filter(
+            (r) =>
+              !(
+                r.id.startsWith('_opt_') &&
+                r.questionId === reply.questionId &&
+                r.fingerprint === reply.fingerprint &&
+                r.text === reply.text
+              )
+          )
+        : state.replies;
+      return { ...state, replies: [...filtered, reply] };
     }
 
     case 'ADD_SNIPPET_OPTIMISTIC': {

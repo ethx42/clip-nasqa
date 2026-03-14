@@ -81,8 +81,9 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
     ? "ADD upvoteCount :delta DELETE voters :fpSet"
     : "ADD upvoteCount :delta, voters :fpSet";
 
+  let newUpvoteCount: number;
   try {
-    await docClient.send(
+    const result = await docClient.send(
       new UpdateCommand({
         TableName: tableName(),
         Key: {
@@ -96,8 +97,10 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
           ":fp": fingerprint,
           ":fpSet": new Set([fingerprint]),
         },
+        ReturnValues: "ALL_NEW",
       })
     );
+    newUpvoteCount = (result.Attributes?.upvoteCount as number) ?? 0;
   } catch (err) {
     if (err instanceof ConditionalCheckFailedException) {
       throw new Error("VOTE_CONFLICT");
@@ -108,7 +111,7 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
   return {
     eventType: "QUESTION_UPDATED" as SessionEventType,
     sessionSlug,
-    payload: JSON.stringify({ questionId, upvoteDelta }),
+    payload: JSON.stringify({ questionId, upvoteCount: newUpvoteCount }),
   };
 }
 

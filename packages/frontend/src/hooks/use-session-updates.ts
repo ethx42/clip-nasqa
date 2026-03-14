@@ -131,14 +131,14 @@ export function useSessionUpdates(
               break;
             }
             case 'QUESTION_UPDATED': {
-              const { questionId, upvoteDelta, isFocused } = parsed as {
+              const { questionId, upvoteCount, isFocused } = parsed as {
                 questionId: string;
-                upvoteDelta?: number;
+                upvoteCount?: number;
                 isFocused?: boolean;
               };
               stableDispatch({
                 type: 'QUESTION_UPDATED',
-                payload: { questionId, upvoteDelta, isFocused },
+                payload: { questionId, upvoteCount, isFocused },
               });
               break;
             }
