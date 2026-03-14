@@ -54,8 +54,20 @@ export default async function HostPage({
     <SessionShell
       title={session.title}
       isHost
-      clipboardSlot={<ClipboardPanel isHost />}
-      qaSlot={<QAPanel isHost />}
+      clipboardSlot={<ClipboardPanel isHost sessionSlug={slug} snippets={[]} hostSecretHash="" />}
+      qaSlot={
+        <QAPanel
+          isHost
+          sessionSlug={slug}
+          questions={[]}
+          replies={[]}
+          fingerprint=""
+          votedQuestionIds={new Set()}
+          onUpvote={() => {}}
+          onAddQuestion={() => {}}
+          onReply={() => {}}
+        />
+      }
       hostToolbar={<HostToolbarPlaceholder participantUrl={participantUrl} />}
     />
   );

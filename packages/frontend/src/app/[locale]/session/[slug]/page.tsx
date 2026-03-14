@@ -31,11 +31,23 @@ export default async function SessionPage({
     );
   }
 
+  // TODO(Plan 04): Replace stub props with SubscriptionProvider-supplied data
   return (
     <SessionShell
       title={session.title}
-      clipboardSlot={<ClipboardPanel />}
-      qaSlot={<QAPanel />}
+      clipboardSlot={<ClipboardPanel sessionSlug={slug} snippets={[]} />}
+      qaSlot={
+        <QAPanel
+          sessionSlug={slug}
+          questions={[]}
+          replies={[]}
+          fingerprint=""
+          votedQuestionIds={new Set()}
+          onUpvote={() => {}}
+          onAddQuestion={() => {}}
+          onReply={() => {}}
+        />
+      }
     />
   );
 }
