@@ -1,0 +1,24 @@
+{
+  "landing": {
+    "headline": "Share code and take questions — live.",
+    "subtitle": "Create a session, share the link, start presenting.",
+    "cta": "Create Session",
+    "placeholder": "What's your talk about?"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong"
+  },
+  "session": {
+    "waitingForSpeaker": "Waiting for the speaker to share...",
+    "clipboard": "Clipboard",
+    "qa": "Q&A",
+    "copySecret": "Copy Secret",
+    "copied": "Copied!",
+    "secretWarning": "Save this secret now — it won't be shown again.",
+    "hostUrl": "Host URL",
+    "participantUrl": "Participant URL",
+    "qrCode": "QR Code",
+    "sessionCreated": "Session Created!"
+  }
+}

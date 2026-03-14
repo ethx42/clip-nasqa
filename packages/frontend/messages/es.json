@@ -1,0 +1,24 @@
+{
+  "landing": {
+    "headline": "Comparte código y responde preguntas — en vivo.",
+    "subtitle": "Crea una sesión, comparte el enlace, empieza a presentar.",
+    "cta": "Crear Sesión",
+    "placeholder": "¿De qué trata tu charla?"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salió mal"
+  },
+  "session": {
+    "waitingForSpeaker": "Esperando a que el presentador comparta...",
+    "clipboard": "Portapapeles",
+    "qa": "Preguntas",
+    "copySecret": "Copiar Secreto",
+    "copied": "¡Copiado!",
+    "secretWarning": "Guarda este secreto ahora — no se mostrará de nuevo.",
+    "hostUrl": "URL del Presentador",
+    "participantUrl": "URL del Participante",
+    "qrCode": "Código QR",
+    "sessionCreated": "¡Sesión Creada!"
+  }
+}

@@ -69,9 +69,16 @@ export default $config({
       code: readFileSync("infra/resolvers/subscription-onSessionUpdate.js", "utf-8"),
     });
 
+    // 8. Next.js site linked to DynamoDB table — makes Resource.NasqaTable.name available
+    const site = new sst.aws.Nextjs("NasqaSite", {
+      path: "packages/frontend",
+      link: [table],
+    });
+
     return {
       apiUrl: api.url,
       tableName: table.name,
+      siteUrl: site.url,
     };
   },
 });
