@@ -44,7 +44,12 @@ Plans:
   3. A QR code for the session participant URL is rendered on the host page for audience scanning
   4. Participant navigates to the session URL and sees the session shell rendered server-side with no real-time content yet
   5. Theme toggle between dark (Zinc-950) and light (White) modes works with no layout shift; accent color is Emerald-500
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Theme system (Zinc/Emerald CSS vars, ThemeProvider, theme toggle) + i18n routing (next-intl middleware, [locale] segment) + SST table link
+- [ ] 02-02-PLAN.md — Session creation Server Action (DynamoDB write, word-pair slug, hashed secret, TTL) + getSession utility + marketing landing page with inline form
+- [ ] 02-03-PLAN.md — Success page (secret display, QR code, host URL) + participant/host view shells (two-column responsive layout) + human verification checkpoint
 
 ### Phase 3: Real-Time Core
 **Goal**: The live clipboard and Q&A are fully functional in real-time — a host pushes code and the audience sees it instantly; participants submit questions, upvote, and replies thread correctly
