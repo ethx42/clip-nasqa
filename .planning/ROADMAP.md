@@ -81,7 +81,13 @@ Plans:
   3. When thumbs-down votes on a question reach 50% of connected audience count, the content is auto-hidden for all participants
   4. After 3 banned posts, a participant's device fingerprint is automatically blocked from posting any further content
   5. All UI chrome (labels, placeholders, navigation) renders in the browser-detected locale (en/es/pt) via locale-prefixed routes; rate limits of 10 snippets/min (host) and 3 questions/min (participant) are enforced server-side
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Moderation backend: GraphQL mutations (ban/downvote), Lambda resolvers, rate limiting, ban enforcement
+- [ ] 04-02-PLAN.md — Identity + i18n foundation: routing config, language switcher, translations, useIdentity hook, join modal
+- [ ] 04-03-PLAN.md — Moderation UI: Server Actions, session state updates, question card moderation controls
+- [ ] 04-04-PLAN.md — Integration wiring (identity + i18n into pages) + human verification checkpoint
 
 ## Progress
 
