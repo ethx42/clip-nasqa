@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquarePlus } from 'lucide-react';
 import type { Question, Reply } from '@nasqa/core';
@@ -16,10 +16,16 @@ interface QAPanelProps {
   replies: Reply[];
   fingerprint: string;
   votedQuestionIds: Set<string>;
+  downvotedQuestionIds: Set<string>;
+  isUserBanned: boolean;
   onUpvote: (questionId: string, remove: boolean) => void;
+  onDownvote: (questionId: string, remove: boolean) => void;
   onAddQuestion: (text: string) => void;
   onReply: (questionId: string, text: string) => void;
   onFocus?: (questionId: string | undefined) => void;
+  onBanQuestion?: (questionId: string) => void;
+  onBanParticipant?: (fingerprint: string) => void;
+  onRestore?: (questionId: string) => void;
 }
 
 const SCROLL_THRESHOLD = 80; // px scrolled down before showing banner
@@ -32,10 +38,16 @@ export function QAPanel({
   replies,
   fingerprint,
   votedQuestionIds,
+  downvotedQuestionIds,
+  isUserBanned,
   onUpvote,
+  onDownvote,
   onAddQuestion,
   onReply,
   onFocus,
+  onBanQuestion,
+  onBanParticipant,
+  onRestore,
 }: QAPanelProps) {
   const [showNewBanner, setShowNewBanner] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -50,12 +62,31 @@ export function QAPanel({
   }
 
   // Sort: focused question pinned first, then by upvoteCount desc, ties broken by createdAt desc
-  const sortedQuestions = [...questions].sort((a, b) => {
-    if (a.isFocused && !b.isFocused) return -1;
-    if (!a.isFocused && b.isFocused) return 1;
-    if (b.upvoteCount !== a.upvoteCount) return b.upvoteCount - a.upvoteCount;
-    return b.createdAt - a.createdAt;
-  });
+  // Debounce re-sorting so cards don't jump on every single vote
+  const [debouncedQuestions, setDebouncedQuestions] = useState(questions);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuestions(questions), 1000);
+    return () => clearTimeout(timer);
+  }, [questions]);
+
+  // Always use latest questions for content, but debounced order for sorting
+  const sortedQuestions = useMemo(() => {
+    // Build order from debounced snapshot
+    const orderMap = new Map<string, { upvoteCount: number; isFocused: boolean }>();
+    for (const q of debouncedQuestions) {
+      orderMap.set(q.id, { upvoteCount: q.upvoteCount, isFocused: !!q.isFocused });
+    }
+
+    return [...questions].sort((a, b) => {
+      const aOrder = orderMap.get(a.id) ?? { upvoteCount: a.upvoteCount, isFocused: !!a.isFocused };
+      const bOrder = orderMap.get(b.id) ?? { upvoteCount: b.upvoteCount, isFocused: !!b.isFocused };
+      if (aOrder.isFocused && !bOrder.isFocused) return -1;
+      if (!aOrder.isFocused && bOrder.isFocused) return 1;
+      if (bOrder.upvoteCount !== aOrder.upvoteCount) return bOrder.upvoteCount - aOrder.upvoteCount;
+      return b.createdAt - a.createdAt;
+    });
+  }, [questions, debouncedQuestions]);
 
   // Show new content banner when a question arrives and user is scrolled down
   useEffect(() => {
@@ -103,14 +134,14 @@ export function QAPanel({
         />
 
         {sortedQuestions.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-12 text-center">
-            <MessageSquarePlus className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-14 text-center">
+            <MessageSquarePlus className="h-10 w-10 text-muted-foreground/30" />
+            <p className="text-base text-muted-foreground">
               Be the first to ask a question!
             </p>
           </div>
         ) : (
-          <div className="space-y-3 p-4">
+          <div className="space-y-4 p-5">
             <AnimatePresence initial={false}>
               {sortedQuestions.map((question) => (
                 <motion.div
@@ -119,7 +150,10 @@ export function QAPanel({
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{
+                    duration: 0.3,
+                    layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                  }}
                 >
                   <QuestionCard
                     question={question}
@@ -129,9 +163,14 @@ export function QAPanel({
                     sessionSlug={sessionSlug}
                     hostSecretHash={hostSecretHash}
                     votedQuestionIds={votedQuestionIds}
+                    downvotedQuestionIds={downvotedQuestionIds}
                     onUpvote={onUpvote}
+                    onDownvote={onDownvote}
                     onReply={onReply}
                     onFocus={onFocus}
+                    onBanQuestion={onBanQuestion}
+                    onBanParticipant={onBanParticipant}
+                    onRestore={onRestore}
                   />
                 </motion.div>
               ))}
@@ -141,7 +180,7 @@ export function QAPanel({
       </div>
 
       {/* Sticky Q&A input at bottom */}
-      <QAInput onSubmit={onAddQuestion} />
+      <QAInput onSubmit={onAddQuestion} isBanned={isUserBanned} />
     </div>
   );
 }
