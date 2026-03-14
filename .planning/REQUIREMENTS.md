@@ -69,15 +69,15 @@
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: DynamoDB single-table design (PK: SESSION#slug, SK: METADATA | SNIPPET# | QUESTION# | REPLY#)
-- [ ] **INFRA-02**: AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session
-- [ ] **INFRA-03**: AppSync subscription validates non-null sessionSlug to prevent cross-session leakage
+- [x] **INFRA-01**: DynamoDB single-table design (PK: SESSION#slug, SK: METADATA | SNIPPET# | QUESTION# | REPLY#)
+- [x] **INFRA-02**: AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session
+- [x] **INFRA-03**: AppSync subscription validates non-null sessionSlug to prevent cross-session leakage
 - [ ] **INFRA-04**: SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention
 - [ ] **INFRA-05**: Rate limiting: host 10 snippets/min, public 3 questions/min
 - [ ] **INFRA-06**: Optimistic UI with < 100ms internal state updates
 - [ ] **INFRA-07**: Global broadcast latency < 200ms
 - [ ] **INFRA-08**: Initial JS payload < 80kB gzipped (Next.js Server Components for session shell)
-- [ ] **INFRA-09**: ULID for sortable DynamoDB sort keys (reverse-chronological feeds)
+- [x] **INFRA-09**: ULID for sortable DynamoDB sort keys (reverse-chronological feeds)
 
 ## v2 Requirements
 
@@ -156,15 +156,15 @@
 | I18N-03 | Phase 4 | Pending |
 | I18N-04 | Phase 4 | Pending |
 | I18N-05 | Phase 4 | Pending |
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 3 | Pending |
-| INFRA-03 | Phase 3 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 3 | Complete |
+| INFRA-03 | Phase 3 | Complete |
 | INFRA-04 | Phase 1 | Pending |
 | INFRA-05 | Phase 4 | Pending |
 | INFRA-06 | Phase 3 | Pending |
 | INFRA-07 | Phase 3 | Pending |
 | INFRA-08 | Phase 3 | Pending |
-| INFRA-09 | Phase 1 | Pending |
+| INFRA-09 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 44 total

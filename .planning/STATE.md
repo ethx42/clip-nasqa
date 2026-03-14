@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 1 of 4 (Infrastructure)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-13 — Roadmap created; 44 v1 requirements mapped across 4 phases
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-03-14 — Completed 01-01 (schema, types, package setup)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 8%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 8 min
+- Total execution time: 0.13 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-infrastructure | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: —
+- Last 5 plans: 01-01 (8 min)
 - Trend: —
 
 *Updated after each plan completion*
@@ -46,6 +46,9 @@ Recent decisions affecting current work:
 - Single AppSync union-type subscription channel per session — enforced server-side session isolation
 - Device fingerprint via localStorage UUID — avoids shared-WiFi false positives with IP tracking
 - Host secret stored only as SHA-256 hash; raw secret passed once in URL hash fragment
+- Tagged union SessionUpdate {eventType, sessionSlug, payload: AWSJSON} over native GraphQL union — AppSync native union in subscriptions is inconsistent
+- Subscription @aws_subscribe(mutations: ["_stub"]) placeholder allows schema to compile before real mutations exist in Phase 3
+- DynamoDB item interfaces (SessionItem etc.) separated from application interfaces (Session etc.) — keeps resolver output clean of PK/SK internals
 
 ### Pending Todos
 
@@ -59,6 +62,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13
-Stopped at: Roadmap created; ready to plan Phase 1
+Last session: 2026-03-14
+Stopped at: Completed 01-01-PLAN.md (schema, types, packages)
 Resume file: None
