@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 1 of 4 (Infrastructure)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-03-14 — Completed 01-02 (SST IaC — DynamoDB, AppSync, Lambda, resolvers)
+Plan: 3 of 3 in current phase
+Status: Blocked — AWS credentials required
+Last activity: 2026-03-14 — 01-03 blocked at AWS auth gate (lint + typecheck pass, sst deploy needs credentials)
 
 Progress: [██░░░░░░░░] 17%
 
@@ -34,6 +34,7 @@ Progress: [██░░░░░░░░] 17%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-infrastructure P03 | 1 | 1 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -52,6 +53,7 @@ Recent decisions affecting current work:
 - NONE data source for subscription resolver — setSubscriptionFilter handles session isolation without backing resource
 - Removed rootDir from functions tsconfig to allow cross-package @nasqa/core imports in monorepo
 - npm run deploy enforces lint + typecheck + AWS_REGION=us-east-1 before any sst deploy call
+- [Phase 01-infrastructure]: AWS credentials must be configured before deploy can proceed (auth gate)
 
 ### Pending Todos
 
@@ -66,5 +68,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 01-02-PLAN.md (SST IaC — DynamoDB, AppSync, Lambda, resolvers wired)
+Stopped at: 01-03-PLAN.md Task 1 — AWS credentials auth gate (configure ~/.aws/config or AWS_PROFILE, then re-run npm run deploy)
 Resume file: None
