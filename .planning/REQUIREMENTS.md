@@ -115,62 +115,62 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | — | Pending |
-| SESS-02 | — | Pending |
-| SESS-03 | — | Pending |
-| SESS-04 | — | Pending |
-| SESS-05 | — | Pending |
-| SESS-06 | — | Pending |
-| SESS-07 | — | Pending |
-| CLIP-01 | — | Pending |
-| CLIP-02 | — | Pending |
-| CLIP-03 | — | Pending |
-| CLIP-04 | — | Pending |
-| CLIP-05 | — | Pending |
-| CLIP-06 | — | Pending |
-| CLIP-07 | — | Pending |
-| QA-01 | — | Pending |
-| QA-02 | — | Pending |
-| QA-03 | — | Pending |
-| QA-04 | — | Pending |
-| QA-05 | — | Pending |
-| QA-06 | — | Pending |
-| QA-07 | — | Pending |
-| QA-08 | — | Pending |
-| MOD-01 | — | Pending |
-| MOD-02 | — | Pending |
-| MOD-03 | — | Pending |
-| MOD-04 | — | Pending |
-| MOD-05 | — | Pending |
-| MOD-06 | — | Pending |
-| IDENT-01 | — | Pending |
-| IDENT-02 | — | Pending |
-| IDENT-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
-| UI-05 | — | Pending |
-| I18N-01 | — | Pending |
-| I18N-02 | — | Pending |
-| I18N-03 | — | Pending |
-| I18N-04 | — | Pending |
-| I18N-05 | — | Pending |
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
-| INFRA-04 | — | Pending |
-| INFRA-05 | — | Pending |
-| INFRA-06 | — | Pending |
-| INFRA-07 | — | Pending |
-| INFRA-08 | — | Pending |
-| INFRA-09 | — | Pending |
+| SESS-01 | Phase 2 | Pending |
+| SESS-02 | Phase 2 | Pending |
+| SESS-03 | Phase 2 | Pending |
+| SESS-04 | Phase 2 | Pending |
+| SESS-05 | Phase 2 | Pending |
+| SESS-06 | Phase 2 | Pending |
+| SESS-07 | Phase 2 | Pending |
+| CLIP-01 | Phase 3 | Pending |
+| CLIP-02 | Phase 3 | Pending |
+| CLIP-03 | Phase 3 | Pending |
+| CLIP-04 | Phase 3 | Pending |
+| CLIP-05 | Phase 3 | Pending |
+| CLIP-06 | Phase 3 | Pending |
+| CLIP-07 | Phase 3 | Pending |
+| QA-01 | Phase 3 | Pending |
+| QA-02 | Phase 3 | Pending |
+| QA-03 | Phase 3 | Pending |
+| QA-04 | Phase 3 | Pending |
+| QA-05 | Phase 3 | Pending |
+| QA-06 | Phase 3 | Pending |
+| QA-07 | Phase 3 | Pending |
+| QA-08 | Phase 3 | Pending |
+| MOD-01 | Phase 4 | Pending |
+| MOD-02 | Phase 4 | Pending |
+| MOD-03 | Phase 4 | Pending |
+| MOD-04 | Phase 4 | Pending |
+| MOD-05 | Phase 4 | Pending |
+| MOD-06 | Phase 4 | Pending |
+| IDENT-01 | Phase 4 | Pending |
+| IDENT-02 | Phase 4 | Pending |
+| IDENT-03 | Phase 4 | Pending |
+| UI-01 | Phase 2 | Pending |
+| UI-02 | Phase 2 | Pending |
+| UI-03 | Phase 2 | Pending |
+| UI-04 | Phase 2 | Pending |
+| UI-05 | Phase 2 | Pending |
+| I18N-01 | Phase 4 | Pending |
+| I18N-02 | Phase 4 | Pending |
+| I18N-03 | Phase 4 | Pending |
+| I18N-04 | Phase 4 | Pending |
+| I18N-05 | Phase 4 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 3 | Pending |
+| INFRA-03 | Phase 3 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 4 | Pending |
+| INFRA-06 | Phase 3 | Pending |
+| INFRA-07 | Phase 3 | Pending |
+| INFRA-08 | Phase 3 | Pending |
+| INFRA-09 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 44 total
-- Mapped to phases: 0
-- Unmapped: 44 ⚠️
+- Mapped to phases: 44
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after initial definition*
+*Last updated: 2026-03-13 after roadmap creation*
