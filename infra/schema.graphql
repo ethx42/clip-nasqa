@@ -1,0 +1,78 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Session {
+  slug: String!
+  title: String!
+  isActive: Boolean!
+  createdAt: AWSTimestamp!
+  TTL: AWSTimestamp!
+}
+
+type Snippet {
+  id: String!
+  sessionSlug: String!
+  type: String!
+  content: String!
+  language: String
+  createdAt: AWSTimestamp!
+  TTL: AWSTimestamp!
+}
+
+type Question {
+  id: String!
+  sessionSlug: String!
+  text: String!
+  fingerprint: String!
+  authorName: String
+  upvoteCount: Int!
+  downvoteCount: Int!
+  isHidden: Boolean!
+  isFocused: Boolean!
+  isBanned: Boolean!
+  createdAt: AWSTimestamp!
+  TTL: AWSTimestamp!
+}
+
+type Reply {
+  id: String!
+  questionId: String!
+  sessionSlug: String!
+  text: String!
+  isHostReply: Boolean!
+  fingerprint: String!
+  createdAt: AWSTimestamp!
+  TTL: AWSTimestamp!
+}
+
+enum SessionEventType {
+  SNIPPET_ADDED
+  SNIPPET_DELETED
+  CLIPBOARD_CLEARED
+  QUESTION_ADDED
+  QUESTION_UPDATED
+  REPLY_ADDED
+  PARTICIPANT_BANNED
+}
+
+type SessionUpdate {
+  eventType: SessionEventType!
+  sessionSlug: String!
+  payload: AWSJSON!
+}
+
+type Query {
+  _empty: String
+}
+
+type Mutation {
+  _stub: String
+}
+
+type Subscription {
+  onSessionUpdate(sessionSlug: String!): SessionUpdate
+    @aws_subscribe(mutations: ["_stub"])
+}
