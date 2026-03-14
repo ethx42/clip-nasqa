@@ -109,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase 04-moderation-identity-and-polish Plan 03]: Focus toggle moved from MoreVertical dropdown to inline icon row alongside ban icons — cleaner host UX
 - [Phase 04-moderation-identity-and-polish Plan 03]: downvotedIds stored under separate localStorage key (downvotes:{sessionSlug}) from upvotes to avoid collision
 - [Phase 04-moderation-identity-and-polish Plan 03]: Optimistic update for banQuestion with rollback; banParticipant has no optimistic update (server subscription handles state)
+- [Phase 04-moderation-identity-and-polish]: LanguageSwitcher placed in both session-shell header and locale layout header — covers all page types including landing page and session pages
+- [Phase 04-moderation-identity-and-polish]: JoinModal open state driven by useEffect + shouldShowJoinModal() — avoids SSR hydration mismatch from reading sessionStorage during render
 
 ### Pending Todos
 

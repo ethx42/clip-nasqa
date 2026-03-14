@@ -13,7 +13,7 @@ Build a real-time session tool where a speaker pushes code snippets and text to 
 - [x] **Phase 1: Infrastructure** - Provision DynamoDB, AppSync, Lambda resolvers, and SST Ion IaC so all feature work builds on a working AWS foundation (completed 2026-03-14)
 - [x] **Phase 2: Session and View Shell** - Session creation, host auth, QR code, and the SSR participant view with device fingerprint and theme system (completed 2026-03-14)
 - [x] **Phase 3: Real-Time Core** - AppSync subscription channel, live clipboard with Shiki highlighting, and the Q&A write path with upvoting (completed 2026-03-14)
-- [ ] **Phase 4: Moderation, Identity, and Polish** - Community downvote auto-hide, host and auto-ban, focus mode, speaker replies, optional identity, i18n, and performance hardening
+- [x] **Phase 4: Moderation, Identity, and Polish** - Community downvote auto-hide, host and auto-ban, focus mode, speaker replies, optional identity, i18n, and performance hardening (completed 2026-03-14)
 
 ## Phase Details
 
@@ -99,4 +99,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Infrastructure | 3/3 | Complete   | 2026-03-14 |
 | 2. Session and View Shell | 3/3 | Complete    | 2026-03-14 |
 | 3. Real-Time Core | 6/6 | Complete   | 2026-03-14 |
-| 4. Moderation, Identity, and Polish | 3/4 | In Progress|  |
+| 4. Moderation, Identity, and Polish | 4/4 | Complete   | 2026-03-14 |
