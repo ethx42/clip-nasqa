@@ -2,7 +2,7 @@
 
 import { codeToHtml } from 'shiki';
 import type { BundledLanguage } from 'shiki';
-import { appsyncClient } from '@/lib/appsync-client';
+import { appsyncMutation } from '@/lib/appsync-server';
 import { PUSH_SNIPPET, DELETE_SNIPPET, CLEAR_CLIPBOARD } from '@/lib/graphql/mutations';
 
 /**
@@ -40,10 +40,7 @@ export async function pushSnippetAction(formData: {
   language?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    await appsyncClient.graphql({
-      query: PUSH_SNIPPET,
-      variables: formData,
-    });
+    await appsyncMutation(PUSH_SNIPPET, formData);
     return { ok: true };
   } catch (err) {
     const message =
@@ -61,7 +58,7 @@ export async function deleteSnippetAction(args: {
   snippetId: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    await appsyncClient.graphql({ query: DELETE_SNIPPET, variables: args });
+    await appsyncMutation(DELETE_SNIPPET, args);
     return { ok: true };
   } catch (err) {
     console.error('deleteSnippetAction error:', err);
@@ -77,7 +74,7 @@ export async function clearClipboardAction(args: {
   hostSecretHash: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    await appsyncClient.graphql({ query: CLEAR_CLIPBOARD, variables: args });
+    await appsyncMutation(CLEAR_CLIPBOARD, args);
     return { ok: true };
   } catch (err) {
     console.error('clearClipboardAction error:', err);

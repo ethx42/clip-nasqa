@@ -1,6 +1,6 @@
 'use server';
 
-import { appsyncClient } from '@/lib/appsync-client';
+import { appsyncMutation } from '@/lib/appsync-server';
 import {
   ADD_QUESTION,
   UPVOTE_QUESTION,
@@ -21,10 +21,7 @@ export async function addQuestionAction(args: {
   }
 
   try {
-    await appsyncClient.graphql({
-      query: ADD_QUESTION,
-      variables: args,
-    });
+    await appsyncMutation(ADD_QUESTION, args);
     return { ok: true };
   } catch (err) {
     console.error('addQuestionAction error:', err);
@@ -39,10 +36,7 @@ export async function upvoteQuestionAction(args: {
   remove?: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    await appsyncClient.graphql({
-      query: UPVOTE_QUESTION,
-      variables: args,
-    });
+    await appsyncMutation(UPVOTE_QUESTION, args);
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -69,10 +63,7 @@ export async function addReplyAction(args: {
   }
 
   try {
-    await appsyncClient.graphql({
-      query: ADD_REPLY,
-      variables: args,
-    });
+    await appsyncMutation(ADD_REPLY, args);
     return { ok: true };
   } catch (err) {
     console.error('addReplyAction error:', err);
@@ -86,10 +77,7 @@ export async function focusQuestionAction(args: {
   questionId?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    await appsyncClient.graphql({
-      query: FOCUS_QUESTION,
-      variables: args,
-    });
+    await appsyncMutation(FOCUS_QUESTION, args);
     return { ok: true };
   } catch (err) {
     console.error('focusQuestionAction error:', err);
