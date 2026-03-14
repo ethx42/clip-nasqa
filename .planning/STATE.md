@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 4 of 4 (Moderation and Polish)
-Plan: 2 of 3 in current phase — COMPLETE
-Status: In Progress
-Last activity: 2026-03-14 — 04-02 complete (i18n routing with persistent cookie, language switcher, complete en/es/pt translations, useIdentity hook, JoinModal, IdentityEditor)
+Plan: 3 of 3 in current phase — COMPLETE
+Status: Complete
+Last activity: 2026-03-14 — 04-03 complete (moderation Server Actions, GraphQL mutations, session state reducer, QuestionCard ban/downvote UI, QAPanel wiring, QAInput banned state)
 
-Progress: [█████████▒] 93% (Phase 4 plan 2/3)
+Progress: [██████████] 100% (Phase 4 plan 3/3 — ALL PHASES COMPLETE)
 
 ## Performance Metrics
 
@@ -46,6 +46,8 @@ Progress: [█████████▒] 93% (Phase 4 plan 2/3)
 | Phase 03-real-time-core P05 | 6min | 2 tasks | 8 files |
 | Phase 03-real-time-core P06 | human-verify | 1 tasks | 4 files |
 | Phase 04-moderation-identity-and-polish P01 | 3 min | 2 tasks | 8 files |
+| Phase 04-moderation-identity-and-polish P02 | 5 min | 3 tasks | 12 files |
+| Phase 04-moderation-identity-and-polish P03 | 12 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -103,6 +105,10 @@ Recent decisions affecting current work:
 - [Phase 04-moderation-identity-and-polish Plan 02]: shouldShowJoinModal() exported utility from join-modal.tsx — session page checks sessionStorage before controlling open state
 - [Phase 04-moderation-identity-and-polish Plan 02]: Email never included in setIdentity server calls — hook enforces client-only constraint (IDENT-03)
 - [Phase 04-moderation-identity-and-polish Plan 02]: @base-ui/react Dialog for JoinModal (full overlay), Popover for IdentityEditor (lightweight inline trigger)
+- [Phase 04-moderation-identity-and-polish Plan 03]: Mutual exclusivity enforced client-side (clicking upvote removes downvote before calling server) to match backend atomics
+- [Phase 04-moderation-identity-and-polish Plan 03]: Focus toggle moved from MoreVertical dropdown to inline icon row alongside ban icons — cleaner host UX
+- [Phase 04-moderation-identity-and-polish Plan 03]: downvotedIds stored under separate localStorage key (downvotes:{sessionSlug}) from upvotes to avoid collision
+- [Phase 04-moderation-identity-and-polish Plan 03]: Optimistic update for banQuestion with rollback; banParticipant has no optimistic update (server subscription handles state)
 
 ### Pending Todos
 
@@ -117,5 +123,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 04-02-PLAN.md (i18n routing, language switcher, translations, useIdentity hook, JoinModal, IdentityEditor)
+Stopped at: Completed 04-03-PLAN.md (moderation Server Actions, GraphQL mutations, session state reducer, QuestionCard ban/downvote UI, QAPanel wiring, QAInput banned state)
 Resume file: None

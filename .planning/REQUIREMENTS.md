@@ -38,7 +38,7 @@
 
 ### Moderation
 
-- [ ] **MOD-01**: Each participant is assigned a device fingerprint (localStorage UUIDv4 token) on first visit
+- [x] **MOD-01**: Each participant is assigned a device fingerprint (localStorage UUIDv4 token) on first visit
 - [x] **MOD-02**: Host can instantly ban any question or comment (content hidden for all participants)
 - [x] **MOD-03**: Host can permanently ban a participant by device fingerprint (blocked from posting)
 - [x] **MOD-04**: Participants can thumbs-down a question/comment
@@ -47,9 +47,9 @@
 
 ### Identity
 
-- [ ] **IDENT-01**: Participants can optionally provide a display name and email
-- [ ] **IDENT-02**: Display name appears next to participant's questions and comments
-- [ ] **IDENT-03**: Email is stored but never displayed publicly
+- [x] **IDENT-01**: Participants can optionally provide a display name and email
+- [x] **IDENT-02**: Display name appears next to participant's questions and comments
+- [x] **IDENT-03**: Email is stored but never displayed publicly
 
 ### UI/UX
 
@@ -61,11 +61,11 @@
 
 ### i18n
 
-- [ ] **I18N-01**: UI labels translated using next-intl (en, es, pt)
-- [ ] **I18N-02**: Locale-based routing via middleware (e.g., /en/live/myslug)
-- [ ] **I18N-03**: Default locale is browser-detected, falling back to en
-- [ ] **I18N-04**: Translation covers UI chrome only, not user-generated content
-- [ ] **I18N-05**: All translation keys reside in /messages/*.json
+- [x] **I18N-01**: UI labels translated using next-intl (en, es, pt)
+- [x] **I18N-02**: Locale-based routing via middleware (e.g., /en/live/myslug)
+- [x] **I18N-03**: Default locale is browser-detected, falling back to en
+- [x] **I18N-04**: Translation covers UI chrome only, not user-generated content
+- [x] **I18N-05**: All translation keys reside in /messages/*.json
 
 ### Infrastructure
 
@@ -137,25 +137,25 @@
 | QA-06 | Phase 3 | Complete |
 | QA-07 | Phase 3 | Complete |
 | QA-08 | Phase 3 | Complete |
-| MOD-01 | Phase 4 | Pending |
+| MOD-01 | Phase 4 | Complete |
 | MOD-02 | Phase 4 | Complete |
 | MOD-03 | Phase 4 | Complete |
 | MOD-04 | Phase 4 | Complete |
 | MOD-05 | Phase 4 | Complete |
 | MOD-06 | Phase 4 | Complete |
-| IDENT-01 | Phase 4 | Pending |
-| IDENT-02 | Phase 4 | Pending |
-| IDENT-03 | Phase 4 | Pending |
+| IDENT-01 | Phase 4 | Complete |
+| IDENT-02 | Phase 4 | Complete |
+| IDENT-03 | Phase 4 | Complete |
 | UI-01 | Phase 2 | Complete |
 | UI-02 | Phase 2 | Complete |
 | UI-03 | Phase 2 | Complete |
 | UI-04 | Phase 2 | Complete |
 | UI-05 | Phase 2 | Complete |
-| I18N-01 | Phase 4 | Pending |
-| I18N-02 | Phase 4 | Pending |
-| I18N-03 | Phase 4 | Pending |
-| I18N-04 | Phase 4 | Pending |
-| I18N-05 | Phase 4 | Pending |
+| I18N-01 | Phase 4 | Complete |
+| I18N-02 | Phase 4 | Complete |
+| I18N-03 | Phase 4 | Complete |
+| I18N-04 | Phase 4 | Complete |
+| I18N-05 | Phase 4 | Complete |
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 3 | Complete |
 | INFRA-03 | Phase 3 | Complete |
