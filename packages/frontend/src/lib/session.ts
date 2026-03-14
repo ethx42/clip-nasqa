@@ -1,5 +1,6 @@
-import { GetCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { docClient, tableName } from '@/lib/dynamo';
+import type { Snippet, Question, Reply } from '@nasqa/core';
 
 export interface Session {
   slug: string;
@@ -40,4 +41,86 @@ export async function getSession(slug: string): Promise<Session | null> {
     createdAt: item.createdAt as number,
     expiresAt: item.TTL as number,
   };
+}
+
+export interface SessionData {
+  snippets: Snippet[];
+  questions: Question[];
+  replies: Reply[];
+}
+
+/**
+ * Fetches all active snippets, questions, and replies for a session from DynamoDB.
+ * Used for SSR initial hydration of the session page.
+ *
+ * Filters items whose TTL has already passed (DynamoDB lazy delete).
+ */
+export async function getSessionData(slug: string): Promise<SessionData> {
+  const now = Math.floor(Date.now() / 1000);
+
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: tableName(),
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': `SESSION#${slug}`,
+      },
+    })
+  );
+
+  const items = result.Items ?? [];
+
+  const snippets: Snippet[] = [];
+  const questions: Question[] = [];
+  const replies: Reply[] = [];
+
+  for (const item of items) {
+    const sk = item.SK as string;
+    // Skip expired items
+    if (item.TTL && (item.TTL as number) < now) continue;
+
+    if (sk.startsWith('SNIPPET#')) {
+      snippets.push({
+        id: item.id as string,
+        sessionSlug: item.sessionSlug as string,
+        type: item.type as string,
+        content: item.content as string,
+        language: item.language as string | undefined,
+        createdAt: item.createdAt as number,
+        TTL: item.TTL as number,
+      });
+    } else if (sk.startsWith('QUESTION#')) {
+      questions.push({
+        id: item.id as string,
+        sessionSlug: item.sessionSlug as string,
+        text: item.text as string,
+        fingerprint: item.fingerprint as string,
+        authorName: item.authorName as string | undefined,
+        upvoteCount: (item.upvoteCount as number) ?? 0,
+        downvoteCount: (item.downvoteCount as number) ?? 0,
+        isHidden: (item.isHidden as boolean) ?? false,
+        isFocused: (item.isFocused as boolean) ?? false,
+        isBanned: (item.isBanned as boolean) ?? false,
+        createdAt: item.createdAt as number,
+        TTL: item.TTL as number,
+      });
+    } else if (sk.startsWith('REPLY#')) {
+      replies.push({
+        id: item.id as string,
+        questionId: item.questionId as string,
+        sessionSlug: item.sessionSlug as string,
+        text: item.text as string,
+        isHostReply: (item.isHostReply as boolean) ?? false,
+        fingerprint: item.fingerprint as string,
+        createdAt: item.createdAt as number,
+        TTL: item.TTL as number,
+      });
+    }
+  }
+
+  // Sort snippets newest first; replies oldest first; questions unsorted (client sorts by votes)
+  snippets.sort((a, b) => b.createdAt - a.createdAt);
+  replies.sort((a, b) => a.createdAt - b.createdAt);
+
+  return { snippets, questions, replies };
 }

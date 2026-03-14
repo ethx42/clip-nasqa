@@ -14,8 +14,12 @@ interface ClipboardPanelProps {
   isHost?: boolean;
   sessionSlug: string;
   hostSecretHash?: string;
-  /** Snippets passed from parent — initially from SSR, later updated by subscription (Plan 04). */
+  /** Snippets passed from parent — initially from SSR, later updated by subscription. */
   snippets: SnippetWithHtml[];
+  /** Called by host to delete a single snippet. */
+  onDeleteSnippet?: (snippetId: string) => void;
+  /** Called by host to clear all snippets. */
+  onClearClipboard?: () => void;
 }
 
 const HISTORY_PAGE_SIZE = 10;
@@ -127,6 +131,8 @@ export function ClipboardPanel({
   sessionSlug,
   hostSecretHash = '',
   snippets,
+  onDeleteSnippet,
+  onClearClipboard,
 }: ClipboardPanelProps) {
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -170,8 +176,11 @@ export function ClipboardPanel({
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-destructive transition"
-            // Clear all wired in Plan 04
-            onClick={() => window.confirm('Clear all snippets?')}
+            onClick={() => {
+              if (window.confirm('Clear all snippets?')) {
+                onClearClipboard?.();
+              }
+            }}
           >
             Clear All
           </button>

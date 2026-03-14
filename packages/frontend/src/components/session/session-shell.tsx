@@ -6,9 +6,12 @@ import { useTranslations } from 'next-intl';
 interface SessionShellProps {
   title: string;
   isHost?: boolean;
+  sessionSlug?: string;
   clipboardSlot: React.ReactNode;
   qaSlot: React.ReactNode;
   hostToolbar?: React.ReactNode;
+  /** Optional live indicator shown next to the session title. Plan 05 provides the actual component. */
+  liveIndicator?: React.ReactNode;
 }
 
 type Tab = 'clipboard' | 'qa';
@@ -16,9 +19,11 @@ type Tab = 'clipboard' | 'qa';
 export function SessionShell({
   title,
   isHost = false,
+  sessionSlug: _sessionSlug,
   clipboardSlot,
   qaSlot,
   hostToolbar,
+  liveIndicator,
 }: SessionShellProps) {
   void isHost; // reserved for Phase 3 additional host-only behaviour
   const t = useTranslations('session');
@@ -28,9 +33,12 @@ export function SessionShell({
     <div className="flex h-[calc(100dvh-49px)] flex-col">
       {/* Session header */}
       <div className="border-b border-border px-4 py-3">
-        <h1 className="truncate text-lg font-semibold text-foreground">
-          {title}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="truncate text-lg font-semibold text-foreground">
+            {title}
+          </h1>
+          {liveIndicator}
+        </div>
       </div>
 
       {/* Optional host toolbar */}

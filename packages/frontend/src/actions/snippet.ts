@@ -3,7 +3,7 @@
 import { codeToHtml } from 'shiki';
 import type { BundledLanguage } from 'shiki';
 import { appsyncClient } from '@/lib/appsync-client';
-import { PUSH_SNIPPET } from '@/lib/graphql/mutations';
+import { PUSH_SNIPPET, DELETE_SNIPPET, CLEAR_CLIPBOARD } from '@/lib/graphql/mutations';
 
 /**
  * Renders Shiki highlighted HTML for the given code and language.
@@ -49,5 +49,38 @@ export async function pushSnippetAction(formData: {
     const message =
       err instanceof Error ? err.message : 'Failed to push snippet';
     return { ok: false, error: message };
+  }
+}
+
+/**
+ * Deletes a single snippet from the session.
+ */
+export async function deleteSnippetAction(args: {
+  sessionSlug: string;
+  hostSecretHash: string;
+  snippetId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await appsyncClient.graphql({ query: DELETE_SNIPPET, variables: args });
+    return { ok: true };
+  } catch (err) {
+    console.error('deleteSnippetAction error:', err);
+    return { ok: false, error: 'Failed to delete snippet' };
+  }
+}
+
+/**
+ * Clears all snippets from the session clipboard.
+ */
+export async function clearClipboardAction(args: {
+  sessionSlug: string;
+  hostSecretHash: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await appsyncClient.graphql({ query: CLEAR_CLIPBOARD, variables: args });
+    return { ok: true };
+  } catch (err) {
+    console.error('clearClipboardAction error:', err);
+    return { ok: false, error: 'Failed to clear clipboard' };
   }
 }

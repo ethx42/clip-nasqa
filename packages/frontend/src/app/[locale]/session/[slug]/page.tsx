@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import { getSession } from '@/lib/session';
-import { SessionShell } from '@/components/session/session-shell';
-import { ClipboardPanel } from '@/components/session/clipboard-panel';
-import { QAPanel } from '@/components/session/qa-panel';
+import { getSession, getSessionData } from '@/lib/session';
+import { SessionLivePage } from '@/components/session/session-live-page';
 
 export default async function SessionPage({
   params,
@@ -31,23 +29,15 @@ export default async function SessionPage({
     );
   }
 
-  // TODO(Plan 04): Replace stub props with SubscriptionProvider-supplied data
+  const { snippets, questions, replies } = await getSessionData(slug);
+
   return (
-    <SessionShell
-      title={session.title}
-      clipboardSlot={<ClipboardPanel sessionSlug={slug} snippets={[]} />}
-      qaSlot={
-        <QAPanel
-          sessionSlug={slug}
-          questions={[]}
-          replies={[]}
-          fingerprint=""
-          votedQuestionIds={new Set()}
-          onUpvote={() => {}}
-          onAddQuestion={() => {}}
-          onReply={() => {}}
-        />
-      }
+    <SessionLivePage
+      session={session}
+      sessionSlug={slug}
+      initialSnippets={snippets}
+      initialQuestions={questions}
+      initialReplies={replies}
     />
   );
 }

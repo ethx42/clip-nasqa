@@ -1,13 +1,11 @@
 import Link from 'next/link';
-import { getSession } from '@/lib/session';
-import { SessionShell } from '@/components/session/session-shell';
-import { ClipboardPanel } from '@/components/session/clipboard-panel';
-import { QAPanel } from '@/components/session/qa-panel';
+import { getSession, getSessionData } from '@/lib/session';
+import { SessionLiveHostPage } from '@/components/session/session-live-host-page';
 import { QRCodeDisplay } from '@/components/session/qr-code';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
-function HostToolbarPlaceholder({ participantUrl }: { participantUrl: string }) {
+function HostToolbar({ participantUrl }: { participantUrl: string }) {
   return (
     <div className="flex flex-wrap items-start gap-6">
       <QRCodeDisplay url={participantUrl} size={100} />
@@ -15,7 +13,9 @@ function HostToolbarPlaceholder({ participantUrl }: { participantUrl: string }) 
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Host Controls
         </p>
-        <p className="text-sm text-muted-foreground">Phase 3</p>
+        <p className="text-sm text-muted-foreground">
+          Use the clipboard and Q&A panels to manage the session.
+        </p>
       </div>
     </div>
   );
@@ -48,27 +48,17 @@ export default async function HostPage({
     );
   }
 
+  const { snippets, questions, replies } = await getSessionData(slug);
   const participantUrl = `${baseUrl}/session/${slug}`;
 
   return (
-    <SessionShell
-      title={session.title}
-      isHost
-      clipboardSlot={<ClipboardPanel isHost sessionSlug={slug} snippets={[]} hostSecretHash="" />}
-      qaSlot={
-        <QAPanel
-          isHost
-          sessionSlug={slug}
-          questions={[]}
-          replies={[]}
-          fingerprint=""
-          votedQuestionIds={new Set()}
-          onUpvote={() => {}}
-          onAddQuestion={() => {}}
-          onReply={() => {}}
-        />
-      }
-      hostToolbar={<HostToolbarPlaceholder participantUrl={participantUrl} />}
+    <SessionLiveHostPage
+      session={session}
+      sessionSlug={slug}
+      initialSnippets={snippets}
+      initialQuestions={questions}
+      initialReplies={replies}
+      hostToolbar={<HostToolbar participantUrl={participantUrl} />}
     />
   );
 }
