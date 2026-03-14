@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import type { Snippet, Question, Reply } from '@nasqa/core';
 import { appsyncClient } from '@/lib/appsync-client';
 import { ON_SESSION_UPDATE } from '@/lib/graphql/subscriptions';
 import type { SessionAction } from './use-session-state';
+
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 interface SessionUpdateEvent {
   eventType: string;
@@ -12,23 +14,38 @@ interface SessionUpdateEvent {
   payload: string; // AWSJSON — serialized JSON string
 }
 
+interface UseSessionUpdatesResult {
+  connectionStatus: ConnectionStatus;
+  lastHostActivity: number | null;
+}
+
 /**
  * Subscribes to AppSync OnSessionUpdate events for the given session.
  * Parses incoming events and dispatches them to the session state reducer.
  *
+ * Returns connection status and last host activity timestamp for the live indicator.
  * Cleanup: unsubscribes on unmount or when sessionSlug changes.
  */
 export function useSessionUpdates(
   sessionSlug: string,
   dispatch: React.Dispatch<SessionAction>
-): void {
+): UseSessionUpdatesResult {
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [lastHostActivity, setLastHostActivity] = useState<number | null>(null);
+
   // Stable dispatch reference — prevents re-subscription on every render
   const stableDispatch = useCallback(
     (action: SessionAction) => dispatch(action),
     [dispatch]
   );
 
+  // Track if we have received at least one event (to detect reconnection)
+  const receivedFirstEvent = useRef(false);
+
   useEffect(() => {
+    setConnectionStatus('connecting');
+    receivedFirstEvent.current = false;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sub = (
       appsyncClient.graphql({
@@ -37,6 +54,12 @@ export function useSessionUpdates(
       }) as any
     ).subscribe({
       next: ({ data }: { data: { onSessionUpdate: SessionUpdateEvent } }) => {
+        // Mark connected on first event received
+        if (!receivedFirstEvent.current) {
+          receivedFirstEvent.current = true;
+          setConnectionStatus('connected');
+        }
+
         const event = data?.onSessionUpdate;
         if (!event) return;
 
@@ -47,6 +70,8 @@ export function useSessionUpdates(
             case 'SNIPPET_ADDED': {
               const snippet = JSON.parse(payload) as Snippet;
               stableDispatch({ type: 'SNIPPET_ADDED', payload: snippet });
+              // Track host activity timestamp for liveness indicator
+              setLastHostActivity(Date.now());
               break;
             }
             case 'SNIPPET_DELETED': {
@@ -89,7 +114,11 @@ export function useSessionUpdates(
       },
       error: (err: unknown) => {
         console.error('[useSessionUpdates] Subscription error:', err);
-        // Connection status tracking will be added in Plan 05 (reconnection banner)
+        setConnectionStatus('disconnected');
+        // Amplify auto-retries; set back to connecting after a short delay
+        setTimeout(() => {
+          setConnectionStatus('connecting');
+        }, 2000);
       },
     });
 
@@ -97,4 +126,6 @@ export function useSessionUpdates(
       sub.unsubscribe();
     };
   }, [sessionSlug, stableDispatch]);
+
+  return { connectionStatus, lastHostActivity };
 }

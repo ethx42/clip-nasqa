@@ -10,6 +10,7 @@ import { hashSecret } from '@/lib/hash-secret';
 import { SessionShell } from '@/components/session/session-shell';
 import { ClipboardPanel } from '@/components/session/clipboard-panel';
 import { QAPanel } from '@/components/session/qa-panel';
+import { LiveIndicator } from '@/components/session/live-indicator';
 import {
   addQuestionAction,
   upvoteQuestionAction,
@@ -67,7 +68,7 @@ export function SessionLiveHostPage({
     replies: initialReplies,
   });
 
-  useSessionUpdates(sessionSlug, dispatch);
+  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionSlug, dispatch);
 
   // ── Host-specific handlers ────────────────────────────────────────────────
 
@@ -197,6 +198,12 @@ export function SessionLiveHostPage({
       sessionSlug={sessionSlug}
       isHost
       hostToolbar={hostToolbar}
+      liveIndicator={
+        <LiveIndicator
+          connectionStatus={connectionStatus}
+          lastHostActivity={lastHostActivity}
+        />
+      }
       clipboardSlot={
         <ClipboardPanel
           isHost

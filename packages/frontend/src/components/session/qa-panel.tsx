@@ -1,9 +1,12 @@
 'use client';
 
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquarePlus } from 'lucide-react';
 import type { Question, Reply } from '@nasqa/core';
 import { QuestionCard } from './question-card';
 import { QAInput } from './qa-input';
+import { NewContentBanner } from './new-content-banner';
 
 interface QAPanelProps {
   isHost?: boolean;
@@ -19,6 +22,8 @@ interface QAPanelProps {
   onFocus?: (questionId: string | undefined) => void;
 }
 
+const SCROLL_THRESHOLD = 80; // px scrolled down before showing banner
+
 export function QAPanel({
   isHost = false,
   sessionSlug,
@@ -32,6 +37,10 @@ export function QAPanel({
   onReply,
   onFocus,
 }: QAPanelProps) {
+  const [showNewBanner, setShowNewBanner] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevQuestionCount = useRef(questions.length);
+
   // Group replies by questionId for efficient lookup
   const repliesByQuestion = new Map<string, Reply[]>();
   for (const reply of replies) {
@@ -48,13 +57,51 @@ export function QAPanel({
     return b.createdAt - a.createdAt;
   });
 
+  // Show new content banner when a question arrives and user is scrolled down
+  useEffect(() => {
+    const newCount = questions.length;
+    const oldCount = prevQuestionCount.current;
+    prevQuestionCount.current = newCount;
+
+    if (newCount > oldCount) {
+      const container = scrollContainerRef.current;
+      if (container && container.scrollTop > SCROLL_THRESHOLD) {
+        setShowNewBanner(true);
+      }
+    }
+  }, [questions.length]);
+
+  const scrollToTop = useCallback(() => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowNewBanner(false);
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container && container.scrollTop <= SCROLL_THRESHOLD) {
+      setShowNewBanner(false);
+    }
+  }, []);
+
+  const newQuestionCount = Math.max(0, questions.length - prevQuestionCount.current);
+  const bannerMessage =
+    newQuestionCount === 1 ? 'New question' : `${newQuestionCount} new questions`;
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      {/* New question notification banner placeholder — wired in Plan 04 */}
-      <div id="qa-new-banner" />
-
       {/* Scrollable question list */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto"
+      >
+        {/* New question notification banner */}
+        <NewContentBanner
+          message={bannerMessage}
+          visible={showNewBanner}
+          onTap={scrollToTop}
+        />
+
         {sortedQuestions.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-12 text-center">
             <MessageSquarePlus className="h-8 w-8 text-muted-foreground/40" />
@@ -64,21 +111,31 @@ export function QAPanel({
           </div>
         ) : (
           <div className="space-y-3 p-4">
-            {sortedQuestions.map((question) => (
-              <QuestionCard
-                key={question.id}
-                question={question}
-                replies={repliesByQuestion.get(question.id) ?? []}
-                isHost={isHost}
-                fingerprint={fingerprint}
-                sessionSlug={sessionSlug}
-                hostSecretHash={hostSecretHash}
-                votedQuestionIds={votedQuestionIds}
-                onUpvote={onUpvote}
-                onReply={onReply}
-                onFocus={onFocus}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {sortedQuestions.map((question) => (
+                <motion.div
+                  key={question.id}
+                  layout
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <QuestionCard
+                    question={question}
+                    replies={repliesByQuestion.get(question.id) ?? []}
+                    isHost={isHost}
+                    fingerprint={fingerprint}
+                    sessionSlug={sessionSlug}
+                    hostSecretHash={hostSecretHash}
+                    votedQuestionIds={votedQuestionIds}
+                    onUpvote={onUpvote}
+                    onReply={onReply}
+                    onFocus={onFocus}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>

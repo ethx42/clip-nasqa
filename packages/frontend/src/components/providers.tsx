@@ -2,6 +2,7 @@
 
 import '../lib/appsync-client'; // Initialize Amplify
 import { ThemeProvider } from 'next-themes';
+import { Toaster } from 'sonner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       {children}
+      <Toaster position="bottom-center" richColors />
     </ThemeProvider>
   );
 }

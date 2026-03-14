@@ -8,6 +8,7 @@ import { useFingerprint } from '@/hooks/use-fingerprint';
 import { SessionShell } from '@/components/session/session-shell';
 import { ClipboardPanel } from '@/components/session/clipboard-panel';
 import { QAPanel } from '@/components/session/qa-panel';
+import { LiveIndicator } from '@/components/session/live-indicator';
 import {
   addQuestionAction,
   upvoteQuestionAction,
@@ -47,7 +48,7 @@ export function SessionLivePage({
     replies: initialReplies,
   });
 
-  useSessionUpdates(sessionSlug, dispatch);
+  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionSlug, dispatch);
 
   async function handleUpvote(questionId: string, remove: boolean) {
     // Optimistic update
@@ -143,6 +144,12 @@ export function SessionLivePage({
     <SessionShell
       title={session.title}
       sessionSlug={sessionSlug}
+      liveIndicator={
+        <LiveIndicator
+          connectionStatus={connectionStatus}
+          lastHostActivity={lastHostActivity}
+        />
+      }
       clipboardSlot={
         <ClipboardPanel
           sessionSlug={sessionSlug}
