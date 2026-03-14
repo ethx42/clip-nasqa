@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Phase 2 - Session and View Shell
+**Current focus:** Phase 3 - Real-Time Core
 
 ## Current Position
 
-Phase: 2 of 4 (Session and View Shell)
-Plan: 3 of 4 in current phase
+Phase: 3 of 4 (Real-Time Core)
+Plan: 2 of 6 in current phase
 Status: Active
-Last activity: 2026-03-14 — 02-03 complete (success page, participant/host view shells, QR code)
+Last activity: 2026-03-14 — 03-01 complete (GraphQL mutations, Lambda resolvers, Amplify client, GraphQL strings)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 58%
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-session-and-view-shell P01 | 3 | 2 tasks | 13 files |
 | Phase 02-session-and-view-shell P02 | 2 | 2 tasks | 5 files |
 | Phase 02-session-and-view-shell P03 | 15 | 3 tasks | 8 files |
+| Phase 03-real-time-core P01 | 3 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,10 @@ Recent decisions affecting current work:
 - [Phase 02-session-and-view-shell Plan 03]: SessionShell is Client Component for mobile tab state; ClipboardPanel/QAPanel are Server Components passed as slots
 - [Phase 02-session-and-view-shell Plan 03]: Host secret shown once on success page only; page warns it won't be shown again
 - [Phase 02-session-and-view-shell Plan 03]: QR code rendered persistently in host view toolbar for projecting during talks
+- [Phase 03-real-time-core Plan 01]: Lambda resolver dispatches via switch on fieldName, casts arguments through any (Record<string,unknown> to specific interface requires intermediate cast)
+- [Phase 03-real-time-core Plan 01]: aws-amplify full package installed for Amplify.configure SSR mode (ssr:true) — @aws-amplify/api-graphql alone does not expose this
+- [Phase 03-real-time-core Plan 01]: GraphQL strings as plain constants (not codegen) — simpler, sufficient for this project scale
+- [Phase 03-real-time-core Plan 01]: voters stored as DynamoDB Set, conditional expression prevents duplicate votes via contains/NOT contains
 
 ### Pending Todos
 
@@ -82,5 +87,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 02-03-PLAN.md (success page, participant/host view shells, QR code, human-verified)
+Stopped at: Completed 03-01-PLAN.md (GraphQL mutations, Lambda resolvers, Amplify client, GraphQL strings)
 Resume file: None
