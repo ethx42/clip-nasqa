@@ -1,0 +1,23 @@
+{
+  "name": "nasqa-live",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/frontend",
+    "build": "npm run build --workspace=packages/frontend",
+    "lint": "npm run lint --workspace=packages/frontend",
+    "typecheck": "npm run typecheck --workspace=packages/core && npm run typecheck --workspace=packages/functions",
+    "deploy": "npm run lint && npm run typecheck && AWS_REGION=us-east-1 sst deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "sst": "^4.2.7",
+    "zod": "^4.3.6"
+  }
+}
