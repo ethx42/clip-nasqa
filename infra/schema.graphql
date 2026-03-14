@@ -64,15 +64,29 @@ type SessionUpdate {
   payload: AWSJSON!
 }
 
+type SessionData {
+  snippets: [Snippet!]!
+  questions: [Question!]!
+  replies: [Reply!]!
+}
+
 type Query {
   _empty: String
+  getSessionData(sessionSlug: String!): SessionData!
 }
 
 type Mutation {
   _stub: SessionUpdate
+  pushSnippet(sessionSlug: String!, hostSecretHash: String!, content: String!, type: String!, language: String): SessionUpdate!
+  deleteSnippet(sessionSlug: String!, hostSecretHash: String!, snippetId: String!): SessionUpdate!
+  clearClipboard(sessionSlug: String!, hostSecretHash: String!): SessionUpdate!
+  addQuestion(sessionSlug: String!, text: String!, fingerprint: String!): SessionUpdate!
+  upvoteQuestion(sessionSlug: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
+  addReply(sessionSlug: String!, questionId: String!, text: String!, fingerprint: String!, isHostReply: Boolean!): SessionUpdate!
+  focusQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String): SessionUpdate!
 }
 
 type Subscription {
   onSessionUpdate(sessionSlug: String!): SessionUpdate
-    @aws_subscribe(mutations: ["_stub"])
+    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion"])
 }

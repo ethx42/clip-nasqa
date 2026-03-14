@@ -69,10 +69,25 @@ export default $config({
       code: readFileSync("infra/resolvers/subscription-onSessionUpdate.js", "utf-8"),
     });
 
-    // 8. Next.js site linked to DynamoDB table — makes Resource.NasqaTable.name available
+    // 8. Mutation resolvers — all routes through Lambda data source
+    api.addResolver("Mutation pushSnippet", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation deleteSnippet", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation clearClipboard", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation addQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation upvoteQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation addReply", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation focusQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Query getSessionData", { dataSource: lambdaDS.name });
+
+    // 9. Next.js site linked to DynamoDB table — passes AppSync config as env vars
     const site = new sst.aws.Nextjs("NasqaSite", {
       path: "packages/frontend",
       link: [table],
+      environment: {
+        NEXT_PUBLIC_APPSYNC_URL: api.url,
+        NEXT_PUBLIC_APPSYNC_API_KEY: api.apiKey,
+        NEXT_PUBLIC_AWS_REGION: "us-east-1",
+      },
     });
 
     return {

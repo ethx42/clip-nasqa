@@ -121,3 +121,13 @@ export interface AppSyncResolverContext<TArgs = Record<string, unknown>> {
   arguments: TArgs;
   identity: null;
 }
+
+// Mutation argument interfaces
+export interface PushSnippetArgs { sessionSlug: string; hostSecretHash: string; content: string; type: string; language?: string; }
+export interface DeleteSnippetArgs { sessionSlug: string; hostSecretHash: string; snippetId: string; }
+export interface ClearClipboardArgs { sessionSlug: string; hostSecretHash: string; }
+export interface AddQuestionArgs { sessionSlug: string; text: string; fingerprint: string; }
+export interface UpvoteQuestionArgs { sessionSlug: string; questionId: string; fingerprint: string; remove?: boolean; }
+export interface AddReplyArgs { sessionSlug: string; questionId: string; text: string; fingerprint: string; isHostReply: boolean; }
+export interface FocusQuestionArgs { sessionSlug: string; hostSecretHash: string; questionId?: string; }
+export interface GetSessionDataArgs { sessionSlug: string; }
