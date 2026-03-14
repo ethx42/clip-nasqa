@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 ## Current Position
 
 Phase: 3 of 4 (Real-Time Core)
-Plan: 4 of 6 in current phase
+Plan: 5 of 6 in current phase
 Status: Active
-Last activity: 2026-03-14 — 03-03 complete (QuestionCard, ReplyList, QAInput, QAPanel, Q&A Server Actions)
+Last activity: 2026-03-14 — 03-04 complete (useSessionState, useSessionUpdates, useFingerprint, SessionLivePage, SessionLiveHostPage, SSR hydration)
 
-Progress: [██████░░░░] 58%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Progress: [██████░░░░] 58%
 | Phase 03-real-time-core P01 | 3 | 2 tasks | 9 files |
 | Phase 03-real-time-core P03 | 5 | 2 tasks | 7 files |
 | Phase 03-real-time-core P02 | 5min | 2 tasks | 10 files |
+| Phase 03-real-time-core P04 | 4min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,10 @@ Recent decisions affecting current work:
 - [Phase 03-real-time-core]: focused state uses ring-2 ring-emerald-500/50 animate-pulse — auto-expands reply thread when isFocused
 - [Phase 03-real-time-core]: ShikiBlock is async RSC with no use client — Shiki stays out of client bundle entirely; renderHighlight Server Action provides live preview to HostInput
 - [Phase 03-real-time-core]: ClipboardPanel is Client Component with inline HeroCard/HistoryCard sub-components — async RSC children cannot be used inside Client Components
+- [Phase 03-real-time-core Plan 04]: useReducer for session state — single dispatch point avoids stale closure issues with subscription callbacks
+- [Phase 03-real-time-core Plan 04]: AppSync subscription payload is AWSJSON (serialized string) — JSON.parse(payload) required in useSessionUpdates
+- [Phase 03-real-time-core Plan 04]: Host secret read from window.location.hash on mount and immediately hashed via SubtleCrypto — raw secret never stored in React state
+- [Phase 03-real-time-core Plan 04]: getSessionData uses single QueryCommand (PK = SESSION#slug) partitioned by SK prefix — no GSI needed
 
 ### Pending Todos
 
@@ -93,5 +98,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: Completed 03-03-PLAN.md (QuestionCard, ReplyList, QAInput, QAPanel, Q&A Server Actions)
+Stopped at: Completed 03-04-PLAN.md (useSessionState, useSessionUpdates, useFingerprint, SessionLivePage, SessionLiveHostPage, SSR hydration)
 Resume file: None
