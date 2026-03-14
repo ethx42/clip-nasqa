@@ -10,6 +10,23 @@ import type { SessionAction } from './use-session-state';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
+/**
+ * Safely parse an AWSJSON value that may be:
+ * - already an object (Amplify auto-parsed it)
+ * - a JSON string (single-encoded)
+ * - a double-encoded JSON string (AppSync serialized the resolver's JSON.stringify output again)
+ */
+function parseAwsJson(value: unknown): unknown {
+  if (typeof value === 'object' && value !== null) return value;
+  if (typeof value !== 'string') return value;
+  let result: unknown = JSON.parse(value);
+  // If still a string after first parse, it was double-encoded
+  if (typeof result === 'string') {
+    result = JSON.parse(result);
+  }
+  return result;
+}
+
 interface SessionUpdateEvent {
   eventType: string;
   sessionSlug: string;
@@ -91,16 +108,18 @@ export function useSessionUpdates(
         const { eventType, payload } = event;
 
         try {
+          // AWSJSON may be double-encoded (string→string) or auto-parsed (string→object)
+          // depending on the Amplify client version and AppSync serialization path.
+          const parsed = parseAwsJson(payload);
+
           switch (eventType) {
             case 'SNIPPET_ADDED': {
-              const snippet = JSON.parse(payload) as Snippet;
-              stableDispatch({ type: 'SNIPPET_ADDED', payload: snippet });
+              stableDispatch({ type: 'SNIPPET_ADDED', payload: parsed as Snippet });
               setLastHostActivity(Date.now());
               break;
             }
             case 'SNIPPET_DELETED': {
-              const { snippetId } = JSON.parse(payload) as { snippetId: string };
-              stableDispatch({ type: 'SNIPPET_DELETED', payload: { snippetId } });
+              stableDispatch({ type: 'SNIPPET_DELETED', payload: parsed as { snippetId: string } });
               break;
             }
             case 'CLIPBOARD_CLEARED': {
@@ -108,12 +127,11 @@ export function useSessionUpdates(
               break;
             }
             case 'QUESTION_ADDED': {
-              const question = JSON.parse(payload) as Question;
-              stableDispatch({ type: 'QUESTION_ADDED', payload: question });
+              stableDispatch({ type: 'QUESTION_ADDED', payload: parsed as Question });
               break;
             }
             case 'QUESTION_UPDATED': {
-              const { questionId, upvoteDelta, isFocused } = JSON.parse(payload) as {
+              const { questionId, upvoteDelta, isFocused } = parsed as {
                 questionId: string;
                 upvoteDelta?: number;
                 isFocused?: boolean;
@@ -125,8 +143,7 @@ export function useSessionUpdates(
               break;
             }
             case 'REPLY_ADDED': {
-              const reply = JSON.parse(payload) as Reply;
-              stableDispatch({ type: 'REPLY_ADDED', payload: reply });
+              stableDispatch({ type: 'REPLY_ADDED', payload: parsed as Reply });
               break;
             }
             default:

@@ -110,7 +110,7 @@ function HeroCard({
   );
 }
 
-/** Inline history card rendered client-side. */
+/** Inline history card rendered client-side with expand/collapse. */
 function HistoryCard({
   snippet,
   snippetNumber,
@@ -122,11 +122,22 @@ function HistoryCard({
   isHost: boolean;
   onDelete?: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [html, setHtml] = useState<string | null>(null);
   const lang = snippet.language ?? 'text';
   const isCode = lang !== 'text';
   const relativeTime = formatRelativeTime(snippet.createdAt);
-  // First 3 lines for truncated view
-  const truncated = snippet.content.split('\n').slice(0, 3).join('\n');
+  const lineCount = snippet.content.split('\n').length;
+  const isLong = lineCount > 3;
+
+  // Fetch highlighted HTML when expanded (code only)
+  useEffect(() => {
+    if (expanded && isCode && !html) {
+      renderHighlight(snippet.content, lang).then((result) => {
+        if (result) setHtml(result);
+      });
+    }
+  }, [expanded, isCode, html, snippet.content, lang]);
 
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
@@ -151,15 +162,44 @@ function HistoryCard({
           )}
         </div>
       </div>
-      <div className="overflow-hidden rounded bg-muted/30">
-        <pre
-          className={`line-clamp-3 whitespace-pre-wrap break-words p-2 text-xs ${
-            isCode ? 'font-mono' : 'font-sans'
-          } text-foreground`}
-        >
-          {truncated}
-        </pre>
+      <div
+        className={`overflow-hidden rounded bg-muted/30 ${isLong ? 'cursor-pointer' : ''}`}
+        onClick={isLong ? () => setExpanded((v) => !v) : undefined}
+      >
+        {expanded ? (
+          html ? (
+            <div
+              className="shiki-wrapper overflow-x-auto text-xs leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <pre
+              className={`whitespace-pre-wrap break-words p-2 text-xs ${
+                isCode ? 'font-mono' : 'font-sans'
+              } text-foreground`}
+            >
+              {snippet.content}
+            </pre>
+          )
+        ) : (
+          <pre
+            className={`line-clamp-3 whitespace-pre-wrap break-words p-2 text-xs ${
+              isCode ? 'font-mono' : 'font-sans'
+            } text-foreground`}
+          >
+            {snippet.content}
+          </pre>
+        )}
       </div>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+        >
+          {expanded ? 'Collapse' : `Show all ${lineCount} lines`}
+        </button>
+      )}
     </div>
   );
 }
