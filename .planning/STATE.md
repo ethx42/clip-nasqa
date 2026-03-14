@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Phase 1 - Infrastructure
+**Current focus:** Phase 2 - Session and View Shell
 
 ## Current Position
 
-Phase: 1 of 4 (Infrastructure)
-Plan: 3 of 3 in current phase
-Status: Blocked — AWS credentials required
-Last activity: 2026-03-14 — 01-03 blocked at AWS auth gate (lint + typecheck pass, sst deploy needs credentials)
+Phase: 2 of 4 (Session and View Shell)
+Plan: 1 of 4 in current phase
+Status: Active
+Last activity: 2026-03-14 — 02-01 complete (theme system, i18n routing, SST table link)
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -28,13 +28,15 @@ Progress: [██░░░░░░░░] 17%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-infrastructure | 2 | 10 min | 5 min |
+| 02-session-and-view-shell | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (2 min)
+- Last 5 plans: 01-01 (8 min), 01-02 (2 min), 02-01 (3 min)
 - Trend: —
 
 *Updated after each plan completion*
 | Phase 01-infrastructure P03 | 1 | 1 tasks | 0 files |
+| Phase 02-session-and-view-shell P01 | 3 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -54,6 +56,9 @@ Recent decisions affecting current work:
 - Removed rootDir from functions tsconfig to allow cross-package @nasqa/core imports in monorepo
 - npm run deploy enforces lint + typecheck + AWS_REGION=us-east-1 before any sst deploy call
 - [Phase 01-infrastructure]: AWS credentials must be configured before deploy can proceed (auth gate)
+- [Phase 02-session-and-view-shell Plan 01]: ThemeProvider must be in providers.tsx client wrapper — RSC root layouts cannot use hooks
+- [Phase 02-session-and-view-shell Plan 01]: useSyncExternalStore pattern for mounted state (avoids react-hooks/set-state-in-effect)
+- [Phase 02-session-and-view-shell Plan 01]: NasqaSite Nextjs SST resource linked to DynamoDB table (siteUrl in sst outputs)
 
 ### Pending Todos
 
@@ -68,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-14
-Stopped at: 01-03-PLAN.md Task 1 — AWS credentials auth gate (configure ~/.aws/config or AWS_PROFILE, then re-run npm run deploy)
+Stopped at: Completed 02-01-PLAN.md (theme system, i18n routing, SST table link — all tasks complete)
 Resume file: None

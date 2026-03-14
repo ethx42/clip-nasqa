@@ -53,10 +53,10 @@
 
 ### UI/UX
 
-- [ ] **UI-01**: Dark mode theme: Background Zinc-950, Text Zinc-50, Borders Zinc-800
-- [ ] **UI-02**: Light mode theme: Background White, Text Zinc-900, Borders Zinc-200
-- [ ] **UI-03**: Accent color Emerald-500 for active/live elements
-- [ ] **UI-04**: Theme toggle via next-themes with no layout shift
+- [x] **UI-01**: Dark mode theme: Background Zinc-950, Text Zinc-50, Borders Zinc-800
+- [x] **UI-02**: Light mode theme: Background White, Text Zinc-900, Borders Zinc-200
+- [x] **UI-03**: Accent color Emerald-500 for active/live elements
+- [x] **UI-04**: Theme toggle via next-themes with no layout shift
 - [ ] **UI-05**: Marketing landing page explaining Nasqa Live with CTA to create session
 
 ### i18n
@@ -146,10 +146,10 @@
 | IDENT-01 | Phase 4 | Pending |
 | IDENT-02 | Phase 4 | Pending |
 | IDENT-03 | Phase 4 | Pending |
-| UI-01 | Phase 2 | Pending |
-| UI-02 | Phase 2 | Pending |
-| UI-03 | Phase 2 | Pending |
-| UI-04 | Phase 2 | Pending |
+| UI-01 | Phase 2 | Complete |
+| UI-02 | Phase 2 | Complete |
+| UI-03 | Phase 2 | Complete |
+| UI-04 | Phase 2 | Complete |
 | UI-05 | Phase 2 | Pending |
 | I18N-01 | Phase 4 | Pending |
 | I18N-02 | Phase 4 | Pending |
