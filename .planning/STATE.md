@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Phase 4 - Moderation and Polish
+**Current focus:** Milestone v1.1 - Enterprise Hardening
 
 ## Current Position
 
-Phase: 4 of 4 (Moderation and Polish)
-Plan: 3 of 3 in current phase — COMPLETE
-Status: Complete
-Last activity: 2026-03-14 — 04-03 complete (moderation Server Actions, GraphQL mutations, session state reducer, QuestionCard ban/downvote UI, QAPanel wiring, QAInput banned state)
-
-Progress: [██████████] 100% (Phase 4 plan 3/3 — ALL PHASES COMPLETE)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-15 — Milestone v1.1 Enterprise Hardening started
 
 ## Performance Metrics
 

@@ -53,6 +53,19 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - Session persistence beyond 24 hours — TTL is a feature, not a limitation
 - Mobile native apps — web-first, responsive design
 
+## Current Milestone: v1.1 Enterprise Hardening
+
+**Goal:** Harden the codebase for production reliability and developer experience — testing, CI/CD, error handling, monitoring, code quality gates, accessibility, and SEO.
+
+**Target features:**
+- Testing infrastructure (Vitest + React Testing Library)
+- CI/CD pipeline (GitHub Actions: lint, typecheck, test, deploy)
+- Error boundaries (error.tsx, graceful fallbacks)
+- Monitoring/observability (Sentry error tracking, structured logging)
+- Pre-commit hooks (Husky + lint-staged)
+- Dynamic SEO (Open Graph, per-session metadata)
+- Accessibility improvements (ARIA labels, keyboard navigation, semantic HTML)
+
 ## Context
 
 - **Stack**: Next.js 16 + SST Ion (AWS) + DynamoDB + AppSync
@@ -82,4 +95,4 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 | 50% downvote threshold | Balances community moderation power without making it too easy to censor | — Pending |
 
 ---
-*Last updated: 2026-03-13 after initialization*
+*Last updated: 2026-03-15 after milestone v1.1 start*
