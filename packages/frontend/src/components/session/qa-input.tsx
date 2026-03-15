@@ -16,6 +16,7 @@ interface QAInputProps {
 
 export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInputProps) {
   const t = useTranslations('moderation');
+  const tSession = useTranslations('session');
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -70,7 +71,7 @@ export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInpu
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask a question..."
+            placeholder={tSession('askQuestion')}
             disabled={isEffectivelyDisabled}
             rows={1}
             style={{ resize: 'none', overflow: 'hidden' }}
@@ -83,7 +84,7 @@ export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInpu
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
-          aria-label="Send question"
+          aria-label={tSession('sendQuestion')}
           className="flex-shrink-0 rounded-xl bg-emerald-600 p-3 text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="h-5 w-5" />

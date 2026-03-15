@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { LanguageSwitcher } from '@/components/language-switcher';
 import { IdentityEditor } from '@/components/session/identity-editor';
 
 interface SessionShellProps {
@@ -40,9 +39,8 @@ export function SessionShell({
             {title}
           </h1>
           {liveIndicator}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto">
             <IdentityEditor />
-            <LanguageSwitcher />
           </div>
         </div>
       </div>

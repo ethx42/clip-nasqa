@@ -230,6 +230,7 @@ export function SessionLivePage({
           <ClipboardPanel
             sessionSlug={sessionSlug}
             snippets={state.snippets}
+            connectionStatus={connectionStatus}
           />
         }
         qaSlot={

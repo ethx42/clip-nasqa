@@ -52,5 +52,5 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { value: 'json', label: 'JSON' },
   { value: 'yaml', label: 'YAML' },
   { value: 'bash', label: 'Bash' },
-  { value: 'text', label: 'Plain Text' },
+  { value: 'text', label: '' },
 ];

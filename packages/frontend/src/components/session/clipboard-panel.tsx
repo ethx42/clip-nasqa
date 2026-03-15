@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@base-ui/react/dialog';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import type { Snippet } from '@nasqa/core';
 import { HostInput } from './host-input';
 import { CopyButton } from './copy-button';
@@ -20,6 +21,8 @@ interface ClipboardPanelProps {
   hostSecretHash?: string;
   /** Snippets passed from parent — initially from SSR, later updated by subscription. */
   snippets: SnippetWithHtml[];
+  /** AppSync connection status — used to differentiate empty state messaging. */
+  connectionStatus?: 'connected' | 'connecting' | 'disconnected';
   /** Called by host to delete a single snippet. */
   onDeleteSnippet?: (snippetId: string) => void;
   /** Called by host to clear all snippets. */
@@ -29,17 +32,15 @@ interface ClipboardPanelProps {
 const HISTORY_PAGE_SIZE = 10;
 const SCROLL_THRESHOLD = 80; // px scrolled down before showing the banner
 
-function formatRelativeTime(createdAt: number): string {
+function formatRelativeTime(createdAt: number, t: (key: string, values?: Record<string, number>) => string): string {
   const now = Date.now();
   const diffMs = now - createdAt * 1000;
   const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin === 1) return '1m ago';
-  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 1) return t('timeJustNow');
+  if (diffMin < 60) return t('timeMinutesAgo', { count: diffMin });
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr === 1) return '1h ago';
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${Math.floor(diffHr / 24)}d ago`;
+  if (diffHr < 24) return t('timeHoursAgo', { count: diffHr });
+  return t('timeDaysAgo', { count: Math.floor(diffHr / 24) });
 }
 
 /** Inline hero card rendered client-side using pre-rendered HTML or plain text. */
@@ -54,10 +55,11 @@ function HeroCard({
   isHost: boolean;
   onDelete?: () => void;
 }) {
+  const t = useTranslations('session');
   const [html, setHtml] = useState(snippet.highlightedHtml ?? null);
   const lang = snippet.language ?? 'text';
   const isCode = lang !== 'text';
-  const relativeTime = formatRelativeTime(snippet.createdAt);
+  const relativeTime = formatRelativeTime(snippet.createdAt, t);
 
   // If no pre-rendered HTML, fetch via Server Action
   useEffect(() => {
@@ -73,20 +75,20 @@ function HeroCard({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="rounded-lg bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
-            {isCode ? lang : 'Text'}
+            {isCode ? lang : t('text')}
           </span>
           <span className="text-base font-bold tabular-nums text-muted-foreground">#{snippetNumber}</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
-          <CopyButton value={snippet.content} label="Copy" />
+          <CopyButton value={snippet.content} label={t('copy')} />
           {isHost && onDelete && (
             <button
               type="button"
-              title="Delete snippet"
+              title={t('deleteSnippet')}
               onClick={onDelete}
               className="text-sm text-muted-foreground hover:text-destructive transition"
-              aria-label="Delete snippet"
+              aria-label={t('deleteSnippet')}
             >
               ···
             </button>
@@ -125,11 +127,12 @@ function HistoryCard({
   isHost: boolean;
   onDelete?: () => void;
 }) {
+  const t = useTranslations('session');
   const [expanded, setExpanded] = useState(false);
   const [html, setHtml] = useState<string | null>(null);
   const lang = snippet.language ?? 'text';
   const isCode = lang !== 'text';
-  const relativeTime = formatRelativeTime(snippet.createdAt);
+  const relativeTime = formatRelativeTime(snippet.createdAt, t);
   const lineCount = snippet.content.split('\n').length;
   const isLong = lineCount > 3;
 
@@ -147,20 +150,20 @@ function HistoryCard({
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className="rounded-md px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground">
-            {isCode ? lang : 'Text'}
+            {isCode ? lang : t('text')}
           </span>
           <span className="text-sm font-semibold tabular-nums text-muted-foreground">#{snippetNumber}</span>
         </div>
         <div className="flex items-center gap-2.5">
           <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
-          <CopyButton value={snippet.content} label="Copy" />
+          <CopyButton value={snippet.content} label={t('copy')} />
           {isHost && onDelete && (
             <button
               type="button"
-              title="Delete snippet"
+              title={t('deleteSnippet')}
               onClick={onDelete}
               className="text-sm text-muted-foreground hover:text-destructive transition"
-              aria-label="Delete snippet"
+              aria-label={t('deleteSnippet')}
             >
               ···
             </button>
@@ -202,7 +205,7 @@ function HistoryCard({
           onClick={() => setExpanded((v) => !v)}
           className="mt-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
         >
-          {expanded ? 'Collapse' : `Show all ${lineCount} lines`}
+          {expanded ? t('collapse') : t('showAllLines', { count: lineCount })}
         </button>
       )}
     </div>
@@ -225,9 +228,12 @@ export function ClipboardPanel({
   sessionSlug,
   hostSecretHash = '',
   snippets,
+  connectionStatus = 'connecting',
   onDeleteSnippet,
   onClearClipboard,
 }: ClipboardPanelProps) {
+  const t = useTranslations('session');
+  const tCommon = useTranslations('common');
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [showNewBanner, setShowNewBanner] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear'; snippetId?: string } | null>(null);
@@ -271,7 +277,7 @@ export function ClipboardPanel({
     const prev = prevSnippetsRef.current;
     prevSnippetsRef.current = snippets;
     if (prev.length > 0 && snippets.length === 0 && !isHost) {
-      toast('Clipboard cleared by speaker');
+      toast(t('clipboardCleared'));
     }
   }, [snippets, isHost]);
 
@@ -297,11 +303,11 @@ export function ClipboardPanel({
     <div
       ref={scrollContainerRef}
       onScroll={handleScroll}
-      className="flex flex-1 flex-col gap-5 overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-sm"
+      className="flex flex-1 flex-col gap-4 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm"
     >
       {/* New snippet banner — sticky at top */}
       <NewContentBanner
-        message="New snippet from speaker"
+        message={t('newSnippet')}
         visible={showNewBanner}
         onTap={scrollToTop}
       />
@@ -324,7 +330,7 @@ export function ClipboardPanel({
             className="text-sm font-medium text-muted-foreground hover:text-destructive transition"
             onClick={() => setConfirmAction({ type: 'clear' })}
           >
-            Clear All
+            {t('clearAll')}
           </button>
         </div>
       )}
@@ -332,9 +338,15 @@ export function ClipboardPanel({
       {/* Content area */}
       {snippets.length === 0 ? (
         <div className="flex flex-1 items-center justify-center p-10 text-center">
-          <p className="animate-pulse text-base text-muted-foreground">
-            Waiting for the speaker...
-          </p>
+          {connectionStatus === 'connected' ? (
+            <p className="text-base text-muted-foreground">
+              {t('speakerLive')}
+            </p>
+          ) : (
+            <p className="animate-pulse text-base text-muted-foreground">
+              {t('waitingForSpeaker')}
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -362,7 +374,7 @@ export function ClipboardPanel({
           {/* History list */}
           {historySnippets.length > 0 && (
             <div className="flex flex-col gap-3">
-              <p className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/50">History</p>
+              <p className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/50">{t('history')}</p>
               <AnimatePresence initial={false}>
                 {historySnippets.map((snippet, idx) => (
                   <motion.div
@@ -399,19 +411,19 @@ export function ClipboardPanel({
           <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
               <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
-                {confirmAction?.type === 'clear' ? 'Clear all snippets?' : 'Delete snippet?'}
+                {confirmAction?.type === 'clear' ? t('clearAllTitle') : t('deleteSnippetTitle')}
               </Dialog.Title>
               <Dialog.Description className="mb-5 text-sm text-muted-foreground">
                 {confirmAction?.type === 'clear'
-                  ? 'This will remove all snippets from the clipboard. This cannot be undone.'
-                  : 'This snippet will be permanently removed.'}
+                  ? t('clearAllDesc')
+                  : t('deleteSnippetDesc')}
               </Dialog.Description>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setConfirmAction(null)}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -424,7 +436,7 @@ export function ClipboardPanel({
                   }}
                   className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
                 >
-                  {confirmAction?.type === 'clear' ? 'Clear All' : 'Delete'}
+                  {confirmAction?.type === 'clear' ? t('clearAll') : t('delete')}
                 </button>
               </div>
             </div>

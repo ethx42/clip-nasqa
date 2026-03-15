@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import type { Question, Reply } from '@nasqa/core';
 import { linkifyText } from '@/lib/linkify';
 import { ReplyList } from './reply-list';
+import { PixelAvatar } from './pixel-avatar';
 import { cn } from '@/lib/utils';
 
 interface QuestionCardProps {
@@ -25,26 +26,6 @@ interface QuestionCardProps {
   onBanQuestion?: (questionId: string) => void;
   onBanParticipant?: (fingerprint: string) => void;
   onRestore?: (questionId: string) => void;
-}
-
-// Deterministic color from name string — 8 muted palette colors
-const AVATAR_COLORS = [
-  'bg-blue-500/15 text-blue-700 dark:text-blue-400',
-  'bg-violet-500/15 text-violet-700 dark:text-violet-400',
-  'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-  'bg-rose-500/15 text-rose-700 dark:text-rose-400',
-  'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400',
-  'bg-pink-500/15 text-pink-700 dark:text-pink-400',
-  'bg-orange-500/15 text-orange-700 dark:text-orange-400',
-  'bg-teal-500/15 text-teal-700 dark:text-teal-400',
-];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!;
 }
 
 /** "Santiago Torres" → "Santiago T." */
@@ -186,7 +167,7 @@ export function QuestionCard({
   return (
     <div
       className={cn(
-        'group relative rounded-xl border border-border bg-card p-5 transition-all',
+        'group relative rounded-xl border border-border bg-card p-4 transition-all',
         question.isFocused &&
           'ring-2 ring-emerald-500/50 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
       )}
@@ -205,7 +186,7 @@ export function QuestionCard({
           {/* Upvote */}
           <button
             onClick={handleUpvoteClick}
-            aria-label={isVoted ? 'Remove upvote' : 'Upvote question'}
+            aria-label={isVoted ? tSession('removeUpvote') : tSession('upvoteQuestion')}
             className={cn(
               'rounded-lg p-1.5 transition-colors hover:bg-accent',
               isVoted ? 'text-emerald-500' : 'text-muted-foreground'
@@ -225,7 +206,7 @@ export function QuestionCard({
           {/* Downvote */}
           <button
             onClick={handleDownvoteClick}
-            aria-label={isDownvoted ? 'Remove downvote' : 'Downvote question'}
+            aria-label={isDownvoted ? tSession('removeDownvote') : tSession('downvoteQuestion')}
             className={cn(
               'mt-1 rounded-lg p-1.5 transition-colors hover:bg-accent',
               isDownvoted ? 'text-rose-500' : 'text-muted-foreground'
@@ -247,45 +228,46 @@ export function QuestionCard({
         <div className="min-w-0 flex-1">
           {/* Author row — avatar + name + time + host actions */}
           <div className="mb-2 flex items-center gap-2.5">
-            {/* Avatar circle */}
-            {(() => {
-              const displayName = isOwn
+            {/* Pixel-art avatar */}
+            <PixelAvatar
+              seed={question.fingerprint}
+              size={28}
+              className="shrink-0 rounded-full"
+            />
+            <span
+              title={question.authorName || undefined}
+              className={cn(
+                'text-[13px] font-semibold truncate max-w-[10rem]',
+                isOwn
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : question.authorName
+                    ? 'text-foreground/80'
+                    : 'text-muted-foreground/60'
+              )}
+            >
+              {isOwn
                 ? tSession('you')
                 : question.authorName
                   ? formatDisplayName(question.authorName)
-                  : tIdentity('anonymous');
-              const initial = (question.authorName ?? '?')[0]!.toUpperCase();
-              const colorClass = question.authorName
-                ? getAvatarColor(question.authorName)
-                : 'bg-muted text-muted-foreground';
-              return (
-                <>
-                  <span
-                    className={cn(
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-                      isOwn ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : colorClass
-                    )}
-                  >
-                    {isOwn ? tSession('you')[0]!.toUpperCase() : initial}
-                  </span>
-                  <span className={cn(
-                    'text-[13px] font-semibold truncate max-w-[10rem]',
-                    isOwn ? 'text-emerald-600 dark:text-emerald-400' : question.authorName ? 'text-foreground/80' : 'text-muted-foreground/60'
-                  )}>
-                    {displayName}
-                  </span>
-                </>
-              );
-            })()}
+                  : tIdentity('anonymous')}
+            </span>
             <span className="text-[12px] text-muted-foreground/50">
               {formatRelativeTime(question.createdAt, tSession)}
             </span>
 
-            {/* Host: hidden badge */}
-            {isHost && question.isHidden && showHiddenContent && (
-              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
-                {t('hidden')}
-              </span>
+            {/* Hidden badge + collapse button */}
+            {question.isHidden && showHiddenContent && (
+              <>
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
+                  {t('hidden')}
+                </span>
+                <button
+                  onClick={() => setShowHiddenContent(false)}
+                  className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  [{t('hiddenByCommunity')}]
+                </button>
+              </>
             )}
 
             {/* Spacer */}
@@ -296,9 +278,9 @@ export function QuestionCard({
               <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={handleFocusToggle}
-                  aria-label={question.isFocused ? 'Unfocus question' : 'Focus question'}
+                  aria-label={question.isFocused ? tSession('unfocusQuestion') : tSession('focusQuestion')}
                   className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  title={question.isFocused ? 'Unfocus' : 'Focus'}
+                  title={question.isFocused ? tSession('unfocusQuestion') : tSession('focusQuestion')}
                 >
                   <span className="text-xs font-bold">{question.isFocused ? '●' : '○'}</span>
                 </button>

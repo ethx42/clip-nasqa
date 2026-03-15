@@ -17,15 +17,6 @@ export async function createSession(formData: FormData): Promise<never> {
     throw new Error('Session title is required');
   }
 
-  // Debug: log env var availability (no secrets, just presence)
-  console.log('[createSession] env check:', {
-    hasAccessKey: !!process.env.MY_AWS_ACCESS_KEY_ID,
-    hasSecretKey: !!process.env.MY_AWS_SECRET_ACCESS_KEY,
-    region: process.env.MY_AWS_REGION ?? process.env.AWS_REGION ?? '(fallback us-east-1)',
-    tableName: tableName(),
-    locale,
-  });
-
   const { generateSlug } = await import('random-word-slugs');
 
   let redirectUrl: string | null = null;
@@ -56,18 +47,11 @@ export async function createSession(formData: FormData): Promise<never> {
 
       // PutCommand succeeded — set redirect target outside try block
       redirectUrl = `/${locale}/session/${slug}/success?raw=${rawSecret}`;
-      console.log('[createSession] success, redirecting to:', redirectUrl);
       break;
     } catch (err) {
       if (err instanceof ConditionalCheckFailedException) {
-        console.log('[createSession] slug collision, retrying...');
         continue;
       }
-      console.error('[createSession] DynamoDB error:', {
-        name: (err as Error).name,
-        message: (err as Error).message,
-        code: (err as Record<string, unknown>).$metadata ?? (err as Record<string, unknown>).code,
-      });
       throw err;
     }
   }

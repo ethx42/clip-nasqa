@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 interface NewContentBannerProps {
   /** Message to show, e.g. "New snippet from speaker" or "2 new questions". */
   message: string;
@@ -15,6 +17,7 @@ interface NewContentBannerProps {
  * Clicking/tapping calls onTap which should scroll the container to the top.
  */
 export function NewContentBanner({ message, visible, onTap }: NewContentBannerProps) {
+  const t = useTranslations('session');
   return (
     <div
       role="button"
@@ -31,7 +34,7 @@ export function NewContentBanner({ message, visible, onTap }: NewContentBannerPr
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}
       `}
     >
-      {message} · tap to scroll up
+      {message} · {t('tapToScroll')}
     </div>
   );
 }

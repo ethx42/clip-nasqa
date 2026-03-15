@@ -304,6 +304,7 @@ export function SessionLiveHostPage({
           sessionSlug={sessionSlug}
           hostSecretHash={hostSecretHash}
           snippets={state.snippets}
+          connectionStatus={connectionStatus}
           onDeleteSnippet={handleDeleteSnippet}
           onClearClipboard={handleClearClipboard}
         />

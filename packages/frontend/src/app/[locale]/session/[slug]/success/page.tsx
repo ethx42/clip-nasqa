@@ -2,10 +2,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { getSession } from '@/lib/session';
+import { getBaseUrl } from '@/lib/base-url';
 import { QRCodeDisplay } from '@/components/session/qr-code';
 import { CopyButton } from '@/components/session/copy-button';
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export default async function SuccessPage({
   params,
@@ -17,12 +16,14 @@ export default async function SuccessPage({
   const { slug } = await params;
   const { raw } = await searchParams;
   const t = await getTranslations('session');
+  const tPages = await getTranslations('pages');
 
   const session = await getSession(slug);
   if (!session) {
     notFound();
   }
 
+  const baseUrl = await getBaseUrl();
   const participantUrl = `${baseUrl}/session/${slug}`;
   const hostUrl = `${baseUrl}/session/${slug}/host#secret=${raw ?? ''}`;
 
@@ -30,13 +31,13 @@ export default async function SuccessPage({
     return (
       <div className="flex min-h-[calc(100vh-53px)] flex-col items-center justify-center px-5 text-center">
         <p className="text-lg text-muted-foreground">
-          This page is only available immediately after session creation.
+          {tPages('pageExpired')}
         </p>
         <Link
           href="/"
           className="mt-6 rounded-xl bg-emerald-500 px-7 py-3.5 text-base font-bold text-white hover:bg-emerald-600"
         >
-          Go Home
+          {tPages('goHome')}
         </Link>
       </div>
     );
@@ -55,7 +56,7 @@ export default async function SuccessPage({
       {/* Host Secret */}
       <div className="rounded-2xl border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-950/30">
         <p className="mb-3 text-sm font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-          Host Secret
+          {t('hostSecret')}
         </p>
         <p className="mb-4 text-base font-medium text-amber-800 dark:text-amber-300">
           {t('secretWarning')}
@@ -77,7 +78,7 @@ export default async function SuccessPage({
           <code className="flex-1 break-all rounded-xl bg-muted px-4 py-3 font-mono text-sm text-foreground">
             {hostUrl}
           </code>
-          <CopyButton value={hostUrl} label="Copy URL" />
+          <CopyButton value={hostUrl} label={tPages('copyUrl')} />
         </div>
       </div>
 
@@ -90,7 +91,7 @@ export default async function SuccessPage({
           <code className="flex-1 break-all rounded-xl bg-muted px-4 py-3 font-mono text-sm text-foreground">
             {participantUrl}
           </code>
-          <CopyButton value={participantUrl} label="Copy URL" />
+          <CopyButton value={participantUrl} label={tPages('copyUrl')} />
         </div>
       </div>
 
@@ -107,7 +108,7 @@ export default async function SuccessPage({
         href={`/session/${slug}/host#secret=${raw}`}
         className="block w-full rounded-2xl bg-emerald-500 px-7 py-4 text-center text-base font-bold text-white transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
-        Go to Host View
+        {tPages('goToHostView')}
       </Link>
     </div>
   );

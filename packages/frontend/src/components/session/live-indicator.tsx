@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { ConnectionStatus } from '@/hooks/use-session-updates';
 
 interface LiveIndicatorProps {
@@ -7,11 +8,10 @@ interface LiveIndicatorProps {
   lastHostActivity?: number | null;
 }
 
-function formatMinutesAgo(timestamp: number): string {
+function formatMinutesAgo(timestamp: number, t: (key: string, values?: Record<string, number>) => string): string {
   const diffMin = Math.floor((Date.now() - timestamp) / 60_000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin === 1) return '1m ago';
-  return `${diffMin}m ago`;
+  if (diffMin < 1) return t('timeJustNow');
+  return t('timeMinutesAgo', { count: diffMin });
 }
 
 /**
@@ -25,6 +25,7 @@ function formatMinutesAgo(timestamp: number): string {
  * shows "Last snippet Xm ago" next to the dot.
  */
 export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndicatorProps) {
+  const t = useTranslations('session');
   const isStale =
     connectionStatus === 'connected' &&
     lastHostActivity !== null &&
@@ -35,10 +36,10 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
     return (
       <div className="flex items-center gap-2">
         <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">LIVE</span>
+        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{t('live')}</span>
         {isStale && lastHostActivity && (
           <span className="text-[13px] text-muted-foreground">
-            · Last snippet {formatMinutesAgo(lastHostActivity)}
+            · {t('lastSnippet', { time: formatMinutesAgo(lastHostActivity, t) })}
           </span>
         )}
       </div>
@@ -49,7 +50,7 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
     return (
       <div className="flex items-center gap-2">
         <span className="inline-block h-2.5 w-2.5 rounded-full bg-yellow-400" />
-        <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Reconnecting...</span>
+        <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">{t('reconnecting')}</span>
       </div>
     );
   }
@@ -58,7 +59,7 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
   return (
     <div className="flex items-center gap-2">
       <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
-      <span className="text-sm text-muted-foreground">Paused</span>
+      <span className="text-sm text-muted-foreground">{t('paused')}</span>
     </div>
   );
 }

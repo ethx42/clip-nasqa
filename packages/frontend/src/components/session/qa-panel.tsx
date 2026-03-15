@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquarePlus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { Question, Reply } from '@nasqa/core';
 import { QuestionCard } from './question-card';
 import { QAInput } from './qa-input';
@@ -49,6 +50,7 @@ export function QAPanel({
   onBanParticipant,
   onRestore,
 }: QAPanelProps) {
+  const t = useTranslations('session');
   const [showNewBanner, setShowNewBanner] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevQuestionCount = useRef(questions.length);
@@ -115,8 +117,7 @@ export function QAPanel({
   }, []);
 
   const newQuestionCount = Math.max(0, questions.length - prevQuestionCount.current);
-  const bannerMessage =
-    newQuestionCount === 1 ? 'New question' : `${newQuestionCount} new questions`;
+  const bannerMessage = t('newQuestionBanner', { count: newQuestionCount });
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -134,14 +135,14 @@ export function QAPanel({
         />
 
         {sortedQuestions.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-14 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10 text-center">
             <MessageSquarePlus className="h-10 w-10 text-muted-foreground/30" />
             <p className="text-base text-muted-foreground">
-              Be the first to ask a question!
+              {t('noQuestions')}
             </p>
           </div>
         ) : (
-          <div className="space-y-4 p-5">
+          <div className="space-y-3 p-4">
             <AnimatePresence initial={false}>
               {sortedQuestions.map((question) => (
                 <motion.div

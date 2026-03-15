@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { detectLanguage, SUPPORTED_LANGUAGES } from '@/lib/detect-language';
 import { renderHighlight, pushSnippetAction } from '@/actions/snippet';
 
@@ -19,17 +20,15 @@ interface HostInputProps {
  * - Input clears immediately after push (optimistic)
  */
 export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: HostInputProps) {
+  const t = useTranslations('session');
   const [value, setValue] = useState('');
   const [detectedLang, setDetectedLang] = useState('text');
-  const [overrideLang, setOverrideLang] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState('');
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeLang = overrideLang ?? detectedLang;
+  const activeLang = detectedLang;
 
   // Auto-resize textarea
   const resizeTextarea = useCallback(() => {
@@ -62,19 +61,9 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       resizeTextarea();
       const detected = detectLanguage(newValue);
       setDetectedLang(detected);
-      const lang = overrideLang ?? detected;
-      schedulePreview(newValue, lang);
+      schedulePreview(newValue, detected);
     },
-    [overrideLang, resizeTextarea, schedulePreview]
-  );
-
-  const handleLangSelect = useCallback(
-    (lang: string) => {
-      setOverrideLang(lang === detectedLang ? null : lang);
-      setShowLangDropdown(false);
-      schedulePreview(value, lang);
-    },
-    [detectedLang, value, schedulePreview]
+    [resizeTextarea, schedulePreview]
   );
 
   const handlePush = useCallback(async () => {
@@ -85,7 +74,6 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
     setValue('');
     setPreviewHtml('');
     setDetectedLang('text');
-    setOverrideLang(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -113,29 +101,15 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
     [handlePush]
   );
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setShowLangDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-5">
+    <div className="flex flex-col gap-3 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-3">
       {/* Textarea */}
       <textarea
         ref={textareaRef}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder="Paste or type code/text..."
+        placeholder={t('pasteOrType')}
         rows={3}
         className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 font-mono text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
         style={{ minHeight: '80px', maxHeight: '300px' }}
@@ -143,38 +117,15 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
 
       {/* Controls row */}
       <div className="flex items-center justify-between gap-3">
-        {/* Language chip + dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setShowLangDropdown((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-accent transition"
-          >
+        {/* Read-only language chip — only visible when there's content */}
+        {value.trim() ? (
+          <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            {SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang}
-            {overrideLang && (
-              <span className="ml-0.5 text-muted-foreground font-normal">(manual)</span>
-            )}
-          </button>
-          {showLangDropdown && (
-            <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-44 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg">
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <button
-                  key={lang.value}
-                  type="button"
-                  onClick={() => handleLangSelect(lang.value)}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-accent transition ${
-                    activeLang === lang.value
-                      ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                      : 'text-foreground'
-                  }`}
-                >
-                  {lang.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            {activeLang === 'text' ? t('text') : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang)}
+          </span>
+        ) : (
+          <span />
+        )}
 
         {/* Push button */}
         <button
@@ -183,7 +134,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           disabled={!value.trim() || isPushing}
           className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
-          {isPushing ? 'Pushing...' : 'Push Snippet'}
+          {isPushing ? t('pushing') : t('pushSnippet')}
           <kbd className="ml-1 hidden rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-medium sm:inline">
             ⌘↵
           </kbd>

@@ -209,8 +209,8 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
         })
       );
     } else {
-      // Add downvote: remove from upvoters (mutual exclusivity), add to downvoters
-      // ADD upvoteCount :negOne is a no-op if voter wasn't in voters set (DELETE on non-existent member is safe)
+      // Add downvote: increment downvoteCount, add to downvoters set
+      // (comma-separated targets — each action keyword must appear only once)
       result = await docClient.send(
         new UpdateCommand({
           TableName: tableName(),
@@ -218,18 +218,42 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
             PK: `SESSION#${sessionSlug}`,
             SK: `QUESTION#${questionId}`,
           },
-          UpdateExpression:
-            "ADD downvoteCount :one, upvoteCount :negOne DELETE voters :fpSet ADD downvoters :fpSet",
+          UpdateExpression: "ADD downvoteCount :one, downvoters :fpSet",
           ConditionExpression: "NOT contains(downvoters, :fp) OR attribute_not_exists(downvoters)",
           ExpressionAttributeValues: {
             ":one": 1,
-            ":negOne": -1,
             ":fp": fingerprint,
             ":fpSet": new Set([fingerprint]),
           },
           ReturnValues: "ALL_NEW",
         })
       );
+
+      // Mutual exclusivity: only decrement upvoteCount if user had actually upvoted
+      try {
+        const upvoteRemoval = await docClient.send(
+          new UpdateCommand({
+            TableName: tableName(),
+            Key: {
+              PK: `SESSION#${sessionSlug}`,
+              SK: `QUESTION#${questionId}`,
+            },
+            UpdateExpression: "ADD upvoteCount :negOne DELETE voters :fpSet",
+            ConditionExpression: "contains(voters, :fp)",
+            ExpressionAttributeValues: {
+              ":negOne": -1,
+              ":fp": fingerprint,
+              ":fpSet": new Set([fingerprint]),
+            },
+            ReturnValues: "ALL_NEW",
+          })
+        );
+        // Use the latest state after both updates
+        result = upvoteRemoval;
+      } catch (err) {
+        // User hadn't upvoted — no-op, result from first update is correct
+        if (!(err instanceof ConditionalCheckFailedException)) throw err;
+      }
     }
   } catch (err) {
     if (err instanceof ConditionalCheckFailedException) {
