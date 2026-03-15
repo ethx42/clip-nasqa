@@ -20,5 +20,5 @@
       "@nasqa/core/*": ["packages/core/src/*"]
     }
   },
-  "exclude": ["node_modules", "dist", ".sst"]
+  "exclude": ["node_modules", "dist", ".sst", "packages/frontend"]
 }
