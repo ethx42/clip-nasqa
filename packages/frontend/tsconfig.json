@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@nasqa/core": ["../core/src"],
+      "@nasqa/core/*": ["../core/src/*"]
     }
   },
   "include": [
