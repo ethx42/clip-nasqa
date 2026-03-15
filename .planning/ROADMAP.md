@@ -113,7 +113,11 @@ Plans:
   2. Running `git commit` with inconsistently formatted staged files auto-formats them via Prettier before the commit completes
   3. All four packages (root, core, frontend, functions) compile without error under TypeScript strict mode
   4. ESLint and Prettier do not conflict — `eslint-config-prettier` disables any ESLint rules that would duplicate or contradict Prettier's output
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Install toolchain (Husky, lint-staged, Prettier, eslint-config-prettier), fix existing lint errors, configure pre-commit hook
+- [ ] 05-02-PLAN.md — Verify TypeScript strict mode, apply initial Prettier formatting, end-to-end hook validation
 
 ### Phase 6: Testing and CI
 **Goal**: A Vitest test suite covers core schemas, Lambda resolvers, and key UI components; a GitHub Actions pipeline runs all quality checks on every PR and gates deploys on passing tests
@@ -161,7 +165,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. Session and View Shell | v1.0 | 3/3 | Complete | 2026-03-14 |
 | 3. Real-Time Core | v1.0 | 6/6 | Complete | 2026-03-14 |
 | 4. Moderation, Identity, and Polish | v1.0 | 4/4 | Complete | 2026-03-14 |
-| 5. Code Quality Gates | v1.1 | 0/TBD | Not started | - |
+| 5. Code Quality Gates | v1.1 | 0/2 | Not started | - |
 | 6. Testing and CI | v1.1 | 0/TBD | Not started | - |
 | 7. Error Handling and Observability | v1.1 | 0/TBD | Not started | - |
 | 8. SEO and Accessibility | v1.1 | 0/TBD | Not started | - |
