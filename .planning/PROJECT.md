@@ -58,6 +58,7 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 **Goal:** Harden the codebase for production reliability and developer experience — testing, CI/CD, error handling, monitoring, code quality gates, accessibility, and SEO.
 
 **Target features:**
+
 - Testing infrastructure (Vitest + React Testing Library)
 - CI/CD pipeline (GitHub Actions: lint, typecheck, test, deploy)
 - Error boundaries (error.tsx, graceful fallbacks)
@@ -65,6 +66,19 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - Pre-commit hooks (Husky + lint-staged)
 - Dynamic SEO (Open Graph, per-session metadata)
 - Accessibility improvements (ARIA labels, keyboard navigation, semantic HTML)
+
+## Next Milestone: v1.2 Reactions
+
+**Goal:** Add emoji reactions to Questions and Replies so participants can express sentiment beyond upvotes — lightweight engagement signals that complement the existing voting system without affecting sort order.
+
+**Target features:**
+
+- Fixed 6-emoji palette (👍 ❤️ 🎉 😂 🤔 👀) — no emoji picker (bundle budget)
+- Reactions on Questions and Replies (not Snippets)
+- DynamoDB atomic dedup (same Set pattern as existing votes)
+- Real-time propagation via existing SessionUpdate subscription
+- Rate limiting and ban enforcement for reactions
+- Optimistic UI with same patterns as vote system
 
 ## Context
 
@@ -85,14 +99,15 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Single-table DynamoDB | Minimize read latency, simplify access patterns for session-scoped data | — Pending |
-| Single AppSync subscription channel | Reduces connection overhead; union type keeps it typed | — Pending |
-| Device fingerprint over IP | Shared networks (conference WiFi) would cause false positives with IP tracking | — Pending |
-| Host-only clipboard | Keeps the feed curated and relevant to the presentation | — Pending |
-| Shiki dual-theme | Prevents layout shift on theme toggle, better UX than CSS-only approach | — Pending |
-| 50% downvote threshold | Balances community moderation power without making it too easy to censor | — Pending |
+| Decision                            | Rationale                                                                      | Outcome   |
+| ----------------------------------- | ------------------------------------------------------------------------------ | --------- |
+| Single-table DynamoDB               | Minimize read latency, simplify access patterns for session-scoped data        | — Pending |
+| Single AppSync subscription channel | Reduces connection overhead; union type keeps it typed                         | — Pending |
+| Device fingerprint over IP          | Shared networks (conference WiFi) would cause false positives with IP tracking | — Pending |
+| Host-only clipboard                 | Keeps the feed curated and relevant to the presentation                        | — Pending |
+| Shiki dual-theme                    | Prevents layout shift on theme toggle, better UX than CSS-only approach        | — Pending |
+| 50% downvote threshold              | Balances community moderation power without making it too easy to censor       | — Pending |
 
 ---
-*Last updated: 2026-03-15 after milestone v1.1 start*
+
+_Last updated: 2026-03-15 after milestone v1.2 definition_
