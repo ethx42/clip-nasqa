@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/navigation';
+import { useLocale } from "next-intl";
+
+import { usePathname, useRouter } from "@/i18n/navigation";
 
 const LOCALES = [
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'pt', label: 'PT' },
+  { code: "en", label: "EN" },
+  { code: "es", label: "ES" },
+  { code: "pt", label: "PT" },
 ] as const;
 
-type Locale = (typeof LOCALES)[number]['code'];
+type Locale = (typeof LOCALES)[number]["code"];
 
 export function LanguageSwitcher() {
   const locale = useLocale();
@@ -29,8 +30,8 @@ export function LanguageSwitcher() {
             onClick={() => handleLocaleChange(l.code)}
             className={
               locale === l.code
-                ? 'font-semibold text-foreground'
-                : 'text-muted-foreground hover:text-foreground transition-colors'
+                ? "font-semibold text-foreground"
+                : "text-muted-foreground hover:text-foreground transition-colors"
             }
           >
             {l.label}

@@ -1,13 +1,7 @@
-import QRCode from 'qrcode';
+import QRCode from "qrcode";
 
-export async function QRCodeDisplay({
-  url,
-  size = 200,
-}: {
-  url: string;
-  size?: number;
-}) {
-  const svg = await QRCode.toString(url, { type: 'svg', width: size, margin: 2 });
+export async function QRCodeDisplay({ url, size = 200 }: { url: string; size?: number }) {
+  const svg = await QRCode.toString(url, { type: "svg", width: size, margin: 2 });
 
   return (
     <div

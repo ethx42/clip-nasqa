@@ -1,14 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useCallback, useState } from 'react';
-import { Hub } from 'aws-amplify/utils';
-import { CONNECTION_STATE_CHANGE, ConnectionState } from 'aws-amplify/api';
-import type { Snippet, Question, Reply } from '@nasqa/core';
-import { appsyncClient } from '@/lib/appsync-client';
-import { ON_SESSION_UPDATE } from '@/lib/graphql/subscriptions';
-import type { SessionAction } from './use-session-state';
+import { CONNECTION_STATE_CHANGE, ConnectionState } from "aws-amplify/api";
+import { Hub } from "aws-amplify/utils";
+import { useCallback, useEffect, useState } from "react";
 
-export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+import type { Question, Reply, Snippet } from "@nasqa/core";
+
+import { appsyncClient } from "@/lib/appsync-client";
+import { ON_SESSION_UPDATE } from "@/lib/graphql/subscriptions";
+
+import type { SessionAction } from "./use-session-state";
+
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 /**
  * Safely parse an AWSJSON value that may be:
@@ -17,11 +20,11 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
  * - a double-encoded JSON string (AppSync serialized the resolver's JSON.stringify output again)
  */
 function parseAwsJson(value: unknown): unknown {
-  if (typeof value === 'object' && value !== null) return value;
-  if (typeof value !== 'string') return value;
+  if (typeof value === "object" && value !== null) return value;
+  if (typeof value !== "string") return value;
   let result: unknown = JSON.parse(value);
   // If still a string after first parse, it was double-encoded
-  if (typeof result === 'string') {
+  if (typeof result === "string") {
     result = JSON.parse(result);
   }
   return result;
@@ -41,17 +44,17 @@ interface UseSessionUpdatesResult {
 function mapConnectionState(state: ConnectionState): ConnectionStatus {
   switch (state) {
     case ConnectionState.Connected:
-      return 'connected';
+      return "connected";
     case ConnectionState.Connecting:
     case ConnectionState.ConnectionDisrupted:
     case ConnectionState.ConnectedPendingKeepAlive:
     case ConnectionState.ConnectedPendingNetwork:
     case ConnectionState.ConnectedPendingDisconnect:
-      return 'connecting';
+      return "connecting";
     case ConnectionState.Disconnected:
-      return 'disconnected';
+      return "disconnected";
     default:
-      return 'connecting';
+      return "connecting";
   }
 }
 
@@ -67,20 +70,17 @@ function mapConnectionState(state: ConnectionState): ConnectionStatus {
  */
 export function useSessionUpdates(
   sessionSlug: string,
-  dispatch: React.Dispatch<SessionAction>
+  dispatch: React.Dispatch<SessionAction>,
 ): UseSessionUpdatesResult {
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [lastHostActivity, setLastHostActivity] = useState<number | null>(null);
 
   // Stable dispatch reference — prevents re-subscription on every render
-  const stableDispatch = useCallback(
-    (action: SessionAction) => dispatch(action),
-    [dispatch]
-  );
+  const stableDispatch = useCallback((action: SessionAction) => dispatch(action), [dispatch]);
 
   // Listen for Amplify connection state changes via Hub
   useEffect(() => {
-    const stopListening = Hub.listen('api', (data) => {
+    const stopListening = Hub.listen("api", (data) => {
       const { payload } = data;
       if (payload.event === CONNECTION_STATE_CHANGE) {
         const state = (payload.data as { connectionState: ConnectionState }).connectionState;
@@ -93,7 +93,7 @@ export function useSessionUpdates(
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting connection status when subscription is re-established
-    setConnectionStatus('connecting');
+    setConnectionStatus("connecting");
 
     interface AppSyncSubscription {
       subscribe(handlers: {
@@ -120,24 +120,24 @@ export function useSessionUpdates(
           const parsed = parseAwsJson(payload);
 
           switch (eventType) {
-            case 'SNIPPET_ADDED': {
-              stableDispatch({ type: 'SNIPPET_ADDED', payload: parsed as Snippet });
+            case "SNIPPET_ADDED": {
+              stableDispatch({ type: "SNIPPET_ADDED", payload: parsed as Snippet });
               setLastHostActivity(Date.now());
               break;
             }
-            case 'SNIPPET_DELETED': {
-              stableDispatch({ type: 'SNIPPET_DELETED', payload: parsed as { snippetId: string } });
+            case "SNIPPET_DELETED": {
+              stableDispatch({ type: "SNIPPET_DELETED", payload: parsed as { snippetId: string } });
               break;
             }
-            case 'CLIPBOARD_CLEARED': {
-              stableDispatch({ type: 'CLIPBOARD_CLEARED' });
+            case "CLIPBOARD_CLEARED": {
+              stableDispatch({ type: "CLIPBOARD_CLEARED" });
               break;
             }
-            case 'QUESTION_ADDED': {
-              stableDispatch({ type: 'QUESTION_ADDED', payload: parsed as Question });
+            case "QUESTION_ADDED": {
+              stableDispatch({ type: "QUESTION_ADDED", payload: parsed as Question });
               break;
             }
-            case 'QUESTION_UPDATED': {
+            case "QUESTION_UPDATED": {
               const { questionId, upvoteCount, downvoteCount, isFocused, isBanned, isHidden } =
                 parsed as {
                   questionId: string;
@@ -148,30 +148,30 @@ export function useSessionUpdates(
                   isHidden?: boolean;
                 };
               stableDispatch({
-                type: 'QUESTION_UPDATED',
+                type: "QUESTION_UPDATED",
                 payload: { questionId, upvoteCount, downvoteCount, isFocused, isBanned, isHidden },
               });
               break;
             }
-            case 'PARTICIPANT_BANNED': {
+            case "PARTICIPANT_BANNED": {
               const { fingerprint } = parsed as { fingerprint: string };
-              stableDispatch({ type: 'PARTICIPANT_BANNED', payload: { fingerprint } });
+              stableDispatch({ type: "PARTICIPANT_BANNED", payload: { fingerprint } });
               break;
             }
-            case 'REPLY_ADDED': {
-              stableDispatch({ type: 'REPLY_ADDED', payload: parsed as Reply });
+            case "REPLY_ADDED": {
+              stableDispatch({ type: "REPLY_ADDED", payload: parsed as Reply });
               break;
             }
             default:
-              console.warn('[useSessionUpdates] Unknown eventType:', eventType);
+              console.warn("[useSessionUpdates] Unknown eventType:", eventType);
           }
         } catch (err) {
-          console.error('[useSessionUpdates] Failed to parse event payload:', err, payload);
+          console.error("[useSessionUpdates] Failed to parse event payload:", err, payload);
         }
       },
       error: (err: unknown) => {
-        console.error('[useSessionUpdates] Subscription error:', err);
-        setConnectionStatus('disconnected');
+        console.error("[useSessionUpdates] Subscription error:", err);
+        setConnectionStatus("disconnected");
       },
     });
 

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-const FINGERPRINT_KEY = 'nasqa_fingerprint';
+const FINGERPRINT_KEY = "nasqa_fingerprint";
 
 function votesKey(sessionSlug: string): string {
   return `votes:${sessionSlug}`;
@@ -31,7 +31,7 @@ interface FingerprintResult {
  * - addVote / removeVote / addDownvote / removeDownvote persist changes back to localStorage.
  */
 export function useFingerprint(sessionSlug: string): FingerprintResult {
-  const [fingerprint, setFingerprint] = useState<string>('');
+  const [fingerprint, setFingerprint] = useState<string>("");
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
   const [downvotedIds, setDownvotedIds] = useState<Set<string>>(new Set());
 
@@ -76,7 +76,7 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
         return next;
       });
     },
-    [sessionSlug]
+    [sessionSlug],
   );
 
   const removeVote = useCallback(
@@ -88,7 +88,7 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
         return next;
       });
     },
-    [sessionSlug]
+    [sessionSlug],
   );
 
   const addDownvote = useCallback(
@@ -100,7 +100,7 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
         return next;
       });
     },
-    [sessionSlug]
+    [sessionSlug],
   );
 
   const removeDownvote = useCallback(
@@ -112,7 +112,7 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
         return next;
       });
     },
-    [sessionSlug]
+    [sessionSlug],
   );
 
   return { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote };

@@ -1,12 +1,7 @@
-'use server';
+"use server";
 
-import { appsyncMutation } from '@/lib/appsync-server';
-import {
-  ADD_QUESTION,
-  UPVOTE_QUESTION,
-  ADD_REPLY,
-  FOCUS_QUESTION,
-} from '@/lib/graphql/mutations';
+import { appsyncMutation } from "@/lib/appsync-server";
+import { ADD_QUESTION, ADD_REPLY, FOCUS_QUESTION, UPVOTE_QUESTION } from "@/lib/graphql/mutations";
 
 export async function addQuestionAction(args: {
   sessionSlug: string;
@@ -15,18 +10,18 @@ export async function addQuestionAction(args: {
   authorName?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (args.text.length > 500) {
-    return { ok: false, error: 'Question must be 500 characters or fewer' };
+    return { ok: false, error: "Question must be 500 characters or fewer" };
   }
   if (args.text.trim().length === 0) {
-    return { ok: false, error: 'Question cannot be empty' };
+    return { ok: false, error: "Question cannot be empty" };
   }
 
   try {
     await appsyncMutation(ADD_QUESTION, args);
     return { ok: true };
   } catch (err) {
-    console.error('addQuestionAction error:', err);
-    return { ok: false, error: 'Failed to submit question' };
+    console.error("addQuestionAction error:", err);
+    return { ok: false, error: "Failed to submit question" };
   }
 }
 
@@ -41,11 +36,11 @@ export async function upvoteQuestionAction(args: {
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (message.includes('VOTE_CONFLICT')) {
-      return { ok: false, error: 'VOTE_CONFLICT' };
+    if (message.includes("VOTE_CONFLICT")) {
+      return { ok: false, error: "VOTE_CONFLICT" };
     }
-    console.error('upvoteQuestionAction error:', err);
-    return { ok: false, error: 'Failed to upvote question' };
+    console.error("upvoteQuestionAction error:", err);
+    return { ok: false, error: "Failed to upvote question" };
   }
 }
 
@@ -58,18 +53,18 @@ export async function addReplyAction(args: {
   authorName?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (args.text.length > 500) {
-    return { ok: false, error: 'Reply must be 500 characters or fewer' };
+    return { ok: false, error: "Reply must be 500 characters or fewer" };
   }
   if (args.text.trim().length === 0) {
-    return { ok: false, error: 'Reply cannot be empty' };
+    return { ok: false, error: "Reply cannot be empty" };
   }
 
   try {
     await appsyncMutation(ADD_REPLY, args);
     return { ok: true };
   } catch (err) {
-    console.error('addReplyAction error:', err);
-    return { ok: false, error: 'Failed to submit reply' };
+    console.error("addReplyAction error:", err);
+    return { ok: false, error: "Failed to submit reply" };
   }
 }
 
@@ -82,7 +77,7 @@ export async function focusQuestionAction(args: {
     await appsyncMutation(FOCUS_QUESTION, args);
     return { ok: true };
   } catch (err) {
-    console.error('focusQuestionAction error:', err);
-    return { ok: false, error: 'Failed to focus question' };
+    console.error("focusQuestionAction error:", err);
+    return { ok: false, error: "Failed to focus question" };
   }
 }

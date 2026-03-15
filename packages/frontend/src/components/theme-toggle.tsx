@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useSyncExternalStore } from 'react';
-import { useTheme } from 'next-themes';
-import { Sun, Moon } from 'lucide-react';
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
 
 function subscribe() {
   return () => {};
@@ -36,14 +36,10 @@ export function ThemeToggle() {
   return (
     <button
       aria-label="Toggle theme"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       className="inline-flex items-center justify-center rounded-md p-2 hover:bg-accent transition-colors"
     >
-      {theme === 'dark' ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
+      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </button>
   );
 }

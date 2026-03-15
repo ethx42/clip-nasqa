@@ -1,5 +1,6 @@
-import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
+import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+
 import { docClient } from "./index";
 
 function tableName(): string {
@@ -18,7 +19,7 @@ function tableName(): string {
 export async function checkRateLimit(
   key: string,
   limit: number,
-  windowSeconds = 60
+  windowSeconds = 60,
 ): Promise<void> {
   const nowEpoch = Math.floor(Date.now() / 1000);
   const bucket = Math.floor(nowEpoch / windowSeconds) * windowSeconds;
@@ -43,7 +44,7 @@ export async function checkRateLimit(
           ":ttl": ttl,
           ":limit": limit,
         },
-      })
+      }),
     );
   } catch (err) {
     if (err instanceof ConditionalCheckFailedException) {
@@ -59,10 +60,7 @@ export async function checkRateLimit(
  * @param fingerprint - participant fingerprint
  * @throws Error('PARTICIPANT_BANNED') if the participant is banned
  */
-export async function checkNotBanned(
-  sessionSlug: string,
-  fingerprint: string
-): Promise<void> {
+export async function checkNotBanned(sessionSlug: string, fingerprint: string): Promise<void> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
@@ -70,7 +68,7 @@ export async function checkNotBanned(
         PK: `SESSION#${sessionSlug}`,
         SK: `BAN#${fingerprint}`,
       },
-    })
+    }),
   );
 
   if (result.Item?.isBanned === true) {

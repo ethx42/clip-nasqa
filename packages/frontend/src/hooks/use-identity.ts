@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-const IDENTITY_KEY = 'nasqa_identity';
+const IDENTITY_KEY = "nasqa_identity";
 
 interface Identity {
   name?: string;
@@ -19,7 +19,7 @@ interface IdentityResult {
 }
 
 // Custom event name for cross-instance sync within the same tab
-const IDENTITY_CHANGE_EVENT = 'nasqa_identity_change';
+const IDENTITY_CHANGE_EVENT = "nasqa_identity_change";
 
 export function useIdentity(): IdentityResult {
   const [identity, setIdentityState] = useState<Identity>({});
@@ -42,7 +42,9 @@ export function useIdentity(): IdentityResult {
       try {
         const raw = localStorage.getItem(IDENTITY_KEY);
         setIdentityState(raw ? (JSON.parse(raw) as Identity) : {});
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     window.addEventListener(IDENTITY_CHANGE_EVENT, handleChange);
     return () => window.removeEventListener(IDENTITY_CHANGE_EVENT, handleChange);

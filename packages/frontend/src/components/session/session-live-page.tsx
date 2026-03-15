@@ -219,6 +219,8 @@ export function SessionLivePage({
       <SessionShell
         title={session.title}
         sessionSlug={sessionSlug}
+        snippetCount={state.snippets.length}
+        questionCount={state.questions.length}
         liveIndicator={
           <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
         }

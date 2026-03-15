@@ -6,20 +6,20 @@
  */
 export async function appsyncMutation<T = unknown>(
   query: string,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
 ): Promise<T> {
   const url = process.env.NEXT_PUBLIC_APPSYNC_URL;
   const apiKey = process.env.NEXT_PUBLIC_APPSYNC_API_KEY;
 
   if (!url || !apiKey) {
-    throw new Error('AppSync URL or API key not configured');
+    throw new Error("AppSync URL or API key not configured");
   }
 
   const res = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
     },
     body: JSON.stringify({ query, variables }),
   });
@@ -27,7 +27,7 @@ export async function appsyncMutation<T = unknown>(
   const body = await res.json();
 
   if (body.errors?.length) {
-    const msg = body.errors.map((e: { message: string }) => e.message).join('; ');
+    const msg = body.errors.map((e: { message: string }) => e.message).join("; ");
     throw new Error(msg);
   }
 

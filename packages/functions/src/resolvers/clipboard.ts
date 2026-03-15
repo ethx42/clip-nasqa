@@ -1,8 +1,22 @@
-import { GetCommand, PutCommand, DeleteCommand, QueryCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  BatchWriteCommand,
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
+
+import type {
+  ClearClipboardArgs,
+  DeleteSnippetArgs,
+  PushSnippetArgs,
+  SessionEventType,
+  SessionUpdate,
+} from "@nasqa/core";
+
 import { docClient } from "./index";
 import { checkRateLimit } from "./rate-limit";
-import type { PushSnippetArgs, DeleteSnippetArgs, ClearClipboardArgs, SessionUpdate, SessionEventType } from "@nasqa/core";
 
 function tableName(): string {
   const name = process.env.TABLE_NAME;
@@ -18,7 +32,7 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
         PK: `SESSION#${sessionSlug}`,
         SK: `SESSION#${sessionSlug}`,
       },
-    })
+    }),
   );
   if (!result.Item || result.Item.hostSecretHash !== hostSecretHash) {
     throw new Error("Unauthorized");
@@ -52,13 +66,21 @@ export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate>
     new PutCommand({
       TableName: tableName(),
       Item: snippet,
-    })
+    }),
   );
 
   return {
     eventType: "SNIPPET_ADDED" as SessionEventType,
     sessionSlug,
-    payload: JSON.stringify({ id, sessionSlug, type, content, language: language ?? null, createdAt: now, TTL: ttl }),
+    payload: JSON.stringify({
+      id,
+      sessionSlug,
+      type,
+      content,
+      language: language ?? null,
+      createdAt: now,
+      TTL: ttl,
+    }),
   };
 }
 
@@ -73,7 +95,7 @@ export async function deleteSnippet(args: DeleteSnippetArgs): Promise<SessionUpd
         PK: `SESSION#${sessionSlug}`,
         SK: `SNIPPET#${snippetId}`,
       },
-    })
+    }),
   );
 
   return {
@@ -96,7 +118,7 @@ export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionU
         ":pk": `SESSION#${sessionSlug}`,
         ":prefix": "SNIPPET#",
       },
-    })
+    }),
   );
 
   const items = queryResult.Items ?? [];
@@ -113,7 +135,7 @@ export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionU
             },
           })),
         },
-      })
+      }),
     );
   }
 

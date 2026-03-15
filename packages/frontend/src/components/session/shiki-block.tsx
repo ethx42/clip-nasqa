@@ -1,6 +1,7 @@
-import { codeToHtml } from 'shiki';
-import type { BundledLanguage } from 'shiki';
-import { linkifyText } from '@/lib/linkify';
+import { codeToHtml } from "shiki";
+import type { BundledLanguage } from "shiki";
+
+import { linkifyText } from "@/lib/linkify";
 
 interface ShikiBlockProps {
   code: string;
@@ -14,7 +15,7 @@ interface ShikiBlockProps {
  * No 'use client' — keeps Shiki entirely out of the client bundle.
  */
 export async function ShikiBlock({ code, lang, showLineNumbers = false }: ShikiBlockProps) {
-  if (lang === 'text') {
+  if (lang === "text") {
     return (
       <pre className="whitespace-pre-wrap break-words font-sans text-sm text-foreground leading-relaxed">
         {linkifyText(code)}
@@ -28,14 +29,14 @@ export async function ShikiBlock({ code, lang, showLineNumbers = false }: ShikiB
     html = await codeToHtml(code, {
       lang: lang as BundledLanguage,
       themes: {
-        light: 'github-light',
-        dark: 'github-dark',
+        light: "github-light",
+        dark: "github-dark",
       },
       transformers: showLineNumbers
         ? [
             {
               line(node, line) {
-                node.properties['data-line'] = line;
+                node.properties["data-line"] = line;
               },
             },
           ]
@@ -52,7 +53,7 @@ export async function ShikiBlock({ code, lang, showLineNumbers = false }: ShikiB
 
   return (
     <div
-      className={`shiki-wrapper overflow-x-auto text-sm leading-relaxed ${showLineNumbers ? 'shiki-line-numbers' : ''}`}
+      className={`shiki-wrapper overflow-x-auto text-sm leading-relaxed ${showLineNumbers ? "shiki-line-numbers" : ""}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

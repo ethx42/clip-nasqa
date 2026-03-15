@@ -291,6 +291,8 @@ export function SessionLiveHostPage({
       sessionSlug={sessionSlug}
       isHost
       hostToolbar={hostToolbar}
+      snippetCount={state.snippets.length}
+      questionCount={state.questions.length}
       liveIndicator={
         <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
       }

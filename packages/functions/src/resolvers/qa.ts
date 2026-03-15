@@ -1,9 +1,18 @@
-import { GetCommand, PutCommand, UpdateCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
+import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
+
+import type {
+  AddQuestionArgs,
+  AddReplyArgs,
+  FocusQuestionArgs,
+  SessionEventType,
+  SessionUpdate,
+  UpvoteQuestionArgs,
+} from "@nasqa/core";
+
 import { docClient } from "./index";
 import { checkNotBanned, checkRateLimit } from "./rate-limit";
-import type { AddQuestionArgs, UpvoteQuestionArgs, AddReplyArgs, FocusQuestionArgs, SessionUpdate, SessionEventType } from "@nasqa/core";
 
 function tableName(): string {
   const name = process.env.TABLE_NAME;
@@ -19,7 +28,7 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
         PK: `SESSION#${sessionSlug}`,
         SK: `SESSION#${sessionSlug}`,
       },
-    })
+    }),
   );
   if (!result.Item || result.Item.hostSecretHash !== hostSecretHash) {
     throw new Error("Unauthorized");
@@ -65,13 +74,26 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
     new PutCommand({
       TableName: tableName(),
       Item: question,
-    })
+    }),
   );
 
   return {
     eventType: "QUESTION_ADDED" as SessionEventType,
     sessionSlug,
-    payload: JSON.stringify({ id, sessionSlug, text, fingerprint, authorName: authorName ?? null, upvoteCount: 0, downvoteCount: 0, isHidden: false, isFocused: false, isBanned: false, createdAt: now, TTL: ttl }),
+    payload: JSON.stringify({
+      id,
+      sessionSlug,
+      text,
+      fingerprint,
+      authorName: authorName ?? null,
+      upvoteCount: 0,
+      downvoteCount: 0,
+      isHidden: false,
+      isFocused: false,
+      isBanned: false,
+      createdAt: now,
+      TTL: ttl,
+    }),
   };
 }
 
@@ -107,7 +129,7 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
           ":fpSet": new Set([fingerprint]),
         },
         ReturnValues: "ALL_NEW",
-      })
+      }),
     );
     newUpvoteCount = (result.Attributes?.upvoteCount as number) ?? 0;
   } catch (err) {
@@ -159,13 +181,23 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
     new PutCommand({
       TableName: tableName(),
       Item: reply,
-    })
+    }),
   );
 
   return {
     eventType: "REPLY_ADDED" as SessionEventType,
     sessionSlug,
-    payload: JSON.stringify({ id, questionId, sessionSlug, text, isHostReply, fingerprint, authorName: authorName ?? null, createdAt: now, TTL: ttl }),
+    payload: JSON.stringify({
+      id,
+      questionId,
+      sessionSlug,
+      text,
+      isHostReply,
+      fingerprint,
+      authorName: authorName ?? null,
+      createdAt: now,
+      TTL: ttl,
+    }),
   };
 }
 
@@ -184,7 +216,7 @@ export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpd
         ":prefix": "QUESTION#",
         ":true": true,
       },
-    })
+    }),
   );
 
   // Unfocus all currently focused questions
@@ -195,8 +227,8 @@ export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpd
         Key: { PK: item.PK, SK: item.SK },
         UpdateExpression: "SET isFocused = :false",
         ExpressionAttributeValues: { ":false": false },
-      })
-    )
+      }),
+    ),
   );
   await Promise.all(unfocusPromises);
 
@@ -211,7 +243,7 @@ export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpd
         },
         UpdateExpression: "SET isFocused = :true",
         ExpressionAttributeValues: { ":true": true },
-      })
+      }),
     );
   }
 

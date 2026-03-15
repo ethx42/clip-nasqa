@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import { useReducer, useCallback } from 'react';
-import type { Snippet, Question, Reply } from '@nasqa/core';
+import { useCallback, useReducer } from "react";
+
+import type { Question, Reply, Snippet } from "@nasqa/core";
 
 // ── Action types ──────────────────────────────────────────────────────────────
 
 export type SessionAction =
-  | { type: 'SNIPPET_ADDED'; payload: Snippet; optimisticId?: string }
-  | { type: 'SNIPPET_DELETED'; payload: { snippetId: string } }
-  | { type: 'CLIPBOARD_CLEARED' }
-  | { type: 'QUESTION_ADDED'; payload: Question; optimisticId?: string }
+  | { type: "SNIPPET_ADDED"; payload: Snippet; optimisticId?: string }
+  | { type: "SNIPPET_DELETED"; payload: { snippetId: string } }
+  | { type: "CLIPBOARD_CLEARED" }
+  | { type: "QUESTION_ADDED"; payload: Question; optimisticId?: string }
   | {
-      type: 'QUESTION_UPDATED';
+      type: "QUESTION_UPDATED";
       payload: {
         questionId: string;
         upvoteDelta?: number;
@@ -22,11 +23,11 @@ export type SessionAction =
         isHidden?: boolean;
       };
     }
-  | { type: 'PARTICIPANT_BANNED'; payload: { fingerprint: string } }
-  | { type: 'REPLY_ADDED'; payload: Reply }
-  | { type: 'ADD_SNIPPET_OPTIMISTIC'; payload: Snippet }
-  | { type: 'ADD_QUESTION_OPTIMISTIC'; payload: Question }
-  | { type: 'REMOVE_OPTIMISTIC'; payload: { id: string } };
+  | { type: "PARTICIPANT_BANNED"; payload: { fingerprint: string } }
+  | { type: "REPLY_ADDED"; payload: Reply }
+  | { type: "ADD_SNIPPET_OPTIMISTIC"; payload: Snippet }
+  | { type: "ADD_QUESTION_OPTIMISTIC"; payload: Question }
+  | { type: "REMOVE_OPTIMISTIC"; payload: { id: string } };
 
 // ── State shape ───────────────────────────────────────────────────────────────
 
@@ -45,15 +46,13 @@ interface SessionState {
 
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
-    case 'SNIPPET_ADDED': {
+    case "SNIPPET_ADDED": {
       let snippets: Snippet[];
       if (action.optimisticId) {
         // Replace optimistic placeholder if present
         const replaced = state.snippets.some((s) => s.id === action.optimisticId);
         snippets = replaced
-          ? state.snippets.map((s) =>
-              s.id === action.optimisticId ? action.payload : s
-            )
+          ? state.snippets.map((s) => (s.id === action.optimisticId ? action.payload : s))
           : [action.payload, ...state.snippets];
       } else {
         // Deduplicate: avoid adding if already present (e.g. after optimistic update)
@@ -67,46 +66,46 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
       };
     }
 
-    case 'SNIPPET_DELETED': {
+    case "SNIPPET_DELETED": {
       return {
         ...state,
         snippets: state.snippets.filter((s) => s.id !== action.payload.snippetId),
       };
     }
 
-    case 'CLIPBOARD_CLEARED': {
+    case "CLIPBOARD_CLEARED": {
       return { ...state, snippets: [] };
     }
 
-    case 'QUESTION_ADDED': {
+    case "QUESTION_ADDED": {
       const q = action.payload;
       const exists = state.questions.some((x) => x.id === q.id);
       if (exists) return state;
       // Replace optimistic question (_opt_ ID) with the real one from subscription
-      const hasOptimistic = q.id.startsWith('_opt_')
+      const hasOptimistic = q.id.startsWith("_opt_")
         ? false
         : state.questions.some(
             (x) =>
-              x.id.startsWith('_opt_') &&
+              x.id.startsWith("_opt_") &&
               x.sessionSlug === q.sessionSlug &&
               x.fingerprint === q.fingerprint &&
-              x.text === q.text
+              x.text === q.text,
           );
       const filtered = hasOptimistic
         ? state.questions.filter(
             (x) =>
               !(
-                x.id.startsWith('_opt_') &&
+                x.id.startsWith("_opt_") &&
                 x.sessionSlug === q.sessionSlug &&
                 x.fingerprint === q.fingerprint &&
                 x.text === q.text
-              )
+              ),
           )
         : state.questions;
       return { ...state, questions: [...filtered, q] };
     }
 
-    case 'QUESTION_UPDATED': {
+    case "QUESTION_UPDATED": {
       const { questionId, upvoteDelta, upvoteCount, downvoteCount, isFocused, isBanned, isHidden } =
         action.payload;
       const questions = state.questions.map((q) => {
@@ -132,55 +131,55 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
       return { ...state, questions };
     }
 
-    case 'PARTICIPANT_BANNED': {
+    case "PARTICIPANT_BANNED": {
       const next = new Set(state.bannedFingerprints);
       next.add(action.payload.fingerprint);
       return { ...state, bannedFingerprints: next };
     }
 
-    case 'REPLY_ADDED': {
+    case "REPLY_ADDED": {
       const reply = action.payload;
       const exists = state.replies.some((r) => r.id === reply.id);
       if (exists) return state;
       // Replace optimistic reply (temp _opt_ ID) with real one from subscription
-      const hasOptimistic = reply.id.startsWith('_opt_')
+      const hasOptimistic = reply.id.startsWith("_opt_")
         ? false
         : state.replies.some(
             (r) =>
-              r.id.startsWith('_opt_') &&
+              r.id.startsWith("_opt_") &&
               r.questionId === reply.questionId &&
               r.fingerprint === reply.fingerprint &&
-              r.text === reply.text
+              r.text === reply.text,
           );
       const filtered = hasOptimistic
         ? state.replies.filter(
             (r) =>
               !(
-                r.id.startsWith('_opt_') &&
+                r.id.startsWith("_opt_") &&
                 r.questionId === reply.questionId &&
                 r.fingerprint === reply.fingerprint &&
                 r.text === reply.text
-              )
+              ),
           )
         : state.replies;
       return { ...state, replies: [...filtered, reply] };
     }
 
-    case 'ADD_SNIPPET_OPTIMISTIC': {
+    case "ADD_SNIPPET_OPTIMISTIC": {
       return {
         ...state,
         snippets: [action.payload, ...state.snippets],
       };
     }
 
-    case 'ADD_QUESTION_OPTIMISTIC': {
+    case "ADD_QUESTION_OPTIMISTIC": {
       return {
         ...state,
         questions: [...state.questions, action.payload],
       };
     }
 
-    case 'REMOVE_OPTIMISTIC': {
+    case "REMOVE_OPTIMISTIC": {
       return {
         ...state,
         snippets: state.snippets.filter((s) => s.id !== action.payload.id),
@@ -232,8 +231,14 @@ export function useSessionState(initialData: {
       state.replies
         .filter((r) => r.questionId === questionId)
         .sort((a, b) => a.createdAt - b.createdAt),
-    [state.replies]
+    [state.replies],
   );
 
-  return { state, dispatch, sortedQuestions, repliesByQuestion, bannedFingerprints: state.bannedFingerprints };
+  return {
+    state,
+    dispatch,
+    sortedQuestions,
+    repliesByQuestion,
+    bannedFingerprints: state.bannedFingerprints,
+  };
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Poppins, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Poppins } from "next/font/google";
+
 import "./globals.css";
+
 import { Providers } from "@/components/providers";
 
 const poppins = Poppins({
@@ -27,9 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${poppins.className} ${jetbrainsMono.variable} antialiased`}
-      >
+      <body className={`${poppins.className} ${jetbrainsMono.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -1,6 +1,8 @@
-import { GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { docClient, tableName } from '@/lib/dynamo';
-import type { Snippet, Question, Reply } from '@nasqa/core';
+import { GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+
+import type { Question, Reply, Snippet } from "@nasqa/core";
+
+import { docClient, tableName } from "@/lib/dynamo";
 
 export interface Session {
   slug: string;
@@ -18,7 +20,7 @@ export async function getSession(slug: string): Promise<Session | null> {
         PK: `SESSION#${slug}`,
         SK: `SESSION#${slug}`,
       },
-    })
+    }),
   );
 
   const item = result.Item;
@@ -61,11 +63,11 @@ export async function getSessionData(slug: string): Promise<SessionData> {
   const result = await docClient.send(
     new QueryCommand({
       TableName: tableName(),
-      KeyConditionExpression: 'PK = :pk',
+      KeyConditionExpression: "PK = :pk",
       ExpressionAttributeValues: {
-        ':pk': `SESSION#${slug}`,
+        ":pk": `SESSION#${slug}`,
       },
-    })
+    }),
   );
 
   const items = result.Items ?? [];
@@ -79,7 +81,7 @@ export async function getSessionData(slug: string): Promise<SessionData> {
     // Skip expired items
     if (item.TTL && (item.TTL as number) < now) continue;
 
-    if (sk.startsWith('SNIPPET#')) {
+    if (sk.startsWith("SNIPPET#")) {
       snippets.push({
         id: item.id as string,
         sessionSlug: item.sessionSlug as string,
@@ -89,7 +91,7 @@ export async function getSessionData(slug: string): Promise<SessionData> {
         createdAt: item.createdAt as number,
         TTL: item.TTL as number,
       });
-    } else if (sk.startsWith('QUESTION#')) {
+    } else if (sk.startsWith("QUESTION#")) {
       questions.push({
         id: item.id as string,
         sessionSlug: item.sessionSlug as string,
@@ -104,7 +106,7 @@ export async function getSessionData(slug: string): Promise<SessionData> {
         createdAt: item.createdAt as number,
         TTL: item.TTL as number,
       });
-    } else if (sk.startsWith('REPLY#')) {
+    } else if (sk.startsWith("REPLY#")) {
       replies.push({
         id: item.id as string,
         questionId: item.questionId as string,

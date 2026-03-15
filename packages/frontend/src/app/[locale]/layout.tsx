@@ -1,7 +1,8 @@
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
+
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function LocaleLayout({
   children,

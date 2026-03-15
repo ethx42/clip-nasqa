@@ -1,12 +1,12 @@
-'use server';
+"use server";
 
-import { appsyncMutation } from '@/lib/appsync-server';
+import { appsyncMutation } from "@/lib/appsync-server";
 import {
-  BAN_QUESTION,
   BAN_PARTICIPANT,
+  BAN_QUESTION,
   DOWNVOTE_QUESTION,
   RESTORE_QUESTION,
-} from '@/lib/graphql/mutations';
+} from "@/lib/graphql/mutations";
 
 export async function banQuestionAction(args: {
   sessionSlug: string;
@@ -17,8 +17,8 @@ export async function banQuestionAction(args: {
     await appsyncMutation(BAN_QUESTION, args);
     return { ok: true };
   } catch (err) {
-    console.error('banQuestionAction error:', err);
-    return { ok: false, error: 'Failed to ban question' };
+    console.error("banQuestionAction error:", err);
+    return { ok: false, error: "Failed to ban question" };
   }
 }
 
@@ -31,8 +31,8 @@ export async function banParticipantAction(args: {
     await appsyncMutation(BAN_PARTICIPANT, args);
     return { ok: true };
   } catch (err) {
-    console.error('banParticipantAction error:', err);
-    return { ok: false, error: 'Failed to ban participant' };
+    console.error("banParticipantAction error:", err);
+    return { ok: false, error: "Failed to ban participant" };
   }
 }
 
@@ -46,8 +46,8 @@ export async function downvoteQuestionAction(args: {
     await appsyncMutation(DOWNVOTE_QUESTION, args);
     return { ok: true };
   } catch (err) {
-    console.error('downvoteQuestionAction error:', err);
-    return { ok: false, error: 'Failed to downvote question' };
+    console.error("downvoteQuestionAction error:", err);
+    return { ok: false, error: "Failed to downvote question" };
   }
 }
 
@@ -60,7 +60,7 @@ export async function restoreQuestionAction(args: {
     await appsyncMutation(RESTORE_QUESTION, args);
     return { ok: true };
   } catch (err) {
-    console.error('restoreQuestionAction error:', err);
-    return { ok: false, error: 'Failed to restore question' };
+    console.error("restoreQuestionAction error:", err);
+    return { ok: false, error: "Failed to restore question" };
   }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * Converts a plain text string to React nodes with URLs wrapped in anchor tags.
@@ -24,7 +24,7 @@ export function linkifyText(text: string): React.ReactNode {
         className="text-emerald-500 underline underline-offset-2 hover:text-emerald-400 break-all"
       >
         {url}
-      </a>
+      </a>,
     );
     lastIndex = match.index + url.length;
   }

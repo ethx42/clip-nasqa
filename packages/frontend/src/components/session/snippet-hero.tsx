@@ -1,6 +1,7 @@
-import type { Snippet } from '@nasqa/core';
-import { ShikiBlock } from './shiki-block';
-import { CopyButton } from './copy-button';
+import type { Snippet } from "@nasqa/core";
+
+import { CopyButton } from "./copy-button";
+import { ShikiBlock } from "./shiki-block";
 
 interface SnippetHeroProps {
   snippet: Snippet;
@@ -13,11 +14,11 @@ function formatRelativeTime(createdAt: number): string {
   const now = Date.now();
   const diffMs = now - createdAt * 1000;
   const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin === 1) return '1m ago';
+  if (diffMin < 1) return "just now";
+  if (diffMin === 1) return "1m ago";
   if (diffMin < 60) return `${diffMin}m ago`;
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr === 1) return '1h ago';
+  if (diffHr === 1) return "1h ago";
   if (diffHr < 24) return `${diffHr}h ago`;
   return `${Math.floor(diffHr / 24)}d ago`;
 }
@@ -29,8 +30,8 @@ function formatRelativeTime(createdAt: number): string {
  * Also accepts pre-rendered highlightedHtml for use from Client Component parents.
  */
 export async function SnippetHero({ snippet, snippetNumber, highlightedHtml }: SnippetHeroProps) {
-  const lang = snippet.language ?? 'text';
-  const isCode = lang !== 'text';
+  const lang = snippet.language ?? "text";
+  const isCode = lang !== "text";
   const relativeTime = formatRelativeTime(snippet.createdAt);
 
   return (
@@ -40,9 +41,11 @@ export async function SnippetHero({ snippet, snippetNumber, highlightedHtml }: S
         <div className="flex items-center gap-3">
           {/* Language badge */}
           <span className="rounded-lg bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
-            {isCode ? lang : 'Text'}
+            {isCode ? lang : "Text"}
           </span>
-          <span className="text-base font-bold tabular-nums text-muted-foreground">#{snippetNumber}</span>
+          <span className="text-base font-bold tabular-nums text-muted-foreground">
+            #{snippetNumber}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
@@ -54,15 +57,11 @@ export async function SnippetHero({ snippet, snippetNumber, highlightedHtml }: S
       <div className="max-h-[30rem] overflow-y-auto rounded-xl bg-muted/30">
         {highlightedHtml ? (
           <div
-            className={`shiki-wrapper overflow-x-auto text-[15px] leading-relaxed ${isCode ? 'shiki-line-numbers' : ''}`}
+            className={`shiki-wrapper overflow-x-auto text-[15px] leading-relaxed ${isCode ? "shiki-line-numbers" : ""}`}
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}
           />
         ) : (
-          <ShikiBlock
-            code={snippet.content}
-            lang={lang}
-            showLineNumbers={isCode}
-          />
+          <ShikiBlock code={snippet.content} lang={lang} showLineNumbers={isCode} />
         )}
       </div>
     </div>

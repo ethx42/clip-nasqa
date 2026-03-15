@@ -1,6 +1,7 @@
-import type { Snippet } from '@nasqa/core';
-import { ShikiBlock } from './shiki-block';
-import { CopyButton } from './copy-button';
+import type { Snippet } from "@nasqa/core";
+
+import { CopyButton } from "./copy-button";
+import { ShikiBlock } from "./shiki-block";
 
 interface SnippetCardProps {
   snippet: Snippet;
@@ -12,11 +13,11 @@ function formatRelativeTime(createdAt: number): string {
   const now = Date.now();
   const diffMs = now - createdAt * 1000;
   const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin === 1) return '1m ago';
+  if (diffMin < 1) return "just now";
+  if (diffMin === 1) return "1m ago";
   if (diffMin < 60) return `${diffMin}m ago`;
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr === 1) return '1h ago';
+  if (diffHr === 1) return "1h ago";
   if (diffHr < 24) return `${diffHr}h ago`;
   return `${Math.floor(diffHr / 24)}d ago`;
 }
@@ -27,8 +28,8 @@ function formatRelativeTime(createdAt: number): string {
  * Click-to-expand toggle will be added in Plan 04 (client-side state).
  */
 export async function SnippetCard({ snippet, snippetNumber, expanded = false }: SnippetCardProps) {
-  const lang = snippet.language ?? 'text';
-  const isCode = lang !== 'text';
+  const lang = snippet.language ?? "text";
+  const isCode = lang !== "text";
   const relativeTime = formatRelativeTime(snippet.createdAt);
 
   return (
@@ -37,9 +38,11 @@ export async function SnippetCard({ snippet, snippetNumber, expanded = false }: 
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className="rounded-md px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground">
-            {isCode ? lang : 'Text'}
+            {isCode ? lang : "Text"}
           </span>
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">#{snippetNumber}</span>
+          <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+            #{snippetNumber}
+          </span>
         </div>
         <div className="flex items-center gap-2.5">
           <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
@@ -54,7 +57,9 @@ export async function SnippetCard({ snippet, snippetNumber, expanded = false }: 
         </div>
       ) : (
         <div className="line-clamp-3 overflow-hidden rounded-lg bg-muted/30 text-sm">
-          <pre className={`whitespace-pre-wrap break-words ${isCode ? 'font-mono' : 'font-sans'} p-3`}>
+          <pre
+            className={`whitespace-pre-wrap break-words ${isCode ? "font-mono" : "font-sans"} p-3`}
+          >
             {snippet.content}
           </pre>
         </div>
