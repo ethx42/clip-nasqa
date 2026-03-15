@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 MVP** - Phases 1-4 (shipped 2026-03-14)
 - 🚧 **v1.1 Enterprise Hardening** - Phases 5-8 (in progress)
+- ⏳ **v1.2 Reactions** - Phases 9-10 (queued)
 
 ## Phases
 
@@ -115,6 +116,13 @@ Plans:
 - [ ] **Phase 7: Error Handling and Observability** - Next.js error boundaries with graceful fallbacks, structured server actions, and pino structured logging in Lambda resolvers
 - [ ] **Phase 8: SEO and Accessibility** - Dynamic per-session metadata, robots/sitemap, semantic HTML landmarks, ARIA labels, and keyboard navigation across all components
 
+### ⏳ v1.2 Reactions (Queued)
+
+**Milestone Goal:** Add emoji reactions to Questions and Replies as a lightweight sentiment layer — fixed 6-emoji palette, per-device dedup, real-time propagation via existing subscription channel, and optimistic UI consistent with the existing vote system.
+
+- [ ] **Phase 9: Reactions Data Model and Backend** - Core types, GraphQL schema, Lambda resolver, rate limiting, ban enforcement, and real-time subscription broadcast for the `react` mutation
+- [ ] **Phase 10: Reactions Frontend State and UI** - Session state reducer extension, `useReactions` hook, `ReactionBar` component with optimistic toggle, ARIA labels, and 44px touch targets integrated into QuestionCard and ReplyCard
+
 ## Phase Details
 
 ### Phase 5: Code Quality Gates
@@ -176,10 +184,37 @@ Plans:
 5. Tabbing through the session page reaches every interactive element in logical order with a visible focus ring; the Q&A feed announces new questions to screen readers via an `aria-live` region
    **Plans**: TBD
 
+### Phase 9: Reactions Data Model and Backend
+
+**Goal**: The `react` GraphQL mutation is live — participants can add and toggle emoji reactions on Questions and Replies, counts are deduplicated per device fingerprint, rate limiting and ban enforcement are active, and reaction updates broadcast to all connected clients via the existing subscription channel
+**Depends on**: Phase 8
+**Requirements**: RXN-01, RXN-02, RXN-03, RXN-04, RXN-05, RXN-06, RXN-07, RXN-08, RXN-09, RXN-14
+**Success Criteria** (what must be TRUE):
+
+1. Calling the `react` mutation from the AppSync console with a valid emoji and Question/Reply ID updates the flat `rxn_<emoji>_count` attribute on that DynamoDB item and broadcasts a `REACTION_UPDATED` event to all subscribers within 200ms
+2. Calling the `react` mutation twice with the same emoji from the same device fingerprint results in a count of 1 (dedup via `rxn_<emoji>_reactors` Set); calling it a third time toggles the count back to 0
+3. A banned participant's `react` call is rejected; a participant who exceeds 30 reactions/minute receives a rate-limit error without consuming their question-submission budget
+4. The `REACTION_UPDATED` subscription payload contains only emoji counts (`{ targetId, targetType, emoji, counts }`) — no reactor fingerprints are included
+5. The `EMOJI_PALETTE` constant in `@nasqa/core` is the single source of truth for the 6 allowed emoji keys, validated by Zod — the Lambda resolver rejects any emoji argument not in the palette
+   **Plans**: TBD
+
+### Phase 10: Reactions Frontend State and UI
+
+**Goal**: The `ReactionBar` component is rendered below every Question and Reply with live emoji counts, optimistic toggle behavior, visual highlight for the user's own active reactions, full ARIA accessibility, and 44px mobile touch targets
+**Depends on**: Phase 9
+**Requirements**: RXN-10, RXN-11, RXN-12, RXN-13
+**Success Criteria** (what must be TRUE):
+
+1. Every QuestionCard and ReplyCard shows a `ReactionBar` with 6 emoji buttons; buttons with zero reactions are hidden; clicking any emoji button immediately toggles its visual state (optimistic) before server confirmation
+2. A participant's own active reactions are visually distinct from inactive ones (highlighted state); toggling an active reaction removes the highlight and decrements the displayed count
+3. When a `REACTION_UPDATED` subscription event arrives for an item, only that item's reaction counts update in place — no full list re-render; count display converges to the authoritative server value
+4. All 6 reaction buttons have `aria-label` strings in en, es, and pt (e.g., "React with thumbs up: 3 reactions") and carry `aria-pressed` to reflect active state; each button's touch target meets the 44px minimum on mobile
+   **Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 5 → 6 → 7 → 8
+Phases execute in numeric order: 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase                               | Milestone | Plans Complete | Status      | Completed  |
 | ----------------------------------- | --------- | -------------- | ----------- | ---------- |
@@ -187,7 +222,9 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. Session and View Shell           | v1.0      | 3/3            | Complete    | 2026-03-14 |
 | 3. Real-Time Core                   | v1.0      | 6/6            | Complete    | 2026-03-14 |
 | 4. Moderation, Identity, and Polish | v1.0      | 4/4            | Complete    | 2026-03-14 |
-| 5. Code Quality Gates               | 2/2       | Complete       | 2026-03-15  | -          |
+| 5. Code Quality Gates               | v1.1      | 2/2            | Complete    | 2026-03-15 |
 | 6. Testing and CI                   | v1.1      | 0/TBD          | Not started | -          |
 | 7. Error Handling and Observability | v1.1      | 0/TBD          | Not started | -          |
 | 8. SEO and Accessibility            | v1.1      | 0/TBD          | Not started | -          |
+| 9. Reactions Data Model and Backend | v1.2      | 0/TBD          | Not started | -          |
+| 10. Reactions Frontend State and UI | v1.2      | 0/TBD          | Not started | -          |

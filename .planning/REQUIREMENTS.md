@@ -101,55 +101,54 @@
 
 ## Traceability
 
-| Requirement | Phase   | Status   |
-| ----------- | ------- | -------- |
-| QUAL-01     | Phase 5 | Complete |
-| QUAL-02     | Phase 5 | Complete |
-| QUAL-03     | Phase 5 | Complete |
-| TEST-01     | Phase 6 | Pending  |
-| TEST-02     | Phase 6 | Pending  |
-| TEST-03     | Phase 6 | Pending  |
-| TEST-04     | Phase 6 | Pending  |
-| TEST-05     | Phase 6 | Pending  |
-| CICD-01     | Phase 6 | Pending  |
-| CICD-02     | Phase 6 | Pending  |
-| ERR-01      | Phase 7 | Pending  |
-| ERR-02      | Phase 7 | Pending  |
-| ERR-03      | Phase 7 | Pending  |
-| ERR-04      | Phase 7 | Pending  |
-| OBS-01      | Phase 7 | Pending  |
-| SEO-01      | Phase 8 | Pending  |
-| SEO-02      | Phase 8 | Pending  |
-| SEO-03      | Phase 8 | Pending  |
-| SEO-04      | Phase 8 | Pending  |
-| SEO-05      | Phase 8 | Pending  |
-| A11Y-01     | Phase 8 | Pending  |
-| A11Y-02     | Phase 8 | Pending  |
-| A11Y-03     | Phase 8 | Pending  |
-
-| RXN-01 | TBD | Pending |
-| RXN-02 | TBD | Pending |
-| RXN-03 | TBD | Pending |
-| RXN-04 | TBD | Pending |
-| RXN-05 | TBD | Pending |
-| RXN-06 | TBD | Pending |
-| RXN-07 | TBD | Pending |
-| RXN-08 | TBD | Pending |
-| RXN-09 | TBD | Pending |
-| RXN-10 | TBD | Pending |
-| RXN-11 | TBD | Pending |
-| RXN-12 | TBD | Pending |
-| RXN-13 | TBD | Pending |
-| RXN-14 | TBD | Pending |
+| Requirement | Phase    | Status   |
+| ----------- | -------- | -------- |
+| QUAL-01     | Phase 5  | Complete |
+| QUAL-02     | Phase 5  | Complete |
+| QUAL-03     | Phase 5  | Complete |
+| TEST-01     | Phase 6  | Pending  |
+| TEST-02     | Phase 6  | Pending  |
+| TEST-03     | Phase 6  | Pending  |
+| TEST-04     | Phase 6  | Pending  |
+| TEST-05     | Phase 6  | Pending  |
+| CICD-01     | Phase 6  | Pending  |
+| CICD-02     | Phase 6  | Pending  |
+| ERR-01      | Phase 7  | Pending  |
+| ERR-02      | Phase 7  | Pending  |
+| ERR-03      | Phase 7  | Pending  |
+| ERR-04      | Phase 7  | Pending  |
+| OBS-01      | Phase 7  | Pending  |
+| SEO-01      | Phase 8  | Pending  |
+| SEO-02      | Phase 8  | Pending  |
+| SEO-03      | Phase 8  | Pending  |
+| SEO-04      | Phase 8  | Pending  |
+| SEO-05      | Phase 8  | Pending  |
+| A11Y-01     | Phase 8  | Pending  |
+| A11Y-02     | Phase 8  | Pending  |
+| A11Y-03     | Phase 8  | Pending  |
+| RXN-01      | Phase 9  | Pending  |
+| RXN-02      | Phase 9  | Pending  |
+| RXN-03      | Phase 9  | Pending  |
+| RXN-04      | Phase 9  | Pending  |
+| RXN-05      | Phase 9  | Pending  |
+| RXN-06      | Phase 9  | Pending  |
+| RXN-07      | Phase 9  | Pending  |
+| RXN-08      | Phase 9  | Pending  |
+| RXN-09      | Phase 9  | Pending  |
+| RXN-14      | Phase 9  | Pending  |
+| RXN-10      | Phase 10 | Pending  |
+| RXN-11      | Phase 10 | Pending  |
+| RXN-12      | Phase 10 | Pending  |
+| RXN-13      | Phase 10 | Pending  |
 
 **Coverage:**
 
 - v1.1 requirements: 23 total (3 complete, 20 pending)
-- v1.2 requirements: 14 total
-- Mapped to phases: 23 (v1.1) + 0 (v1.2)
-- Unmapped: 14 (v1.2 — pending roadmap)
+- v1.2 requirements: 14 total (0 complete, 14 pending)
+- Mapped to phases: 23 (v1.1) + 14 (v1.2) = 37 total
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-03-15_
-_Last updated: 2026-03-15 after v1.2 requirements definition_
+_Last updated: 2026-03-15 after v1.2 roadmap creation_
