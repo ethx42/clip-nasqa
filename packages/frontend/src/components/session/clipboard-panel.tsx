@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog } from '@base-ui/react/dialog';
 import { toast } from 'sonner';
 import type { Snippet } from '@nasqa/core';
 import { HostInput } from './host-input';
@@ -229,6 +230,7 @@ export function ClipboardPanel({
 }: ClipboardPanelProps) {
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [showNewBanner, setShowNewBanner] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'clear'; snippetId?: string } | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevSnippetCount = useRef(snippets.length);
@@ -320,11 +322,7 @@ export function ClipboardPanel({
           <button
             type="button"
             className="text-sm font-medium text-muted-foreground hover:text-destructive transition"
-            onClick={() => {
-              if (window.confirm('Clear all snippets? This cannot be undone.')) {
-                onClearClipboard?.();
-              }
-            }}
+            onClick={() => setConfirmAction({ type: 'clear' })}
           >
             Clear All
           </button>
@@ -355,7 +353,7 @@ export function ClipboardPanel({
                   snippet={heroSnippet}
                   snippetNumber={snippets.length}
                   isHost={isHost}
-                  onDelete={onDeleteSnippet ? () => onDeleteSnippet(heroSnippet.id) : undefined}
+                  onDelete={onDeleteSnippet ? () => setConfirmAction({ type: 'delete', snippetId: heroSnippet.id }) : undefined}
                 />
               </motion.div>
             )}
@@ -379,7 +377,7 @@ export function ClipboardPanel({
                       snippet={snippet}
                       snippetNumber={snippets.length - 1 - idx}
                       isHost={isHost}
-                      onDelete={onDeleteSnippet ? () => onDeleteSnippet(snippet.id) : undefined}
+                      onDelete={onDeleteSnippet ? () => setConfirmAction({ type: 'delete', snippetId: snippet.id }) : undefined}
                     />
                   </motion.div>
                 ))}
@@ -393,6 +391,46 @@ export function ClipboardPanel({
           )}
         </div>
       )}
+
+      {/* Confirmation dialog for delete/clear */}
+      <Dialog.Root open={!!confirmAction} onOpenChange={(open) => { if (!open) setConfirmAction(null); }}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+              <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
+                {confirmAction?.type === 'clear' ? 'Clear all snippets?' : 'Delete snippet?'}
+              </Dialog.Title>
+              <Dialog.Description className="mb-5 text-sm text-muted-foreground">
+                {confirmAction?.type === 'clear'
+                  ? 'This will remove all snippets from the clipboard. This cannot be undone.'
+                  : 'This snippet will be permanently removed.'}
+              </Dialog.Description>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmAction(null)}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmAction?.type === 'clear') {
+                      onClearClipboard?.();
+                    } else if (confirmAction?.type === 'delete' && confirmAction.snippetId) {
+                      onDeleteSnippet?.(confirmAction.snippetId);
+                    }
+                    setConfirmAction(null);
+                  }}
+                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                >
+                  {confirmAction?.type === 'clear' ? 'Clear All' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

@@ -3,7 +3,13 @@
     "headline": "Share code and take questions — live.",
     "subtitle": "Create a session, share the link, start presenting.",
     "cta": "Create Session",
-    "placeholder": "What's your talk about?"
+    "placeholder": "What's your talk about?",
+    "featureClipboardTitle": "Real-time Clipboard",
+    "featureClipboardDesc": "Share code snippets and links instantly. Every connected device sees updates in under 200ms.",
+    "featureQaTitle": "Live Q&A",
+    "featureQaDesc": "Audience members submit questions and vote up the best ones — no app download needed.",
+    "featureNoSignupTitle": "No sign-up needed",
+    "featureNoSignupDesc": "Create a session in seconds. Share the link. Done."
   },
   "common": {
     "loading": "Loading...",

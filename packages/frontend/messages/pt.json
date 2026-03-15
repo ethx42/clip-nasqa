@@ -3,7 +3,13 @@
     "headline": "Compartilhe código e responda perguntas — ao vivo.",
     "subtitle": "Crie uma sessão, compartilhe o link, comece a apresentar.",
     "cta": "Criar Sessão",
-    "placeholder": "Sobre o que é a sua palestra?"
+    "placeholder": "Sobre o que é a sua palestra?",
+    "featureClipboardTitle": "Clipboard em tempo real",
+    "featureClipboardDesc": "Compartilhe trechos de código e links instantaneamente. Todos os dispositivos conectados veem as atualizações em menos de 200ms.",
+    "featureQaTitle": "Perguntas ao vivo",
+    "featureQaDesc": "Os participantes enviam perguntas e votam nas melhores — sem precisar baixar nenhum app.",
+    "featureNoSignupTitle": "Sem cadastro",
+    "featureNoSignupDesc": "Crie uma sessão em segundos. Compartilhe o link. Pronto."
   },
   "common": {
     "loading": "Carregando...",

@@ -204,18 +204,47 @@ export function SessionLiveHostPage({
   }
 
   async function handleDownvote(questionId: string, remove: boolean) {
+    // Optimistic update
+    dispatch({
+      type: 'QUESTION_UPDATED',
+      payload: {
+        questionId,
+        downvoteCount: (() => {
+          const q = state.questions.find((q) => q.id === questionId);
+          if (!q) return undefined;
+          return remove ? Math.max(0, q.downvoteCount - 1) : q.downvoteCount + 1;
+        })(),
+      },
+    });
+
     if (remove) {
       removeDownvote(questionId);
     } else {
       addDownvote(questionId);
       if (votedIds.has(questionId)) {
         removeVote(questionId);
+        dispatch({
+          type: 'QUESTION_UPDATED',
+          payload: { questionId, upvoteDelta: -1 },
+        });
       }
     }
 
     const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
 
     if (!result.ok) {
+      // Rollback optimistic update
+      dispatch({
+        type: 'QUESTION_UPDATED',
+        payload: {
+          questionId,
+          downvoteCount: (() => {
+            const q = state.questions.find((q) => q.id === questionId);
+            if (!q) return undefined;
+            return remove ? q.downvoteCount + 1 : Math.max(0, q.downvoteCount - 1);
+          })(),
+        },
+      });
       if (remove) {
         addDownvote(questionId);
       } else {

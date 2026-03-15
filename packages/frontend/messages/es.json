@@ -3,7 +3,13 @@
     "headline": "Comparte código y responde preguntas — en vivo.",
     "subtitle": "Crea una sesión, comparte el enlace, empieza a presentar.",
     "cta": "Crear Sesión",
-    "placeholder": "¿De qué trata tu charla?"
+    "placeholder": "¿De qué trata tu charla?",
+    "featureClipboardTitle": "Portapapeles en tiempo real",
+    "featureClipboardDesc": "Comparte fragmentos de código y enlaces al instante. Todos los dispositivos conectados ven las actualizaciones en menos de 200ms.",
+    "featureQaTitle": "Preguntas en vivo",
+    "featureQaDesc": "Los participantes envían preguntas y votan las mejores — sin necesidad de descargar una app.",
+    "featureNoSignupTitle": "Sin registro",
+    "featureNoSignupDesc": "Crea una sesión en segundos. Comparte el enlace. Listo."
   },
   "common": {
     "loading": "Cargando...",
