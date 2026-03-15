@@ -18,6 +18,9 @@ interface IdentityResult {
   clearIdentity: () => void;
 }
 
+// Custom event name for cross-instance sync within the same tab
+const IDENTITY_CHANGE_EVENT = 'nasqa_identity_change';
+
 export function useIdentity(): IdentityResult {
   const [identity, setIdentityState] = useState<Identity>({});
 
@@ -32,12 +35,23 @@ export function useIdentity(): IdentityResult {
       // Corrupted data — reset
       localStorage.removeItem(IDENTITY_KEY);
     }
+
+    // Listen for identity changes from other hook instances in the same tab
+    function handleChange() {
+      try {
+        const raw = localStorage.getItem(IDENTITY_KEY);
+        setIdentityState(raw ? (JSON.parse(raw) as Identity) : {});
+      } catch { /* ignore */ }
+    }
+    window.addEventListener(IDENTITY_CHANGE_EVENT, handleChange);
+    return () => window.removeEventListener(IDENTITY_CHANGE_EVENT, handleChange);
   }, []);
 
   const setIdentity = useCallback((name?: string, email?: string) => {
     const next: Identity = { name: name ?? undefined, email: email ?? undefined };
     setIdentityState(next);
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(next));
+    window.dispatchEvent(new Event(IDENTITY_CHANGE_EVENT));
   }, []);
 
   const clearIdentity = useCallback(() => {
