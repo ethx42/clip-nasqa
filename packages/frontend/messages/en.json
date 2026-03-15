@@ -34,8 +34,16 @@
     "submitQuestion": "Submit",
     "upvote": "Upvote",
     "reply": "Reply",
-    "replyPlaceholder": "Add a reply...",
+    "replyPlaceholder": "Write a reply...",
     "submitReply": "Reply",
+    "send": "Send",
+    "you": "You",
+    "focused": "Focused",
+    "replyCount": "{count, plural, one {# reply} other {# replies}}",
+    "timeJustNow": "just now",
+    "timeMinutesAgo": "{count}m ago",
+    "timeHoursAgo": "{count}h ago",
+    "timeDaysAgo": "{count}d ago",
     "noQuestions": "No questions yet. Be the first to ask!",
     "clipboardEmpty": "Waiting for the speaker to share code snippets.",
     "clipboardCleared": "The clipboard was cleared."
@@ -49,7 +57,9 @@
     "blockedFromPosting": "You've been blocked from posting in this session.",
     "confirmBan": "Confirm ban",
     "confirmBanQuestion": "Are you sure you want to ban this participant?",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "restore": "Restore",
+    "hidden": "Hidden"
   },
   "identity": {
     "whatsYourName": "What's your name?",

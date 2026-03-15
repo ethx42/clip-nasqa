@@ -27,14 +27,14 @@ interface QuestionCardProps {
   onRestore?: (questionId: string) => void;
 }
 
-function formatRelativeTime(createdAt: number): string {
+function formatRelativeTime(createdAt: number, tSession: (key: string, values?: Record<string, number>) => string): string {
   const now = Math.floor(Date.now() / 1000);
   const diffSeconds = now - createdAt;
 
-  if (diffSeconds < 60) return 'just now';
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
-  return `${Math.floor(diffSeconds / 86400)}d ago`;
+  if (diffSeconds < 60) return tSession('timeJustNow');
+  if (diffSeconds < 3600) return tSession('timeMinutesAgo', { count: Math.floor(diffSeconds / 60) });
+  if (diffSeconds < 86400) return tSession('timeHoursAgo', { count: Math.floor(diffSeconds / 3600) });
+  return tSession('timeDaysAgo', { count: Math.floor(diffSeconds / 86400) });
 }
 
 export function QuestionCard({
@@ -54,6 +54,8 @@ export function QuestionCard({
   onRestore,
 }: QuestionCardProps) {
   const t = useTranslations('moderation');
+  const tSession = useTranslations('session');
+  const tCommon = useTranslations('common');
   const tIdentity = useTranslations('identity');
   const [showReplies, setShowReplies] = useState(question.isFocused);
   const [showReplyInput, setShowReplyInput] = useState(false);
@@ -143,7 +145,7 @@ export function QuestionCard({
               onClick={() => onRestore?.(question.id)}
               className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/10"
             >
-              Restore
+              {t('restore')}
             </button>
           )}
         </div>
@@ -163,7 +165,7 @@ export function QuestionCard({
       {question.isFocused && (
         <div className="mb-3 flex items-center gap-1.5">
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-500">
-            Focused
+            {tSession('focused')}
           </span>
         </div>
       )}
@@ -259,7 +261,7 @@ export function QuestionCard({
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
             {isOwn && (
               <span className="rounded-full bg-muted px-2.5 py-0.5 font-semibold text-foreground/70">
-                You
+                {tSession('you')}
               </span>
             )}
             {!isOwn && question.authorName && (
@@ -273,7 +275,7 @@ export function QuestionCard({
               </span>
             )}
             <span>
-              {formatRelativeTime(question.createdAt)}
+              {formatRelativeTime(question.createdAt, tSession)}
             </span>
 
             {/* Reply count toggle */}
@@ -283,7 +285,7 @@ export function QuestionCard({
                 className="flex items-center gap-1 transition-colors hover:text-foreground"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
-                {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+                {tSession('replyCount', { count: replies.length })}
               </button>
             )}
 
@@ -292,13 +294,13 @@ export function QuestionCard({
               onClick={() => setShowReplyInput((v) => !v)}
               className="font-semibold transition-colors hover:text-foreground"
             >
-              Reply
+              {tSession('reply')}
             </button>
 
             {/* Host: show hidden indicator for expanded hidden questions + focus toggle (text) */}
             {isHost && question.isHidden && showHiddenContent && (
               <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500">
-                Hidden
+                {t('hidden')}
               </span>
             )}
           </div>
@@ -311,7 +313,7 @@ export function QuestionCard({
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={handleReplyKeyDown}
-                  placeholder="Write a reply..."
+                  placeholder={tSession('replyPlaceholder')}
                   rows={2}
                   maxLength={REPLY_CHAR_LIMIT}
                   className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
@@ -339,7 +341,7 @@ export function QuestionCard({
                       }}
                       className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
                     >
-                      Cancel
+                      {tCommon('cancel')}
                     </button>
                     <button
                       onClick={handleReplySubmit}
@@ -349,7 +351,7 @@ export function QuestionCard({
                       }
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
                     >
-                      Send
+                      {tSession('send')}
                     </button>
                   </div>
                 </div>

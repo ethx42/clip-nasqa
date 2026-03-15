@@ -34,8 +34,16 @@
     "submitQuestion": "Enviar",
     "upvote": "Votar",
     "reply": "Responder",
-    "replyPlaceholder": "Agrega una respuesta...",
+    "replyPlaceholder": "Escribe una respuesta...",
     "submitReply": "Responder",
+    "send": "Enviar",
+    "you": "Tú",
+    "focused": "Enfocada",
+    "replyCount": "{count, plural, one {# respuesta} other {# respuestas}}",
+    "timeJustNow": "ahora",
+    "timeMinutesAgo": "hace {count}m",
+    "timeHoursAgo": "hace {count}h",
+    "timeDaysAgo": "hace {count}d",
     "noQuestions": "Aún no hay preguntas. ¡Sé el primero en preguntar!",
     "clipboardEmpty": "Esperando a que el presentador comparta fragmentos de código.",
     "clipboardCleared": "El portapapeles fue vaciado."
@@ -49,7 +57,9 @@
     "blockedFromPosting": "Has sido bloqueado para publicar en esta sesión.",
     "confirmBan": "Confirmar bloqueo",
     "confirmBanQuestion": "¿Estás seguro de que quieres bloquear a este participante?",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "restore": "Restaurar",
+    "hidden": "Oculta"
   },
   "identity": {
     "whatsYourName": "¿Cuál es tu nombre?",
