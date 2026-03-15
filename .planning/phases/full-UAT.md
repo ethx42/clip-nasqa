@@ -88,7 +88,9 @@ result: [pending]
 
 ### 18. Identity — Display Name on Questions
 expected: Set a display name via JoinModal or IdentityEditor (user icon in header). Submit a question — your name appears on the question card. Another participant without a name shows "Anonymous".
-result: [pending]
+result: issue
+reported: "el user agrega su name pero nunca se ve en las cards del QA"
+severity: major
 
 ### 19. Downvote a Question
 expected: Click the thumbs-down icon on a question — downvote count increases. If you had upvoted, the upvote is removed (mutually exclusive). Click thumbs-down again to retract.
@@ -124,8 +126,8 @@ result: [pending]
 
 total: 25
 passed: 0
-issues: 2
-pending: 23
+issues: 3
+pending: 22
 skipped: 0
 
 ## Gaps
