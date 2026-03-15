@@ -1,10 +1,14 @@
 # Roadmap: Nasqa Live
 
-## Overview
+## Milestones
 
-Build a real-time session tool where a speaker pushes code snippets and text to a shared clipboard while the audience asks questions, upvotes, and interacts — all anonymous, no accounts, no friction. The delivery path moves from AWS infrastructure outward: provisioning the DynamoDB + AppSync foundation, then session creation and the participant view shell, then the live clipboard and Q&A write path over real-time subscriptions, and finally moderation, identity, and i18n polish.
+- ✅ **v1.0 MVP** - Phases 1-4 (shipped 2026-03-14)
+- 🚧 **v1.1 Enterprise Hardening** - Phases 5-8 (in progress)
 
 ## Phases
+
+<details>
+<summary>✅ v1.0 MVP (Phases 1-4) - SHIPPED 2026-03-14</summary>
 
 **Phase Numbering:**
 - Integer phases (1, 2, 3): Planned milestone work
@@ -14,8 +18,6 @@ Build a real-time session tool where a speaker pushes code snippets and text to 
 - [x] **Phase 2: Session and View Shell** - Session creation, host auth, QR code, and the SSR participant view with device fingerprint and theme system (completed 2026-03-14)
 - [x] **Phase 3: Real-Time Core** - AppSync subscription channel, live clipboard with Shiki highlighting, and the Q&A write path with upvoting (completed 2026-03-14)
 - [x] **Phase 4: Moderation, Identity, and Polish** - Community downvote auto-hide, host and auto-ban, focus mode, speaker replies, optional identity, i18n, and performance hardening (completed 2026-03-14)
-
-## Phase Details
 
 ### Phase 1: Infrastructure
 **Goal**: The AWS backend is fully provisioned and deployable so feature work can begin without infrastructure unknowns
@@ -32,7 +34,7 @@ Build a real-time session tool where a speaker pushes code snippets and text to 
 Plans:
 - [x] 01-01-PLAN.md — GraphQL schema expansion, core types/schemas, package installations
 - [x] 01-02-PLAN.md — SST IaC wiring (DynamoDB + AppSync + Lambda data sources + resolver files + deploy script)
-- [ ] 01-03-PLAN.md — Deploy execution and AWS resource verification checkpoint
+- [x] 01-03-PLAN.md — Deploy execution and AWS resource verification checkpoint
 
 ### Phase 2: Session and View Shell
 **Goal**: A host can create a session and share it; participants can navigate to the session URL and see the static view — before any real-time features exist
@@ -47,9 +49,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Theme system (Zinc/Emerald CSS vars, ThemeProvider, theme toggle) + i18n routing (next-intl middleware, [locale] segment) + SST table link
-- [ ] 02-02-PLAN.md — Session creation Server Action (DynamoDB write, word-pair slug, hashed secret, TTL) + getSession utility + marketing landing page with inline form
-- [ ] 02-03-PLAN.md — Success page (secret display, QR code, host URL) + participant/host view shells (two-column responsive layout) + human verification checkpoint
+- [x] 02-01-PLAN.md — Theme system (Zinc/Emerald CSS vars, ThemeProvider, theme toggle) + i18n routing (next-intl middleware, [locale] segment) + SST table link
+- [x] 02-02-PLAN.md — Session creation Server Action (DynamoDB write, word-pair slug, hashed secret, TTL) + getSession utility + marketing landing page with inline form
+- [x] 02-03-PLAN.md — Success page (secret display, QR code, host URL) + participant/host view shells (two-column responsive layout) + human verification checkpoint
 
 ### Phase 3: Real-Time Core
 **Goal**: The live clipboard and Q&A are fully functional in real-time — a host pushes code and the audience sees it instantly; participants submit questions, upvote, and replies thread correctly
@@ -64,12 +66,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — GraphQL mutations, Lambda resolver handlers (clipboard + Q&A), SST wiring, Amplify client config
-- [ ] 03-02-PLAN.md — Shiki SSR dual-theme block, snippet hero/history cards, host input composer with live preview
-- [ ] 03-03-PLAN.md — Q&A components: question cards with upvoting, reply threads, input with character counter
-- [ ] 03-04-PLAN.md — AppSync subscription provider, session state reducer, optimistic mutations, page wiring
-- [ ] 03-05-PLAN.md — Host delete/clear/focus actions, liveness indicators, animations, bundle size verification
-- [ ] 03-06-PLAN.md — Human verification checkpoint for complete real-time core
+- [x] 03-01-PLAN.md — GraphQL mutations, Lambda resolver handlers (clipboard + Q&A), SST wiring, Amplify client config
+- [x] 03-02-PLAN.md — Shiki SSR dual-theme block, snippet hero/history cards, host input composer with live preview
+- [x] 03-03-PLAN.md — Q&A components: question cards with upvoting, reply threads, input with character counter
+- [x] 03-04-PLAN.md — AppSync subscription provider, session state reducer, optimistic mutations, page wiring
+- [x] 03-05-PLAN.md — Host delete/clear/focus actions, liveness indicators, animations, bundle size verification
+- [x] 03-06-PLAN.md — Human verification checkpoint for complete real-time core
 
 ### Phase 4: Moderation, Identity, and Polish
 **Goal**: Community moderation, host superuser controls, optional participant identity, i18n for en/es/pt, and rate limiting are all active — the product is production-ready
@@ -84,19 +86,82 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Moderation backend: GraphQL mutations (ban/downvote), Lambda resolvers, rate limiting, ban enforcement
-- [ ] 04-02-PLAN.md — Identity + i18n foundation: routing config, language switcher, translations, useIdentity hook, join modal
-- [ ] 04-03-PLAN.md — Moderation UI: Server Actions, session state updates, question card moderation controls
-- [ ] 04-04-PLAN.md — Integration wiring (identity + i18n into pages) + human verification checkpoint
+- [x] 04-01-PLAN.md — Moderation backend: GraphQL mutations (ban/downvote), Lambda resolvers, rate limiting, ban enforcement
+- [x] 04-02-PLAN.md — Identity + i18n foundation: routing config, language switcher, translations, useIdentity hook, join modal
+- [x] 04-03-PLAN.md — Moderation UI: Server Actions, session state updates, question card moderation controls
+- [x] 04-04-PLAN.md — Integration wiring (identity + i18n into pages) + human verification checkpoint
+
+</details>
+
+### 🚧 v1.1 Enterprise Hardening (In Progress)
+
+**Milestone Goal:** Harden the codebase for production reliability and developer experience — testing, CI/CD, error handling, observability, code quality gates, SEO, and accessibility.
+
+- [ ] **Phase 5: Code Quality Gates** - Pre-commit hooks, Prettier formatting, and TypeScript strict mode so no quality debt enters the repo during hardening
+- [ ] **Phase 6: Testing and CI** - Vitest test suite across schemas, resolvers, and components; GitHub Actions pipeline that runs lint, typecheck, test, and build on every PR
+- [ ] **Phase 7: Error Handling and Observability** - Next.js error boundaries with graceful fallbacks, structured server actions, and pino structured logging in Lambda resolvers
+- [ ] **Phase 8: SEO and Accessibility** - Dynamic per-session metadata, robots/sitemap, semantic HTML landmarks, ARIA labels, and keyboard navigation across all components
+
+## Phase Details
+
+### Phase 5: Code Quality Gates
+**Goal**: Every commit is blocked if it fails lint or formatting checks, and TypeScript strict mode is consistent across all packages — no new quality debt can enter the repo
+**Depends on**: Phase 4
+**Requirements**: QUAL-01, QUAL-02, QUAL-03
+**Success Criteria** (what must be TRUE):
+  1. Running `git commit` with a lint error in a staged file is rejected by the pre-commit hook with a clear error message
+  2. Running `git commit` with inconsistently formatted staged files auto-formats them via Prettier before the commit completes
+  3. All four packages (root, core, frontend, functions) compile without error under TypeScript strict mode
+  4. ESLint and Prettier do not conflict — `eslint-config-prettier` disables any ESLint rules that would duplicate or contradict Prettier's output
+**Plans**: TBD
+
+### Phase 6: Testing and CI
+**Goal**: A Vitest test suite covers core schemas, Lambda resolvers, and key UI components; a GitHub Actions pipeline runs all quality checks on every PR and gates deploys on passing tests
+**Depends on**: Phase 5
+**Requirements**: TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, CICD-01, CICD-02
+**Success Criteria** (what must be TRUE):
+  1. Running `pnpm test` from the repo root executes all unit and component tests and exits non-zero on any failure
+  2. Opening a pull request triggers a GitHub Actions run that runs lint, typecheck, and tests in parallel — a PR cannot be merged if any job fails
+  3. The Actions run completes in under 3 minutes for a typical PR thanks to node_modules and .next caching
+  4. A CI job fails if the gzipped initial JS bundle exceeds the 80kB budget
+**Plans**: TBD
+
+### Phase 7: Error Handling and Observability
+**Goal**: Root layout crashes, session-scoped errors, and 404s all show branded fallback UIs instead of blank screens; server actions return structured errors; Lambda resolvers emit structured JSON logs
+**Depends on**: Phase 5
+**Requirements**: ERR-01, ERR-02, ERR-03, ERR-04, OBS-01
+**Success Criteria** (what must be TRUE):
+  1. A crash in the root layout renders `global-error.tsx` with a recovery button — no blank white screen in production
+  2. A crash in a session route segment renders `error.tsx` with a "try again" option — the rest of the app remains functional
+  3. Navigating to a slug that does not exist (or has expired) renders a branded `not-found.tsx` page with a "session has ended" message
+  4. Calling `createSession` or a Q&A server action with invalid input returns a typed error object — no unhandled exception reaches the client
+  5. Lambda resolver logs appear in CloudWatch as structured JSON objects with level, sessionSlug, operation, and durationMs fields
+**Plans**: TBD
+
+### Phase 8: SEO and Accessibility
+**Goal**: Search engines index the landing page correctly (with OG image), session pages are excluded from indexing, and all interactive components are usable by keyboard and screen reader users
+**Depends on**: Phase 7
+**Requirements**: SEO-01, SEO-02, SEO-03, SEO-04, SEO-05, A11Y-01, A11Y-02, A11Y-03
+**Success Criteria** (what must be TRUE):
+  1. Pasting a session URL into Slack or Twitter shows the session title as the OG preview title; pasting the landing page URL shows a static OG image
+  2. Fetching `/robots.txt` shows that `/live/` paths are disallowed and the landing page is allowed
+  3. Every icon-only button (upvote, downvote, copy snippet, delete, theme toggle, language switcher) has an ARIA label readable by VoiceOver
+  4. The session page structure uses semantic landmark elements (`main`, `section`, `article`, `header`) — no layout-div soup for primary regions
+  5. Tabbing through the session page reaches every interactive element in logical order with a visible focus ring; the Q&A feed announces new questions to screen readers via an `aria-live` region
+**Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 5 → 6 → 7 → 8
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Infrastructure | 3/3 | Complete   | 2026-03-14 |
-| 2. Session and View Shell | 3/3 | Complete    | 2026-03-14 |
-| 3. Real-Time Core | 6/6 | Complete   | 2026-03-14 |
-| 4. Moderation, Identity, and Polish | 4/4 | Complete   | 2026-03-14 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Infrastructure | v1.0 | 3/3 | Complete | 2026-03-14 |
+| 2. Session and View Shell | v1.0 | 3/3 | Complete | 2026-03-14 |
+| 3. Real-Time Core | v1.0 | 6/6 | Complete | 2026-03-14 |
+| 4. Moderation, Identity, and Polish | v1.0 | 4/4 | Complete | 2026-03-14 |
+| 5. Code Quality Gates | v1.1 | 0/TBD | Not started | - |
+| 6. Testing and CI | v1.1 | 0/TBD | Not started | - |
+| 7. Error Handling and Observability | v1.1 | 0/TBD | Not started | - |
+| 8. SEO and Accessibility | v1.1 | 0/TBD | Not started | - |

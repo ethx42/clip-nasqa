@@ -72,34 +72,34 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QUAL-01 | — | Pending |
-| QUAL-02 | — | Pending |
-| QUAL-03 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| TEST-05 | — | Pending |
-| CICD-01 | — | Pending |
-| CICD-02 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| ERR-03 | — | Pending |
-| ERR-04 | — | Pending |
-| OBS-01 | — | Pending |
-| SEO-01 | — | Pending |
-| SEO-02 | — | Pending |
-| SEO-03 | — | Pending |
-| SEO-04 | — | Pending |
-| SEO-05 | — | Pending |
-| A11Y-01 | — | Pending |
-| A11Y-02 | — | Pending |
-| A11Y-03 | — | Pending |
+| QUAL-01 | Phase 5 | Pending |
+| QUAL-02 | Phase 5 | Pending |
+| QUAL-03 | Phase 5 | Pending |
+| TEST-01 | Phase 6 | Pending |
+| TEST-02 | Phase 6 | Pending |
+| TEST-03 | Phase 6 | Pending |
+| TEST-04 | Phase 6 | Pending |
+| TEST-05 | Phase 6 | Pending |
+| CICD-01 | Phase 6 | Pending |
+| CICD-02 | Phase 6 | Pending |
+| ERR-01 | Phase 7 | Pending |
+| ERR-02 | Phase 7 | Pending |
+| ERR-03 | Phase 7 | Pending |
+| ERR-04 | Phase 7 | Pending |
+| OBS-01 | Phase 7 | Pending |
+| SEO-01 | Phase 8 | Pending |
+| SEO-02 | Phase 8 | Pending |
+| SEO-03 | Phase 8 | Pending |
+| SEO-04 | Phase 8 | Pending |
+| SEO-05 | Phase 8 | Pending |
+| A11Y-01 | Phase 8 | Pending |
+| A11Y-02 | Phase 8 | Pending |
+| A11Y-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-15*
