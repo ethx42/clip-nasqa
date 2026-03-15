@@ -9,7 +9,7 @@
 
 - [x] **QUAL-01**: Pre-commit hooks block commits that fail lint or typecheck (Husky + lint-staged)
 - [x] **QUAL-02**: Prettier enforces consistent formatting on staged files with import sorting
-- [ ] **QUAL-03**: TypeScript strict mode standardized across all packages (root, core, frontend, functions)
+- [x] **QUAL-03**: TypeScript strict mode standardized across all packages (root, core, frontend, functions)
 
 ### Testing
 
@@ -58,48 +58,50 @@
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Integration tests against live AWS | Cost, speed, test pollution — use mocked SDK |
-| Jest | ESM-first codebase; Vitest is faster and ESM-native |
-| 100% code coverage | Tiered targets instead (core 90%, resolvers 80%, UI 70%) |
-| E2E on every PR | 5-15 min per PR; run on main only |
-| Storybook | No design team; components coupled to real-time state |
-| WCAG AAA | Level AA is realistic; AAA conflicts with real-time UI |
-| Datadog/New Relic | Overkill at 50-500 users |
+| Feature                            | Reason                                                   |
+| ---------------------------------- | -------------------------------------------------------- |
+| Integration tests against live AWS | Cost, speed, test pollution — use mocked SDK             |
+| Jest                               | ESM-first codebase; Vitest is faster and ESM-native      |
+| 100% code coverage                 | Tiered targets instead (core 90%, resolvers 80%, UI 70%) |
+| E2E on every PR                    | 5-15 min per PR; run on main only                        |
+| Storybook                          | No design team; components coupled to real-time state    |
+| WCAG AAA                           | Level AA is realistic; AAA conflicts with real-time UI   |
+| Datadog/New Relic                  | Overkill at 50-500 users                                 |
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| QUAL-01 | Phase 5 | Complete |
-| QUAL-02 | Phase 5 | Complete |
-| QUAL-03 | Phase 5 | Pending |
-| TEST-01 | Phase 6 | Pending |
-| TEST-02 | Phase 6 | Pending |
-| TEST-03 | Phase 6 | Pending |
-| TEST-04 | Phase 6 | Pending |
-| TEST-05 | Phase 6 | Pending |
-| CICD-01 | Phase 6 | Pending |
-| CICD-02 | Phase 6 | Pending |
-| ERR-01 | Phase 7 | Pending |
-| ERR-02 | Phase 7 | Pending |
-| ERR-03 | Phase 7 | Pending |
-| ERR-04 | Phase 7 | Pending |
-| OBS-01 | Phase 7 | Pending |
-| SEO-01 | Phase 8 | Pending |
-| SEO-02 | Phase 8 | Pending |
-| SEO-03 | Phase 8 | Pending |
-| SEO-04 | Phase 8 | Pending |
-| SEO-05 | Phase 8 | Pending |
-| A11Y-01 | Phase 8 | Pending |
-| A11Y-02 | Phase 8 | Pending |
-| A11Y-03 | Phase 8 | Pending |
+| Requirement | Phase   | Status   |
+| ----------- | ------- | -------- |
+| QUAL-01     | Phase 5 | Complete |
+| QUAL-02     | Phase 5 | Complete |
+| QUAL-03     | Phase 5 | Complete |
+| TEST-01     | Phase 6 | Pending  |
+| TEST-02     | Phase 6 | Pending  |
+| TEST-03     | Phase 6 | Pending  |
+| TEST-04     | Phase 6 | Pending  |
+| TEST-05     | Phase 6 | Pending  |
+| CICD-01     | Phase 6 | Pending  |
+| CICD-02     | Phase 6 | Pending  |
+| ERR-01      | Phase 7 | Pending  |
+| ERR-02      | Phase 7 | Pending  |
+| ERR-03      | Phase 7 | Pending  |
+| ERR-04      | Phase 7 | Pending  |
+| OBS-01      | Phase 7 | Pending  |
+| SEO-01      | Phase 8 | Pending  |
+| SEO-02      | Phase 8 | Pending  |
+| SEO-03      | Phase 8 | Pending  |
+| SEO-04      | Phase 8 | Pending  |
+| SEO-05      | Phase 8 | Pending  |
+| A11Y-01     | Phase 8 | Pending  |
+| A11Y-02     | Phase 8 | Pending  |
+| A11Y-03     | Phase 8 | Pending  |
 
 **Coverage:**
+
 - v1.1 requirements: 23 total
 - Mapped to phases: 23
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-03-15*
+
+_Requirements defined: 2026-03-15_

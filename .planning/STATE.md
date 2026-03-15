@@ -10,33 +10,36 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 5 of 8 (Code Quality Gates)
-Plan: 1 of 2 complete
-Status: In progress
-Last activity: 2026-03-15 — 05-01 complete: pre-commit quality gate toolchain installed and configured
+Plan: 2 of 2 complete
+Status: Phase complete
+Last activity: 2026-03-15 — 05-02 complete: Prettier formatting baseline applied, TypeScript strict verified on all four compile surfaces
 
-Progress: [████████░░░░░░░░░░░░] 42% (v1.0 complete, v1.1 Phase 5 started)
+Progress: [█████████░░░░░░░░░░░] 47% (v1.0 complete, v1.1 Phase 5 complete)
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 16 (v1.0)
 - Average duration: 5 min
 - Total execution time: ~1.3 hours
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-infrastructure | 3 | 10 min | 5 min |
-| 02-session-and-view-shell | 3 | 10 min | 3 min |
-| 03-real-time-core | 6 | 30 min | 5 min |
-| 04-moderation-identity-and-polish | 4 | 20 min | 5 min |
+| Phase                             | Plans | Total  | Avg/Plan |
+| --------------------------------- | ----- | ------ | -------- |
+| 01-infrastructure                 | 3     | 10 min | 5 min    |
+| 02-session-and-view-shell         | 3     | 10 min | 3 min    |
+| 03-real-time-core                 | 6     | 30 min | 5 min    |
+| 04-moderation-identity-and-polish | 4     | 20 min | 5 min    |
+| 05-code-quality-gates             | 2     | 18 min | 9 min    |
 
 **Recent Trend:**
+
 - Last 5 plans: 04-01 (3 min), 04-02 (5 min), 04-03 (12 min), 04-04 (paused at task 2/2)
 - Trend: stable
 
-*Updated after each plan completion*
+_Updated after each plan completion_
 
 ## Accumulated Context
 
@@ -53,6 +56,8 @@ Recent decisions affecting current work:
 - [05-01]: eslint-disable-next-line for react-hooks/set-state-in-effect must be on the line before the first setState call inside the effect, not before the useEffect() declaration
 - [05-01]: lint-staged.config.mjs (ESM extension) avoids needing "type: module" in root package.json
 - [05-01]: Defensive "prepare": "husky || true" prevents CI failures when devDependencies are skipped
+- [05-02]: Root tsconfig.json must exclude packages/frontend — root has no include restriction so tsc at root picks up all TSX files without JSX support producing hundreds of false errors
+- [05-02]: useRef -> useState when ref values are read during render — react-hooks/refs rule prohibits .current access in render; tracked state is safe to read in render
 
 ### Pending Todos
 
@@ -67,5 +72,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-15
-Stopped at: Completed 05-01-PLAN.md (pre-commit quality gate toolchain)
+Stopped at: Completed 05-02-PLAN.md (Prettier formatting baseline + TypeScript strict verification)
 Resume file: None
