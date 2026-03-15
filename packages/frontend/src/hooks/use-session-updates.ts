@@ -92,14 +92,21 @@ export function useSessionUpdates(
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting connection status when subscription is re-established
     setConnectionStatus('connecting');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    interface AppSyncSubscription {
+      subscribe(handlers: {
+        next: (value: { data: { onSessionUpdate: SessionUpdateEvent } }) => void;
+        error: (err: unknown) => void;
+      }): { unsubscribe(): void };
+    }
+
     const sub = (
       appsyncClient.graphql({
         query: ON_SESSION_UPDATE,
         variables: { sessionSlug },
-      }) as any
+      }) as unknown as AppSyncSubscription
     ).subscribe({
       next: ({ data }: { data: { onSessionUpdate: SessionUpdateEvent } }) => {
         const event = data?.onSessionUpdate;

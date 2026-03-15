@@ -24,6 +24,7 @@ export function JoinModal({ sessionSlug, open, onClose }: JoinModalProps) {
 
   // Pre-fill from saved identity when it loads
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-filling form from async-loaded identity storage
     if (savedName) setName(savedName);
     if (savedEmail) setEmail(savedEmail);
   }, [savedName, savedEmail]);

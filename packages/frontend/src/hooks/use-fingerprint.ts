@@ -42,6 +42,7 @@ export function useFingerprint(sessionSlug: string): FingerprintResult {
       fp = crypto.randomUUID();
       localStorage.setItem(FINGERPRINT_KEY, fp);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing state from localStorage on mount
     setFingerprint(fp);
 
     const raw = localStorage.getItem(votesKey(sessionSlug));

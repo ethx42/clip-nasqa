@@ -1,14 +1,16 @@
-import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
-import { docClient } from "./index";
+import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+
 import type {
-  BanQuestionArgs,
   BanParticipantArgs,
+  BanQuestionArgs,
   DownvoteQuestionArgs,
   RestoreQuestionArgs,
-  SessionUpdate,
   SessionEventType,
+  SessionUpdate,
 } from "@nasqa/core";
+
+import { docClient } from "./index";
 
 function tableName(): string {
   const name = process.env.TABLE_NAME;
@@ -24,7 +26,7 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
         PK: `SESSION#${sessionSlug}`,
         SK: `SESSION#${sessionSlug}`,
       },
-    })
+    }),
   );
   if (!result.Item || result.Item.hostSecretHash !== hostSecretHash) {
     throw new Error("Unauthorized");
@@ -52,7 +54,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
         PK: `SESSION#${sessionSlug}`,
         SK: `QUESTION#${questionId}`,
       },
-    })
+    }),
   );
 
   if (!questionResult.Item) {
@@ -74,7 +76,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
         ":true": true,
       },
       ReturnValues: "ALL_NEW",
-    })
+    }),
   );
 
   // Increment bannedPostCount on BAN item; set isBanned=false if not yet existing
@@ -97,7 +99,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
         ":ttl": banTTL,
       },
       ReturnValues: "ALL_NEW",
-    })
+    }),
   );
 
   const bannedPostCount = (banUpdate.Attributes?.bannedPostCount as number) ?? 0;
@@ -115,7 +117,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
         ExpressionAttributeValues: {
           ":true": true,
         },
-      })
+      }),
     );
 
     // Broadcast PARTICIPANT_BANNED for auto-ban
@@ -168,7 +170,7 @@ export async function handleBanParticipant(args: BanParticipantArgs): Promise<Se
         ":zero": 0,
         ":ttl": banTTL,
       },
-    })
+    }),
   );
 
   return {
@@ -206,7 +208,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
             ":fpSet": new Set([fingerprint]),
           },
           ReturnValues: "ALL_NEW",
-        })
+        }),
       );
     } else {
       // Add downvote: increment downvoteCount, add to downvoters set
@@ -226,7 +228,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
             ":fpSet": new Set([fingerprint]),
           },
           ReturnValues: "ALL_NEW",
-        })
+        }),
       );
 
       // Mutual exclusivity: only decrement upvoteCount if user had actually upvoted
@@ -246,7 +248,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
               ":fpSet": new Set([fingerprint]),
             },
             ReturnValues: "ALL_NEW",
-          })
+          }),
         );
         // Use the latest state after both updates
         result = upvoteRemoval;
@@ -283,7 +285,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
         ExpressionAttributeValues: {
           ":hidden": shouldHide,
         },
-      })
+      }),
     );
   }
 
@@ -319,7 +321,7 @@ export async function handleRestoreQuestion(args: RestoreQuestionArgs): Promise<
         ":false": false,
       },
       ReturnValues: "ALL_NEW",
-    })
+    }),
   );
 
   const attrs = result.Attributes ?? {};

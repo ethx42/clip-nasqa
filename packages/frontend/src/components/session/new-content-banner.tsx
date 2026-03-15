@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useTranslations } from 'next-intl';
+import { useTranslations } from "next-intl";
 
 interface NewContentBannerProps {
   /** Message to show, e.g. "New snippet from speaker" or "2 new questions". */
@@ -17,24 +17,24 @@ interface NewContentBannerProps {
  * Clicking/tapping calls onTap which should scroll the container to the top.
  */
 export function NewContentBanner({ message, visible, onTap }: NewContentBannerProps) {
-  const t = useTranslations('session');
+  const t = useTranslations("session");
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={onTap}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onTap();
+        if (e.key === "Enter" || e.key === " ") onTap();
       }}
-      style={{ position: 'sticky', top: 0, zIndex: 10 }}
+      style={{ position: "sticky", top: 0, zIndex: 10 }}
       className={`
         cursor-pointer select-none
         bg-emerald-500 text-white text-sm font-semibold text-center py-2.5 px-5 shadow-md
         transition-all duration-300 ease-in-out
-        ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}
+        ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"}
       `}
     >
-      {message} · {t('tapToScroll')}
+      {message} · {t("tapToScroll")}
     </div>
   );
 }

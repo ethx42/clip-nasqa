@@ -1,33 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import type { Session } from '@/lib/session';
-import type { Snippet, Question, Reply } from '@nasqa/core';
-import { useSessionState } from '@/hooks/use-session-state';
-import { useSessionUpdates } from '@/hooks/use-session-updates';
-import { useFingerprint } from '@/hooks/use-fingerprint';
-import { useIdentity } from '@/hooks/use-identity';
-import { hashSecret } from '@/lib/hash-secret';
-import { SessionShell } from '@/components/session/session-shell';
-import { ClipboardPanel } from '@/components/session/clipboard-panel';
-import { QAPanel } from '@/components/session/qa-panel';
-import { LiveIndicator } from '@/components/session/live-indicator';
+import { useEffect, useState } from "react";
+
+import type { Question, Reply, Snippet } from "@nasqa/core";
+
 import {
-  addQuestionAction,
-  upvoteQuestionAction,
-  addReplyAction,
-  focusQuestionAction,
-} from '@/actions/qa';
-import {
-  deleteSnippetAction,
-  clearClipboardAction,
-} from '@/actions/snippet';
-import {
-  banQuestionAction,
   banParticipantAction,
+  banQuestionAction,
   downvoteQuestionAction,
   restoreQuestionAction,
-} from '@/actions/moderation';
+} from "@/actions/moderation";
+import {
+  addQuestionAction,
+  addReplyAction,
+  focusQuestionAction,
+  upvoteQuestionAction,
+} from "@/actions/qa";
+import { clearClipboardAction, deleteSnippetAction } from "@/actions/snippet";
+import { ClipboardPanel } from "@/components/session/clipboard-panel";
+import { LiveIndicator } from "@/components/session/live-indicator";
+import { QAPanel } from "@/components/session/qa-panel";
+import { SessionShell } from "@/components/session/session-shell";
+import { useFingerprint } from "@/hooks/use-fingerprint";
+import { useIdentity } from "@/hooks/use-identity";
+import { useSessionState } from "@/hooks/use-session-state";
+import { useSessionUpdates } from "@/hooks/use-session-updates";
+import { hashSecret } from "@/lib/hash-secret";
+import type { Session } from "@/lib/session";
 
 interface SessionLiveHostPageProps {
   session: Session;
@@ -55,7 +54,7 @@ export function SessionLiveHostPage({
   initialReplies,
   hostToolbar,
 }: SessionLiveHostPageProps) {
-  const [hostSecretHash, setHostSecretHash] = useState<string>('');
+  const [hostSecretHash, setHostSecretHash] = useState<string>("");
   const { name: authorName } = useIdentity();
 
   // Extract and hash the secret from the URL hash fragment on mount
@@ -83,36 +82,36 @@ export function SessionLiveHostPage({
 
   async function handleDeleteSnippet(snippetId: string) {
     // Optimistic removal
-    dispatch({ type: 'SNIPPET_DELETED', payload: { snippetId } });
+    dispatch({ type: "SNIPPET_DELETED", payload: { snippetId } });
     const result = await deleteSnippetAction({ sessionSlug, hostSecretHash, snippetId });
     if (!result.ok) {
-      console.error('deleteSnippetAction failed:', result.error);
+      console.error("deleteSnippetAction failed:", result.error);
     }
   }
 
   async function handleClearClipboard() {
-    dispatch({ type: 'CLIPBOARD_CLEARED' });
+    dispatch({ type: "CLIPBOARD_CLEARED" });
     const result = await clearClipboardAction({ sessionSlug, hostSecretHash });
     if (!result.ok) {
-      console.error('clearClipboardAction failed:', result.error);
+      console.error("clearClipboardAction failed:", result.error);
     }
   }
 
   async function handleFocusQuestion(questionId: string | undefined) {
     // Optimistic: update focused state locally
     if (questionId) {
-      dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isFocused: true } });
+      dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isFocused: true } });
     } else {
       // Unfocus all — clear isFocused on every question
       for (const q of state.questions) {
         if (q.isFocused) {
-          dispatch({ type: 'QUESTION_UPDATED', payload: { questionId: q.id, isFocused: false } });
+          dispatch({ type: "QUESTION_UPDATED", payload: { questionId: q.id, isFocused: false } });
         }
       }
     }
     const result = await focusQuestionAction({ sessionSlug, hostSecretHash, questionId });
     if (!result.ok) {
-      console.error('focusQuestionAction failed:', result.error);
+      console.error("focusQuestionAction failed:", result.error);
     }
   }
 
@@ -120,7 +119,7 @@ export function SessionLiveHostPage({
 
   async function handleUpvote(questionId: string, remove: boolean) {
     dispatch({
-      type: 'QUESTION_UPDATED',
+      type: "QUESTION_UPDATED",
       payload: { questionId, upvoteDelta: remove ? -1 : 1 },
     });
     if (remove) {
@@ -138,7 +137,7 @@ export function SessionLiveHostPage({
 
     if (!result.ok) {
       dispatch({
-        type: 'QUESTION_UPDATED',
+        type: "QUESTION_UPDATED",
         payload: { questionId, upvoteDelta: remove ? 1 : -1 },
       });
       if (remove) {
@@ -166,11 +165,11 @@ export function SessionLiveHostPage({
       TTL: 0,
     };
 
-    dispatch({ type: 'ADD_QUESTION_OPTIMISTIC', payload: optimisticQuestion });
+    dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
     const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
     if (!result.ok) {
-      dispatch({ type: 'REMOVE_OPTIMISTIC', payload: { id: tempId } });
+      dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
     }
   }
 
@@ -187,7 +186,7 @@ export function SessionLiveHostPage({
       TTL: 0,
     };
 
-    dispatch({ type: 'REPLY_ADDED', payload: optimisticReply });
+    dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
 
     const result = await addReplyAction({
       sessionSlug,
@@ -199,14 +198,14 @@ export function SessionLiveHostPage({
     });
 
     if (!result.ok) {
-      dispatch({ type: 'REMOVE_OPTIMISTIC', payload: { id: tempId } });
+      dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
     }
   }
 
   async function handleDownvote(questionId: string, remove: boolean) {
     // Optimistic update
     dispatch({
-      type: 'QUESTION_UPDATED',
+      type: "QUESTION_UPDATED",
       payload: {
         questionId,
         downvoteCount: (() => {
@@ -224,7 +223,7 @@ export function SessionLiveHostPage({
       if (votedIds.has(questionId)) {
         removeVote(questionId);
         dispatch({
-          type: 'QUESTION_UPDATED',
+          type: "QUESTION_UPDATED",
           payload: { questionId, upvoteDelta: -1 },
         });
       }
@@ -235,7 +234,7 @@ export function SessionLiveHostPage({
     if (!result.ok) {
       // Rollback optimistic update
       dispatch({
-        type: 'QUESTION_UPDATED',
+        type: "QUESTION_UPDATED",
         payload: {
           questionId,
           downvoteCount: (() => {
@@ -255,12 +254,12 @@ export function SessionLiveHostPage({
 
   async function handleBanQuestion(questionId: string) {
     // Optimistic: mark banned immediately
-    dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isBanned: true } });
+    dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: true } });
     const result = await banQuestionAction({ sessionSlug, hostSecretHash, questionId });
     if (!result.ok) {
       // Rollback
-      dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isBanned: false } });
-      console.error('banQuestionAction failed:', result.error);
+      dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: false } });
+      console.error("banQuestionAction failed:", result.error);
     }
   }
 
@@ -271,16 +270,16 @@ export function SessionLiveHostPage({
       fingerprint: participantFingerprint,
     });
     if (!result.ok) {
-      console.error('banParticipantAction failed:', result.error);
+      console.error("banParticipantAction failed:", result.error);
     }
   }
 
   async function handleRestoreQuestion(questionId: string) {
-    dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isHidden: false } });
+    dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: false } });
     const result = await restoreQuestionAction({ sessionSlug, hostSecretHash, questionId });
     if (!result.ok) {
-      dispatch({ type: 'QUESTION_UPDATED', payload: { questionId, isHidden: true } });
-      console.error('restoreQuestionAction failed:', result.error);
+      dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: true } });
+      console.error("restoreQuestionAction failed:", result.error);
     }
   }
 
@@ -293,10 +292,7 @@ export function SessionLiveHostPage({
       isHost
       hostToolbar={hostToolbar}
       liveIndicator={
-        <LiveIndicator
-          connectionStatus={connectionStatus}
-          lastHostActivity={lastHostActivity}
-        />
+        <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
       }
       clipboardSlot={
         <ClipboardPanel

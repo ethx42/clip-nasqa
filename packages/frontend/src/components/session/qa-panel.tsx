@@ -1,13 +1,15 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquarePlus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import type { Question, Reply } from '@nasqa/core';
-import { QuestionCard } from './question-card';
-import { QAInput } from './qa-input';
-import { NewContentBanner } from './new-content-banner';
+import { AnimatePresence, motion } from "framer-motion";
+import { MessageSquarePlus } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import type { Question, Reply } from "@nasqa/core";
+
+import { NewContentBanner } from "./new-content-banner";
+import { QAInput } from "./qa-input";
+import { QuestionCard } from "./question-card";
 
 interface QAPanelProps {
   isHost?: boolean;
@@ -50,8 +52,9 @@ export function QAPanel({
   onBanParticipant,
   onRestore,
 }: QAPanelProps) {
-  const t = useTranslations('session');
+  const t = useTranslations("session");
   const [showNewBanner, setShowNewBanner] = useState(false);
+  const [newQuestionCount, setNewQuestionCount] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevQuestionCount = useRef(questions.length);
 
@@ -99,14 +102,17 @@ export function QAPanel({
     if (newCount > oldCount) {
       const container = scrollContainerRef.current;
       if (container && container.scrollTop > SCROLL_THRESHOLD) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- subscription-driven state update based on scroll position
         setShowNewBanner(true);
+        setNewQuestionCount((prev) => prev + (newCount - oldCount));
       }
     }
   }, [questions.length]);
 
   const scrollToTop = useCallback(() => {
-    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     setShowNewBanner(false);
+    setNewQuestionCount(0);
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -116,30 +122,19 @@ export function QAPanel({
     }
   }, []);
 
-  const newQuestionCount = Math.max(0, questions.length - prevQuestionCount.current);
-  const bannerMessage = t('newQuestionBanner', { count: newQuestionCount });
+  const bannerMessage = t("newQuestionBanner", { count: newQuestionCount });
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       {/* Scrollable question list */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto"
-      >
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
         {/* New question notification banner */}
-        <NewContentBanner
-          message={bannerMessage}
-          visible={showNewBanner}
-          onTap={scrollToTop}
-        />
+        <NewContentBanner message={bannerMessage} visible={showNewBanner} onTap={scrollToTop} />
 
         {sortedQuestions.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10 text-center">
             <MessageSquarePlus className="h-10 w-10 text-muted-foreground/30" />
-            <p className="text-base text-muted-foreground">
-              {t('noQuestions')}
-            </p>
+            <p className="text-base text-muted-foreground">{t("noQuestions")}</p>
           </div>
         ) : (
           <div className="space-y-3 p-4">

@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { createAvatar } from '@dicebear/core';
-import * as notionists from '@dicebear/notionists';
+import { createAvatar } from "@dicebear/core";
+import * as notionists from "@dicebear/notionists";
+import { useMemo } from "react";
 
 interface PixelAvatarProps {
   /** Seed string — typically the user's fingerprint. */
@@ -20,13 +20,7 @@ export function PixelAvatar({ seed, size = 28, className }: PixelAvatarProps) {
   }, [seed, size]);
 
   return (
-    <img
-      src={dataUri}
-      alt=""
-      width={size}
-      height={size}
-      className={className}
-      aria-hidden="true"
-    />
+    // eslint-disable-next-line @next/next/no-img-element -- data URI avatars cannot be optimized by next/image
+    <img src={dataUri} alt="" width={size} height={size} className={className} aria-hidden="true" />
   );
 }

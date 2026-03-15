@@ -1,14 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ChevronUp, ThumbsDown, MessageSquare, ShieldX, Ban } from 'lucide-react';
-import { Dialog } from '@base-ui/react/dialog';
-import { useTranslations } from 'next-intl';
-import type { Question, Reply } from '@nasqa/core';
-import { linkifyText } from '@/lib/linkify';
-import { ReplyList } from './reply-list';
-import { PixelAvatar } from './pixel-avatar';
-import { cn } from '@/lib/utils';
+import { Dialog } from "@base-ui/react/dialog";
+import { Ban, ChevronUp, MessageSquare, ShieldX, ThumbsDown } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
+
+import type { Question, Reply } from "@nasqa/core";
+
+import { linkifyText } from "@/lib/linkify";
+import { cn } from "@/lib/utils";
+
+import { PixelAvatar } from "./pixel-avatar";
+import { ReplyList } from "./reply-list";
 
 interface QuestionCardProps {
   question: Question;
@@ -37,14 +40,19 @@ function formatDisplayName(name: string): string {
   return `${first} ${lastInitial}.`;
 }
 
-function formatRelativeTime(createdAt: number, tSession: (key: string, values?: Record<string, number>) => string): string {
+function formatRelativeTime(
+  createdAt: number,
+  tSession: (key: string, values?: Record<string, number>) => string,
+): string {
   const now = Math.floor(Date.now() / 1000);
   const diffSeconds = now - createdAt;
 
-  if (diffSeconds < 60) return tSession('timeJustNow');
-  if (diffSeconds < 3600) return tSession('timeMinutesAgo', { count: Math.floor(diffSeconds / 60) });
-  if (diffSeconds < 86400) return tSession('timeHoursAgo', { count: Math.floor(diffSeconds / 3600) });
-  return tSession('timeDaysAgo', { count: Math.floor(diffSeconds / 86400) });
+  if (diffSeconds < 60) return tSession("timeJustNow");
+  if (diffSeconds < 3600)
+    return tSession("timeMinutesAgo", { count: Math.floor(diffSeconds / 60) });
+  if (diffSeconds < 86400)
+    return tSession("timeHoursAgo", { count: Math.floor(diffSeconds / 3600) });
+  return tSession("timeDaysAgo", { count: Math.floor(diffSeconds / 86400) });
 }
 
 export function QuestionCard({
@@ -63,13 +71,13 @@ export function QuestionCard({
   onBanParticipant,
   onRestore,
 }: QuestionCardProps) {
-  const t = useTranslations('moderation');
-  const tSession = useTranslations('session');
-  const tCommon = useTranslations('common');
-  const tIdentity = useTranslations('identity');
+  const t = useTranslations("moderation");
+  const tSession = useTranslations("session");
+  const tCommon = useTranslations("common");
+  const tIdentity = useTranslations("identity");
   const [showReplies, setShowReplies] = useState(question.isFocused);
   const [showReplyInput, setShowReplyInput] = useState(false);
-  const [replyText, setReplyText] = useState('');
+  const [replyText, setReplyText] = useState("");
   const [showHiddenContent, setShowHiddenContent] = useState(false);
   const [banConfirmOpen, setBanConfirmOpen] = useState(false);
 
@@ -101,12 +109,12 @@ export function QuestionCard({
     const trimmed = replyText.trim();
     if (!trimmed || trimmed.length > REPLY_CHAR_LIMIT) return;
     onReply(question.id, trimmed);
-    setReplyText('');
+    setReplyText("");
     setShowReplyInput(false);
   }
 
   function handleReplyKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleReplySubmit();
     }
@@ -133,7 +141,7 @@ export function QuestionCard({
   if (question.isBanned) {
     return (
       <div className="rounded-xl border border-border bg-card p-5">
-        <p className="text-sm text-muted-foreground italic">{t('questionRemoved')}</p>
+        <p className="text-sm text-muted-foreground italic">{t("questionRemoved")}</p>
       </div>
     );
   }
@@ -143,19 +151,19 @@ export function QuestionCard({
     return (
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{t('hiddenByCommunity')}</span>
+          <span>{t("hiddenByCommunity")}</span>
           <button
             onClick={() => setShowHiddenContent(true)}
             className="font-semibold text-foreground/70 underline-offset-2 hover:underline"
           >
-            [{t('show')}]
+            [{t("show")}]
           </button>
           {isHost && (
             <button
               onClick={() => onRestore?.(question.id)}
               className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/10"
             >
-              {t('restore')}
+              {t("restore")}
             </button>
           )}
         </div>
@@ -167,15 +175,15 @@ export function QuestionCard({
   return (
     <div
       className={cn(
-        'group relative rounded-xl border border-border bg-card p-4 transition-all',
+        "group relative rounded-xl border border-border bg-card p-4 transition-all",
         question.isFocused &&
-          'ring-2 ring-emerald-500/50 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+          "ring-2 ring-emerald-500/50 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]",
       )}
     >
       {question.isFocused && (
         <div className="mb-3 flex items-center gap-1.5">
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-500">
-            {tSession('focused')}
+            {tSession("focused")}
           </span>
         </div>
       )}
@@ -186,18 +194,18 @@ export function QuestionCard({
           {/* Upvote */}
           <button
             onClick={handleUpvoteClick}
-            aria-label={isVoted ? tSession('removeUpvote') : tSession('upvoteQuestion')}
+            aria-label={isVoted ? tSession("removeUpvote") : tSession("upvoteQuestion")}
             className={cn(
-              'rounded-lg p-1.5 transition-colors hover:bg-accent',
-              isVoted ? 'text-emerald-500' : 'text-muted-foreground'
+              "rounded-lg p-1.5 transition-colors hover:bg-accent",
+              isVoted ? "text-emerald-500" : "text-muted-foreground",
             )}
           >
             <ChevronUp className="h-5 w-5" />
           </button>
           <span
             className={cn(
-              'text-base font-bold tabular-nums',
-              isVoted ? 'text-emerald-500' : 'text-muted-foreground'
+              "text-base font-bold tabular-nums",
+              isVoted ? "text-emerald-500" : "text-muted-foreground",
             )}
           >
             {question.upvoteCount}
@@ -206,18 +214,18 @@ export function QuestionCard({
           {/* Downvote */}
           <button
             onClick={handleDownvoteClick}
-            aria-label={isDownvoted ? tSession('removeDownvote') : tSession('downvoteQuestion')}
+            aria-label={isDownvoted ? tSession("removeDownvote") : tSession("downvoteQuestion")}
             className={cn(
-              'mt-1 rounded-lg p-1.5 transition-colors hover:bg-accent',
-              isDownvoted ? 'text-rose-500' : 'text-muted-foreground'
+              "mt-1 rounded-lg p-1.5 transition-colors hover:bg-accent",
+              isDownvoted ? "text-rose-500" : "text-muted-foreground",
             )}
           >
             <ThumbsDown className="h-4 w-4" />
           </button>
           <span
             className={cn(
-              'text-xs font-semibold tabular-nums',
-              isDownvoted ? 'text-rose-500' : 'text-muted-foreground'
+              "text-xs font-semibold tabular-nums",
+              isDownvoted ? "text-rose-500" : "text-muted-foreground",
             )}
           >
             {question.downvoteCount}
@@ -229,27 +237,23 @@ export function QuestionCard({
           {/* Author row — avatar + name + time + host actions */}
           <div className="mb-2 flex items-center gap-2.5">
             {/* Pixel-art avatar */}
-            <PixelAvatar
-              seed={question.fingerprint}
-              size={28}
-              className="shrink-0 rounded-full"
-            />
+            <PixelAvatar seed={question.fingerprint} size={28} className="shrink-0 rounded-full" />
             <span
               title={question.authorName || undefined}
               className={cn(
-                'text-[13px] font-semibold truncate max-w-[10rem]',
+                "text-[13px] font-semibold truncate max-w-[10rem]",
                 isOwn
-                  ? 'text-emerald-600 dark:text-emerald-400'
+                  ? "text-emerald-600 dark:text-emerald-400"
                   : question.authorName
-                    ? 'text-foreground/80'
-                    : 'text-muted-foreground/60'
+                    ? "text-foreground/80"
+                    : "text-muted-foreground/60",
               )}
             >
               {isOwn
-                ? tSession('you')
+                ? tSession("you")
                 : question.authorName
                   ? formatDisplayName(question.authorName)
-                  : tIdentity('anonymous')}
+                  : tIdentity("anonymous")}
             </span>
             <span className="text-[12px] text-muted-foreground/50">
               {formatRelativeTime(question.createdAt, tSession)}
@@ -259,13 +263,13 @@ export function QuestionCard({
             {question.isHidden && showHiddenContent && (
               <>
                 <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
-                  {t('hidden')}
+                  {t("hidden")}
                 </span>
                 <button
                   onClick={() => setShowHiddenContent(false)}
                   className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
                 >
-                  [{t('hiddenByCommunity')}]
+                  [{t("hiddenByCommunity")}]
                 </button>
               </>
             )}
@@ -278,24 +282,28 @@ export function QuestionCard({
               <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={handleFocusToggle}
-                  aria-label={question.isFocused ? tSession('unfocusQuestion') : tSession('focusQuestion')}
+                  aria-label={
+                    question.isFocused ? tSession("unfocusQuestion") : tSession("focusQuestion")
+                  }
                   className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  title={question.isFocused ? tSession('unfocusQuestion') : tSession('focusQuestion')}
+                  title={
+                    question.isFocused ? tSession("unfocusQuestion") : tSession("focusQuestion")
+                  }
                 >
-                  <span className="text-xs font-bold">{question.isFocused ? '●' : '○'}</span>
+                  <span className="text-xs font-bold">{question.isFocused ? "●" : "○"}</span>
                 </button>
                 <button
                   onClick={handleBanQuestionClick}
-                  aria-label={t('banQuestion')}
-                  title={t('banQuestion')}
+                  aria-label={t("banQuestion")}
+                  title={t("banQuestion")}
                   className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <ShieldX className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => setBanConfirmOpen(true)}
-                  aria-label={t('banParticipant')}
-                  title={t('banParticipant')}
+                  aria-label={t("banParticipant")}
+                  title={t("banParticipant")}
                   className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Ban className="h-3.5 w-3.5" />
@@ -317,14 +325,14 @@ export function QuestionCard({
                 className="flex items-center gap-1 transition-colors hover:text-foreground"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
-                {tSession('replyCount', { count: replies.length })}
+                {tSession("replyCount", { count: replies.length })}
               </button>
             )}
             <button
               onClick={() => setShowReplyInput((v) => !v)}
               className="font-semibold transition-colors hover:text-foreground"
             >
-              {tSession('reply')}
+              {tSession("reply")}
             </button>
           </div>
 
@@ -336,7 +344,7 @@ export function QuestionCard({
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={handleReplyKeyDown}
-                  placeholder={tSession('replyPlaceholder')}
+                  placeholder={tSession("replyPlaceholder")}
                   rows={2}
                   maxLength={REPLY_CHAR_LIMIT}
                   className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
@@ -345,10 +353,8 @@ export function QuestionCard({
                   {replyText.length >= REPLY_COUNTER_THRESHOLD ? (
                     <span
                       className={cn(
-                        'text-xs tabular-nums',
-                        replyText.length >= 490
-                          ? 'text-destructive'
-                          : 'text-muted-foreground'
+                        "text-xs tabular-nums",
+                        replyText.length >= 490 ? "text-destructive" : "text-muted-foreground",
                       )}
                     >
                       {replyText.length}/{REPLY_CHAR_LIMIT}
@@ -360,21 +366,18 @@ export function QuestionCard({
                     <button
                       onClick={() => {
                         setShowReplyInput(false);
-                        setReplyText('');
+                        setReplyText("");
                       }}
                       className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
                     >
-                      {tCommon('cancel')}
+                      {tCommon("cancel")}
                     </button>
                     <button
                       onClick={handleReplySubmit}
-                      disabled={
-                        !replyText.trim() ||
-                        replyText.length > REPLY_CHAR_LIMIT
-                      }
+                      disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
                     >
-                      {tSession('send')}
+                      {tSession("send")}
                     </button>
                   </div>
                 </div>
@@ -398,23 +401,23 @@ export function QuestionCard({
           <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
               <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
-                {t('confirmBan')}
+                {t("confirmBan")}
               </Dialog.Title>
               <Dialog.Description className="mb-5 text-sm text-muted-foreground">
-                {t('confirmBanQuestion')}
+                {t("confirmBanQuestion")}
               </Dialog.Description>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setBanConfirmOpen(false)}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
                 >
-                  {t('cancel')}
+                  {t("cancel")}
                 </button>
                 <button
                   onClick={handleConfirmBanParticipant}
                   className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
                 >
-                  {t('confirmBan')}
+                  {t("confirmBan")}
                 </button>
               </div>
             </div>

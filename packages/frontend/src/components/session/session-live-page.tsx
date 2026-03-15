@@ -1,23 +1,21 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import type { Session } from '@/lib/session';
-import type { Snippet, Question, Reply } from '@nasqa/core';
-import { useSessionState } from '@/hooks/use-session-state';
-import { useSessionUpdates } from '@/hooks/use-session-updates';
-import { useFingerprint } from '@/hooks/use-fingerprint';
-import { useIdentity } from '@/hooks/use-identity';
-import { SessionShell } from '@/components/session/session-shell';
-import { ClipboardPanel } from '@/components/session/clipboard-panel';
-import { QAPanel } from '@/components/session/qa-panel';
-import { LiveIndicator } from '@/components/session/live-indicator';
-import { JoinModal, shouldShowJoinModal } from '@/components/session/join-modal';
-import {
-  addQuestionAction,
-  upvoteQuestionAction,
-  addReplyAction,
-} from '@/actions/qa';
-import { downvoteQuestionAction } from '@/actions/moderation';
+import { useEffect, useState } from "react";
+
+import type { Question, Reply, Snippet } from "@nasqa/core";
+
+import { downvoteQuestionAction } from "@/actions/moderation";
+import { addQuestionAction, addReplyAction, upvoteQuestionAction } from "@/actions/qa";
+import { ClipboardPanel } from "@/components/session/clipboard-panel";
+import { JoinModal, shouldShowJoinModal } from "@/components/session/join-modal";
+import { LiveIndicator } from "@/components/session/live-indicator";
+import { QAPanel } from "@/components/session/qa-panel";
+import { SessionShell } from "@/components/session/session-shell";
+import { useFingerprint } from "@/hooks/use-fingerprint";
+import { useIdentity } from "@/hooks/use-identity";
+import { useSessionState } from "@/hooks/use-session-state";
+import { useSessionUpdates } from "@/hooks/use-session-updates";
+import type { Session } from "@/lib/session";
 
 interface SessionLivePageProps {
   session: Session;
@@ -50,6 +48,7 @@ export function SessionLivePage({
   // Show JoinModal once per session (sessionStorage flag)
   useEffect(() => {
     if (shouldShowJoinModal(sessionSlug)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing modal visibility from sessionStorage on mount
       setJoinModalOpen(true);
     }
   }, [sessionSlug]);
@@ -68,7 +67,7 @@ export function SessionLivePage({
   async function handleUpvote(questionId: string, remove: boolean) {
     // Optimistic update
     dispatch({
-      type: 'QUESTION_UPDATED',
+      type: "QUESTION_UPDATED",
       payload: { questionId, upvoteDelta: remove ? -1 : 1 },
     });
     if (remove) {
@@ -87,7 +86,7 @@ export function SessionLivePage({
     if (!result.ok) {
       // Rollback optimistic update
       dispatch({
-        type: 'QUESTION_UPDATED',
+        type: "QUESTION_UPDATED",
         payload: { questionId, upvoteDelta: remove ? 1 : -1 },
       });
       if (remove) {
@@ -116,12 +115,12 @@ export function SessionLivePage({
       TTL: 0,
     };
 
-    dispatch({ type: 'ADD_QUESTION_OPTIMISTIC', payload: optimisticQuestion });
+    dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
     const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
 
     if (!result.ok) {
-      dispatch({ type: 'REMOVE_OPTIMISTIC', payload: { id: tempId } });
+      dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
     }
     // On success: subscription event will arrive and replace the optimistic item
   }
@@ -140,7 +139,7 @@ export function SessionLivePage({
       TTL: 0,
     };
 
-    dispatch({ type: 'REPLY_ADDED', payload: optimisticReply });
+    dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
 
     const result = await addReplyAction({
       sessionSlug,
@@ -153,14 +152,14 @@ export function SessionLivePage({
 
     if (!result.ok) {
       // Rollback: remove optimistic reply
-      dispatch({ type: 'REMOVE_OPTIMISTIC', payload: { id: tempId } });
+      dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
     }
   }
 
   async function handleDownvote(questionId: string, remove: boolean) {
     // Optimistic update
     dispatch({
-      type: 'QUESTION_UPDATED',
+      type: "QUESTION_UPDATED",
       payload: {
         questionId,
         downvoteCount: (() => {
@@ -179,7 +178,7 @@ export function SessionLivePage({
       if (votedIds.has(questionId)) {
         removeVote(questionId);
         dispatch({
-          type: 'QUESTION_UPDATED',
+          type: "QUESTION_UPDATED",
           payload: { questionId, upvoteDelta: -1 },
         });
       }
@@ -190,7 +189,7 @@ export function SessionLivePage({
     if (!result.ok) {
       // Rollback optimistic update
       dispatch({
-        type: 'QUESTION_UPDATED',
+        type: "QUESTION_UPDATED",
         payload: {
           questionId,
           downvoteCount: (() => {
@@ -221,10 +220,7 @@ export function SessionLivePage({
         title={session.title}
         sessionSlug={sessionSlug}
         liveIndicator={
-          <LiveIndicator
-            connectionStatus={connectionStatus}
-            lastHostActivity={lastHostActivity}
-          />
+          <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
         }
         clipboardSlot={
           <ClipboardPanel

@@ -29,6 +29,7 @@ export function useIdentity(): IdentityResult {
       const raw = localStorage.getItem(IDENTITY_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Identity;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing state from localStorage on mount
         setIdentityState(parsed);
       }
     } catch {

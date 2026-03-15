@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useRef, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
-import { detectLanguage, SUPPORTED_LANGUAGES } from '@/lib/detect-language';
-import { renderHighlight, pushSnippetAction } from '@/actions/snippet';
+import { useTranslations } from "next-intl";
+import { useCallback, useRef, useState } from "react";
+
+import { pushSnippetAction, renderHighlight } from "@/actions/snippet";
+import { detectLanguage, SUPPORTED_LANGUAGES } from "@/lib/detect-language";
 
 interface HostInputProps {
   sessionSlug: string;
@@ -20,10 +21,10 @@ interface HostInputProps {
  * - Input clears immediately after push (optimistic)
  */
 export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: HostInputProps) {
-  const t = useTranslations('session');
-  const [value, setValue] = useState('');
-  const [detectedLang, setDetectedLang] = useState('text');
-  const [previewHtml, setPreviewHtml] = useState('');
+  const t = useTranslations("session");
+  const [value, setValue] = useState("");
+  const [detectedLang, setDetectedLang] = useState("text");
+  const [previewHtml, setPreviewHtml] = useState("");
   const [isPushing, setIsPushing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -34,25 +35,22 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
   const resizeTextarea = useCallback(() => {
     const ta = textareaRef.current;
     if (!ta) return;
-    ta.style.height = 'auto';
+    ta.style.height = "auto";
     ta.style.height = `${Math.min(ta.scrollHeight, 300)}px`;
   }, []);
 
   // Debounced live preview
-  const schedulePreview = useCallback(
-    (code: string, lang: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(async () => {
-        if (!code.trim() || lang === 'text') {
-          setPreviewHtml('');
-          return;
-        }
-        const html = await renderHighlight(code, lang);
-        setPreviewHtml(html);
-      }, 300);
-    },
-    []
-  );
+  const schedulePreview = useCallback((code: string, lang: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      if (!code.trim() || lang === "text") {
+        setPreviewHtml("");
+        return;
+      }
+      const html = await renderHighlight(code, lang);
+      setPreviewHtml(html);
+    }, 300);
+  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -63,7 +61,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       setDetectedLang(detected);
       schedulePreview(newValue, detected);
     },
-    [resizeTextarea, schedulePreview]
+    [resizeTextarea, schedulePreview],
   );
 
   const handlePush = useCallback(async () => {
@@ -71,20 +69,20 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
     if (!content || isPushing) return;
     setIsPushing(true);
     // Clear immediately (optimistic)
-    setValue('');
-    setPreviewHtml('');
-    setDetectedLang('text');
+    setValue("");
+    setPreviewHtml("");
+    setDetectedLang("text");
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
     }
     const lang = activeLang;
-    const type = lang !== 'text' ? 'code' : 'text';
+    const type = lang !== "text" ? "code" : "text";
     await pushSnippetAction({
       sessionSlug,
       hostSecretHash,
       content,
       type,
-      language: lang !== 'text' ? lang : undefined,
+      language: lang !== "text" ? lang : undefined,
     });
     setIsPushing(false);
     onSnippetPushed?.();
@@ -93,12 +91,12 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
   // Keyboard shortcut: Cmd/Ctrl + Enter
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         void handlePush();
       }
     },
-    [handlePush]
+    [handlePush],
   );
 
   return (
@@ -109,10 +107,10 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder={t('pasteOrType')}
+        placeholder={t("pasteOrType")}
         rows={3}
         className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 font-mono text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-        style={{ minHeight: '80px', maxHeight: '300px' }}
+        style={{ minHeight: "80px", maxHeight: "300px" }}
       />
 
       {/* Controls row */}
@@ -121,7 +119,9 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
         {value.trim() ? (
           <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            {activeLang === 'text' ? t('text') : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang)}
+            {activeLang === "text"
+              ? t("text")
+              : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang)}
           </span>
         ) : (
           <span />
@@ -134,7 +134,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           disabled={!value.trim() || isPushing}
           className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
-          {isPushing ? t('pushing') : t('pushSnippet')}
+          {isPushing ? t("pushing") : t("pushSnippet")}
           <kbd className="ml-1 hidden rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-medium sm:inline">
             ⌘↵
           </kbd>

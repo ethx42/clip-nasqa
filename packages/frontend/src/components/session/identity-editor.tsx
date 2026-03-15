@@ -16,6 +16,7 @@ export function IdentityEditor() {
 
   // Sync fields when saved identity changes (e.g., set by JoinModal)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing local form fields from external identity store
     setName(savedName ?? '');
     setEmail(savedEmail ?? '');
   }, [savedName, savedEmail]);
