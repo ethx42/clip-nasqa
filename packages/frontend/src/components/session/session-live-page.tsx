@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import type { Question, Reply, Snippet } from "@nasqa/core";
 
@@ -43,6 +45,7 @@ export function SessionLivePage({
   initialReplies,
 }: SessionLivePageProps) {
   const { name: authorName } = useIdentity();
+  const tCommon = useTranslations("common");
   const [joinModalOpen, setJoinModalOpen] = useState(false);
 
   // Show JoinModal once per session (sessionStorage flag)
@@ -94,6 +97,7 @@ export function SessionLivePage({
       } else {
         removeVote(questionId);
       }
+      toast.error(tCommon("error"));
     }
   }
 
@@ -121,6 +125,7 @@ export function SessionLivePage({
 
     if (!result.ok) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
+      toast.error(tCommon("error"));
     }
     // On success: subscription event will arrive and replace the optimistic item
   }
@@ -153,6 +158,7 @@ export function SessionLivePage({
     if (!result.ok) {
       // Rollback: remove optimistic reply
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
+      toast.error(tCommon("error"));
     }
   }
 
@@ -204,6 +210,7 @@ export function SessionLivePage({
       } else {
         removeDownvote(questionId);
       }
+      toast.error(tCommon("error"));
     }
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import type { Question, Reply, Snippet } from "@nasqa/core";
 
@@ -17,6 +18,7 @@ import {
   upvoteQuestionAction,
 } from "@/actions/qa";
 import { clearClipboardAction, deleteSnippetAction } from "@/actions/snippet";
+import { useTranslations } from "next-intl";
 import { ClipboardPanel } from "@/components/session/clipboard-panel";
 import { LiveIndicator } from "@/components/session/live-indicator";
 import { QAPanel } from "@/components/session/qa-panel";
@@ -56,6 +58,7 @@ export function SessionLiveHostPage({
 }: SessionLiveHostPageProps) {
   const [hostSecretHash, setHostSecretHash] = useState<string>("");
   const { name: authorName } = useIdentity();
+  const tCommon = useTranslations("common");
 
   // Extract and hash the secret from the URL hash fragment on mount
   useEffect(() => {
@@ -85,7 +88,7 @@ export function SessionLiveHostPage({
     dispatch({ type: "SNIPPET_DELETED", payload: { snippetId } });
     const result = await deleteSnippetAction({ sessionSlug, hostSecretHash, snippetId });
     if (!result.ok) {
-      console.error("deleteSnippetAction failed:", result.error);
+      toast.error(tCommon("error"));
     }
   }
 
@@ -93,7 +96,7 @@ export function SessionLiveHostPage({
     dispatch({ type: "CLIPBOARD_CLEARED" });
     const result = await clearClipboardAction({ sessionSlug, hostSecretHash });
     if (!result.ok) {
-      console.error("clearClipboardAction failed:", result.error);
+      toast.error(tCommon("error"));
     }
   }
 
@@ -111,7 +114,7 @@ export function SessionLiveHostPage({
     }
     const result = await focusQuestionAction({ sessionSlug, hostSecretHash, questionId });
     if (!result.ok) {
-      console.error("focusQuestionAction failed:", result.error);
+      toast.error(tCommon("error"));
     }
   }
 
@@ -145,6 +148,7 @@ export function SessionLiveHostPage({
       } else {
         removeVote(questionId);
       }
+      toast.error(tCommon("error"));
     }
   }
 
@@ -170,6 +174,7 @@ export function SessionLiveHostPage({
     const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
     if (!result.ok) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
+      toast.error(tCommon("error"));
     }
   }
 
@@ -199,6 +204,7 @@ export function SessionLiveHostPage({
 
     if (!result.ok) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
+      toast.error(tCommon("error"));
     }
   }
 
@@ -249,6 +255,7 @@ export function SessionLiveHostPage({
       } else {
         removeDownvote(questionId);
       }
+      toast.error(tCommon("error"));
     }
   }
 
@@ -259,7 +266,7 @@ export function SessionLiveHostPage({
     if (!result.ok) {
       // Rollback
       dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: false } });
-      console.error("banQuestionAction failed:", result.error);
+      toast.error(tCommon("error"));
     }
   }
 
@@ -270,7 +277,7 @@ export function SessionLiveHostPage({
       fingerprint: participantFingerprint,
     });
     if (!result.ok) {
-      console.error("banParticipantAction failed:", result.error);
+      toast.error(tCommon("error"));
     }
   }
 
@@ -279,7 +286,7 @@ export function SessionLiveHostPage({
     const result = await restoreQuestionAction({ sessionSlug, hostSecretHash, questionId });
     if (!result.ok) {
       dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: true } });
-      console.error("restoreQuestionAction failed:", result.error);
+      toast.error(tCommon("error"));
     }
   }
 
