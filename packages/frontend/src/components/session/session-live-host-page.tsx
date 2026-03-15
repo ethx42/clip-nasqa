@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -18,7 +19,6 @@ import {
   upvoteQuestionAction,
 } from "@/actions/qa";
 import { clearClipboardAction, deleteSnippetAction } from "@/actions/snippet";
-import { useTranslations } from "next-intl";
 import { ClipboardPanel } from "@/components/session/clipboard-panel";
 import { LiveIndicator } from "@/components/session/live-indicator";
 import { QAPanel } from "@/components/session/qa-panel";
