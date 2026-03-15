@@ -1,12 +1,12 @@
 # Technology Stack
 
 **Project:** Nasqa Live — real-time presentation session tool (live clipboard + Q&A)
-**Researched:** 2026-03-13
+**Researched:** 2026-03-13 (production stack) | 2026-03-15 (v1.1 enterprise hardening additions)
 **Confidence:** HIGH (all versions verified from actual installed package.json files in the codebase)
 
 ---
 
-## Recommended Stack
+## Part 1: Production Stack (v1.0 — Existing, Do Not Re-Research)
 
 All versions below are the versions already installed in the scaffolded codebase. Treat them as pinned
 baselines; semver ranges in package.json allow patch/minor updates but the majors are fixed.
@@ -178,76 +178,381 @@ WAF rule (in SST `infra/` resource):
 
 ---
 
-## Packages NOT Yet Installed (Required)
+## Part 2: Enterprise Hardening Stack (v1.1 — New Additions)
+
+**Scope:** Testing infrastructure, CI/CD pipeline, error tracking/boundaries, pre-commit hooks,
+dynamic SEO, and accessibility. All choices verified against current npm versions as of 2026-03-15.
+
+---
+
+### Testing — Unit & Component Tests
+
+| Library | Recommended Version | Purpose | Why |
+|---------|---------------------|---------|-----|
+| vitest | ^4.1.0 | Test runner | v4.1 is the current stable release (as of March 2026). Vite-native — shares the same Vite config as the build pipeline, so module resolution, aliases, and env vars work identically in tests without duplication. Native ESM, no Babel transform needed. 10-40× faster than Jest for this stack because it skips the CommonJS transform layer. Official Next.js docs (updated 2026-02-27) recommend Vitest for unit/component tests in App Router. |
+| @vitejs/plugin-react | ^4.x | React transform for Vitest | Required for JSX transform in the Vitest environment. Already likely present via Vite config; add explicitly if not. |
+| @testing-library/react | ^16.3.2 | Component rendering and interaction | v16.3.2 (released January 2026) officially supports React 19. Earlier RTL versions have peer-dep conflicts with React 19 — use ≥ 16.3.0. |
+| @testing-library/dom | ^10.x | DOM query utilities | Peer dependency of @testing-library/react. Provides `getByRole`, `getByText`, etc. |
+| @testing-library/user-event | ^14.x | User interaction simulation | For testing upvote clicks, question submission, host actions. More realistic than `fireEvent` — simulates browser-level events. |
+| jsdom | ^26.x | DOM environment for Vitest | Sets `environment: 'jsdom'` in vitest.config. Required for rendering React components in Node. |
+| vite-tsconfig-paths | ^5.x | Path alias resolution | Maps `@/` imports to the correct source directories in test files, matching Next.js config. Without this, `import { cn } from '@/lib/utils'` fails in tests. |
+
+**Vitest config for this monorepo (place in `packages/frontend/vitest.config.mts`):**
+```ts
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
+
+export default defineConfig({
+  plugins: [tsconfigPaths(), react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+  },
+})
+```
+
+**Critical limitation:** Vitest does NOT support async Server Components (RSC with `async` functions).
+Test those via E2E (Playwright). Synchronous Server Components and all Client Components are testable
+with Vitest + RTL.
+
+---
+
+### Testing — End-to-End (E2E)
+
+| Library | Recommended Version | Purpose | Why |
+|---------|---------------------|---------|-----|
+| @playwright/test | ^1.58.0 | E2E test runner | v1.58.2 is current (March 2026). Choose Playwright over Cypress because: (1) native parallelism without paid tier, (2) cross-browser including WebKit/Safari, (3) first-class support for async RSC testing which Vitest cannot do, (4) better WebSocket/real-time testing via the network interception API. The Next.js docs recommend Playwright for E2E. Playwright is 35-45% faster than Cypress in parallel CI runs. |
+
+E2E tests cover:
+- Session creation flow (host secret display, QR code)
+- Real-time subscription events (WebSocket via Playwright network API)
+- Async Server Components (landing page, session shell rendering)
+- i18n routing (`/en/`, `/es/`, `/pt/` locale switching)
+
+---
+
+### Testing — Accessibility
+
+| Library | Recommended Version | Purpose | Why |
+|---------|---------------------|---------|-----|
+| @axe-core/playwright | ^4.x | Accessibility audits in E2E | Integrates axe-core with Playwright to run WCAG scans against fully rendered pages. Catches structural issues that unit tests miss (landmark regions, heading hierarchy, color contrast). Run on key pages: landing, session host view, session audience view. |
+
+**Do NOT use `vitest-axe`** — its latest stable release is 0.1.0 (3 years old, maintenance inactive).
+Use `@axe-core/playwright` instead, which gets axe audits on real rendered DOM with real CSS.
+
+Component-level ARIA correctness (correct roles, labels, keyboard nav) is covered by RTL's
+`getByRole` / `getByLabelText` queries — no separate accessibility library needed for unit tests.
+
+---
+
+### Error Tracking & Monitoring
+
+| Library | Recommended Version | Purpose | Why |
+|---------|---------------------|---------|-----|
+| @sentry/nextjs | ^10.43.0 | Error tracking + performance monitoring | v10.43.0 is current (March 2026). The wizard auto-generates `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`, and `app/global-error.tsx`. App Router error boundaries (`error.tsx`, `global-error.tsx`) are first-class in Sentry v10. Captures unhandled errors, React component stack traces, and Lambda resolver errors via the Node SDK. |
+
+**Next.js App Router error boundary pattern (generated by Sentry wizard):**
+```ts
+// app/global-error.tsx — Sentry captures + shows fallback UI
+'use client'
+import * as Sentry from '@sentry/nextjs'
+import NextError from 'next/error'
+import { useEffect } from 'react'
+
+export default function GlobalError({ error }) {
+  useEffect(() => { Sentry.captureException(error) }, [error])
+  return (
+    <html><body>
+      <NextError statusCode={undefined as any} />
+    </body></html>
+  )
+}
+```
+
+**Custom error.tsx files** (per-route error boundaries) should be added for:
+- `app/[locale]/live/[slug]/error.tsx` — session not found, expired, network errors
+- `app/[locale]/error.tsx` — locale-level fallback
+
+**Do NOT use** a third-party structured logging library for Lambda resolvers. Use `console.log`/`console.error`
+with structured JSON objects — CloudWatch Logs Insights picks these up natively. Sentry's Node SDK
+automatically instruments Lambda via the SST function config.
+
+---
+
+### Pre-Commit Hooks
+
+| Tool | Recommended Version | Purpose | Why |
+|------|---------------------|---------|-----|
+| husky | ^9.1.7 | Git hook manager | v9.1.7 is current stable (2025). Minimal setup: `husky init` creates `.husky/` and adds `prepare` script to package.json. The `prepare` script ensures all team members get hooks on `npm install`. |
+| lint-staged | ^16.3.0 | Run linters on staged files only | v16.3.3 is current (March 2026). Critical: run only on staged files to keep pre-commit fast (< 5 seconds). Running ESLint on the whole monorepo on every commit would be too slow. |
+
+**Pre-commit hook configuration (`.husky/pre-commit`):**
+```sh
+npx lint-staged
+```
+
+**`lint-staged` config in root `package.json`:**
+```json
+{
+  "lint-staged": {
+    "packages/frontend/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/core/**/*.ts": [
+      "prettier --write"
+    ],
+    "packages/functions/**/*.ts": [
+      "prettier --write"
+    ],
+    "**/*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}
+```
+
+**Add Prettier** — it is not yet installed in the project. This is the right time.
+
+| Tool | Recommended Version | Purpose | Why |
+|------|---------------------|---------|-----|
+| prettier | ^3.8.1 | Code formatter | v3.8.1 is current (January 2026). ESLint 9 flat config is already in use (eslint-config-next ships it). Add `eslint-config-prettier` to disable ESLint formatting rules that conflict with Prettier. Do NOT use eslint-plugin-prettier (it slows down lint). |
+| eslint-config-prettier | ^9.x | Disables ESLint rules that conflict with Prettier | Required when using both tools. Without it, ESLint and Prettier fight over quote style, semicolons, etc. |
+
+---
+
+### CI/CD Pipeline
+
+**Platform:** GitHub Actions (already implied by the git repo context).
+
+**Workflow file:** `.github/workflows/ci.yml`
+
+**Recommended job structure:**
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck          # tsc --noEmit across all packages
+      - run: npm run lint               # eslint on frontend
+      - run: npm run test --workspace=packages/frontend -- --run  # vitest --run (no watch)
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run build --workspace=packages/frontend
+      - run: npx playwright test
+```
+
+**Key decisions:**
+- `npm ci` (not `npm install`) for reproducible installs in CI
+- `actions/setup-node@v4` with `cache: 'npm'` halves install time on subsequent runs
+- `--run` flag on Vitest disables watch mode (required in CI — watch mode hangs)
+- E2E runs after quality gate passes (`needs: quality`) to avoid wasting Playwright time on broken builds
+- Deploy step is separate and only runs on `main` push (not on PRs) to avoid billing runaway
+
+**Deploy job (separate workflow or additional job, main branch only):**
+```yaml
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [quality, e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+```
+
+Note: The root `package.json` deploy script already runs lint + typecheck before `sst deploy`.
+In CI the quality job runs those separately first, so you may want a lighter deploy script
+(just `sst deploy`) to avoid double-running checks in CI.
+
+---
+
+### Dynamic SEO
+
+**No new library needed.** Next.js 16 App Router provides all required primitives natively.
+
+| Primitive | Purpose | How to Use |
+|-----------|---------|------------|
+| `generateMetadata()` | Per-route dynamic metadata | Export from any `page.tsx` — async, can fetch data. Works for session pages (title from session title, description from session slug). |
+| `ImageResponse` from `next/og` | Dynamic OG images | Built-in image generation API. Create `app/[locale]/live/[slug]/opengraph-image.tsx` as a route segment file — Next.js auto-registers it as the OG image endpoint. |
+| Static `metadata` export | Static page metadata | Use for the landing page, which has fixed title/description. |
+
+**Per-session OG metadata pattern:**
+```ts
+// app/[locale]/live/[slug]/page.tsx
+export async function generateMetadata({ params }) {
+  const session = await getSession(params.slug)
+  return {
+    title: session?.title ?? 'Nasqa Live Session',
+    description: `Join the live Q&A session: ${params.slug}`,
+    openGraph: {
+      title: session?.title ?? 'Nasqa Live',
+      images: [`/api/og?slug=${params.slug}`],
+    },
+  }
+}
+```
+
+**What NOT to build:** Do not install `next-seo` — it is a Pages Router library. App Router's
+built-in `generateMetadata` API replaces it entirely.
+
+---
+
+## Packages NOT Yet Installed (v1.0 Gaps)
 
 | Package | Version | Why Needed |
 |---------|---------|-----------|
-| `ulid` | ^2.3.0 | Lexicographically sortable IDs for DynamoDB SK ordering (replaces UUID for time-ordered records) |
-| `qrcode` | ^1.5.4 | QR code SVG generation (server-side, zero client JS) |
-| `@types/qrcode` | ^1.5.5 | TypeScript types for qrcode |
-| `aws-amplify` or `@aws-amplify/api-graphql` | ^6.x | AppSync WebSocket subscription client. Amplify Gen2's `API.graphql` subscription API is the standard way to connect to AppSync from a browser without managing WebSocket handshakes manually. Amplify is large — import only the API subpackage: `@aws-amplify/api-graphql`. |
-| `crypto` (Node built-in) | — | SHA-256 hashing for hostSecret. Available natively in Node 24 / Edge Runtime via `crypto.subtle`. No package needed; use `await crypto.subtle.digest("SHA-256", encoded)`. |
+| `ulid` | ^3.0.2 | Already in functions/package.json. Confirm it's present — it is. |
+| `qrcode` | ^1.5.4 | Already in frontend/package.json. Confirm present — it is. |
+| `@types/qrcode` | ^1.5.6 | Already in frontend/devDependencies. |
+| `aws-amplify` / `@aws-amplify/api-graphql` | ^6.x | Already in frontend/package.json as `aws-amplify@^6.16.3` and `@aws-amplify/api-graphql@^4.8.5`. |
+
+## Packages NOT Yet Installed (v1.1 Enterprise Hardening)
+
+| Package | Version | Workspace | Why Needed |
+|---------|---------|-----------|-----------|
+| `vitest` | ^4.1.0 | packages/frontend (devDep) | Test runner |
+| `@vitejs/plugin-react` | ^4.x | packages/frontend (devDep) | JSX transform for Vitest |
+| `@testing-library/react` | ^16.3.2 | packages/frontend (devDep) | Component testing, React 19 compatible |
+| `@testing-library/dom` | ^10.x | packages/frontend (devDep) | DOM queries |
+| `@testing-library/user-event` | ^14.x | packages/frontend (devDep) | User interaction simulation |
+| `jsdom` | ^26.x | packages/frontend (devDep) | DOM environment |
+| `vite-tsconfig-paths` | ^5.x | packages/frontend (devDep) | Path alias resolution in tests |
+| `@playwright/test` | ^1.58.0 | root (devDep) | E2E testing |
+| `@axe-core/playwright` | ^4.x | root (devDep) | Accessibility audits in E2E |
+| `@sentry/nextjs` | ^10.43.0 | packages/frontend | Error tracking + monitoring |
+| `husky` | ^9.1.7 | root (devDep) | Git hook manager |
+| `lint-staged` | ^16.3.0 | root (devDep) | Staged-file linting |
+| `prettier` | ^3.8.1 | root (devDep) | Code formatter |
+| `eslint-config-prettier` | ^9.x | packages/frontend (devDep) | Disables ESLint formatting rules that conflict with Prettier |
 
 ---
 
-## Alternatives Considered
-
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Real-time transport | AppSync WebSocket | Ably / Pusher / Socket.io | AppSync is already in the stack; third-party services add cost, another vendor dependency, and don't integrate with DynamoDB TTL or Lambda resolvers natively |
-| Real-time transport | AppSync WebSocket | API Gateway WebSocket API | AppSync WebSocket requires no connection management lambda; API GW WebSocket requires custom connect/disconnect/message lambdas and a connection table — more moving parts |
-| Subscription client | @aws-amplify/api-graphql | aws-appsync (deprecated) | aws-appsync is unmaintained; Amplify v6 is the current supported path |
-| Subscription client | @aws-amplify/api-graphql | graphql-ws | graphql-ws speaks GraphQL over WebSocket (RFC compliant) but AppSync uses a proprietary protocol — graphql-ws will not work without a custom adapter |
-| Animation | Framer Motion | CSS animations only | Complex choreography (hero snippet emphasis, pulsing glow, list reorder on upvote) is impractical in pure CSS; Framer's layout animations are the right tool |
-| Animation | Framer Motion | React Spring | React Spring is capable but less ergonomic for layout animations; Framer already installed |
-| Highlighting | Shiki | Prism.js / highlight.js | Shiki uses TextMate grammars (same as VS Code) for higher fidelity; only Shiki supports no-layout-shift dual-theme via CSS vars natively in v4 |
-| ID generation | ulid | uuid v4 | UUIDs are random — no sort order. DynamoDB reverse-chron feeds need sortable IDs; ULID is monotonic and time-prefixed |
-| DB access pattern | Single-table DynamoDB | Multi-table DynamoDB | Multi-table adds GSI complexity and extra reads for session-scoped queries. All entities share the same PK (SESSION#slug), so single-table is the natural fit |
-| DB access pattern | Single-table DynamoDB | Aurora Serverless v2 | Aurora has cold-start connection overhead; DynamoDB is better for ephemeral 24-hour sessions with bursty concurrent access (50-500 users) |
-| i18n | next-intl | next-i18next | next-i18next is Pages Router oriented; next-intl has first-class App Router and Server Components support |
-| IaC | SST Ion v4 | CDK / SAM / Terraform | Non-negotiable per project constraint; SST Ion v4 chosen over older SST v2/v3 due to Pulumi backend (eliminates CloudFormation drift) |
-| QR code | qrcode (server) | qr-code-styling (client) | Client-side QR adds ~20 kB to bundle; server-rendered SVG is zero client cost and satisfies < 80 kB constraint |
-| Component primitives | @base-ui/react | Radix UI | @base-ui is already installed; it is maintained by the MUI team and has a smaller bundle than Radix with comparable accessibility |
-
----
-
-## Installation
+## Installation (v1.1 Additions)
 
 ```bash
-# In packages/frontend
-npm install ulid qrcode @aws-amplify/api-graphql --workspace=packages/frontend
+# Unit testing stack — frontend workspace
+npm install -D vitest @vitejs/plugin-react @testing-library/react @testing-library/dom @testing-library/user-event jsdom vite-tsconfig-paths --workspace=packages/frontend
 
-# In packages/frontend (dev)
-npm install -D @types/qrcode --workspace=packages/frontend
+# E2E testing + accessibility — root (applies to all workspaces)
+npm install -D @playwright/test @axe-core/playwright
 
-# In packages/functions (if ULID used in resolvers too)
-npm install ulid --workspace=packages/functions
+# Install Playwright browsers (run once after install)
+npx playwright install --with-deps
+
+# Error tracking — frontend workspace (runtime dep, not devDep)
+npm install @sentry/nextjs --workspace=packages/frontend
+
+# Pre-commit hooks — root
+npm install -D husky lint-staged prettier eslint-config-prettier
+npx husky init
+
+# Add Prettier config to root package.json
+# (See lint-staged config block above)
 ```
 
 ---
 
-## Key Version Pinning Notes
+## Alternatives Considered (v1.1 Additions)
 
-| Package | Pinned At | Notes |
-|---------|-----------|-------|
-| next | 16.1.6 | Next.js 16 introduced the `use cache` directive (stable) and improved RSC streaming. Do not upgrade to 17.x without testing AppSync auth headers in edge middleware. |
-| react | 19.2.3 | React 19 `useOptimistic` is the correct API for optimistic upvote/question state. Do not downgrade. |
-| shiki | 4.0.2 | v4 API is not backwards compatible with v3. The `codeToHtml` dual-theme API exists only in v4+. |
-| next-intl | 4.8.3 | v4 dropped the `pages/` directory API. Do not regress to v3. |
-| zod | 4.3.6 | Zod v4 has breaking API changes vs v3 (notably `z.string().min()` error messages). All schemas must be written for v4. |
-| sst | 4.2.7 | SST Ion (v4). Do not confuse with SST v2 (CDK-based) — the API surface is completely different. |
-| @aws-sdk/* | 3.1009.0 | v3 modular SDK. Do not use v2 (`aws-sdk`) — it is deprecated and has a much larger bundle. |
-| tailwindcss | 4.x | CSS-first config. There is no `tailwind.config.js` — customization goes in `globals.css` via `@theme`. v4 is not backwards compatible with v3 plugin APIs. |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Test runner | Vitest | Jest | Jest requires Babel transform for ESM/TypeScript in this stack — adds config overhead. Vitest is native ESM, 10-40× faster cold start, and the official Next.js docs now recommend it over Jest for App Router. |
+| Test runner | Vitest | Jest (with SWC) | Even with SWC, Jest's architecture runs each test file in an isolated process. Vitest shares the Vite build graph across tests for faster reruns. |
+| E2E | Playwright | Cypress | Cypress charges for parallel execution (required in CI at scale). Playwright has native parallelism free. Playwright also supports WebKit/Safari and has better WebSocket network interception for testing AppSync subscriptions. |
+| E2E | Playwright | Cypress | Cypress cannot test async RSC behavior directly; Playwright runs against the real browser. |
+| Accessibility | @axe-core/playwright | vitest-axe | vitest-axe is unmaintained (latest stable 0.1.0, published 3 years ago). @axe-core/playwright tests against real rendered CSS, which catches contrast and layout issues vitest-axe cannot. |
+| Accessibility | @axe-core/playwright | jest-axe | jest-axe targets Jest, not Vitest. Even with adapters, it tests against a JSDOM snapshot, not real CSS — misses contrast violations. |
+| Error tracking | @sentry/nextjs | Datadog RUM | Sentry has a generous free tier (5K errors/month). Datadog requires paid plan. For a personal project at 50-500 users/session, Sentry free tier is sufficient. |
+| Error tracking | @sentry/nextjs | LogRocket | LogRocket is session-replay focused. Sentry has better App Router error boundary integration and Lambda function error capture via the same SDK. |
+| Pre-commit | husky + lint-staged | lefthook | lefthook is a valid alternative (faster, written in Go). Husky v9 is simpler for a npm workspaces setup and has better ecosystem documentation. Both are fine; husky is more commonly understood. |
+| Code formatting | Prettier | ESLint formatting rules only | ESLint formatting rules are deprecated in ESLint 9+. Prettier is the dedicated formatter; ESLint handles correctness. Using both with `eslint-config-prettier` is the standard pattern. |
+| SEO | Native generateMetadata | next-seo | next-seo is a Pages Router library. It provides no value in an App Router project — generateMetadata covers everything next-seo offered, natively. |
+
+---
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `jest` (for unit tests) | Requires Babel/SWC transform config on top of existing Vite/TypeScript setup. Duplicates build config. Slower than Vitest. | `vitest` |
+| `vitest-axe` | Unmaintained (0.1.0, 3 years old). Do not add unmaintained packages to a hardening milestone. | `@axe-core/playwright` |
+| `jest-axe` | Jest-specific, incompatible with Vitest. | `@axe-core/playwright` |
+| `next-seo` | Pages Router library. A no-op in App Router — adds a dependency with zero benefit. | `generateMetadata()` from Next.js |
+| `eslint-plugin-prettier` | Runs Prettier as an ESLint rule — significantly slows ESLint (2-5× slower). The correct pattern is to run them separately. | `eslint-config-prettier` (disables conflicts) + `prettier --write` in lint-staged |
+| `@sentry/react` (alone) | The React-only SDK does not instrument Next.js Server Components, Lambda resolvers, or edge middleware. | `@sentry/nextjs` (covers all runtimes) |
+| `cypress` | Parallel execution requires paid plan. No WebKit support. | `@playwright/test` |
+| `aws-sdk` (v2) | Deprecated. Has a 50× larger bundle than the v3 modular SDK. | `@aws-sdk/client-dynamodb` v3 (already installed) |
+
+---
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| `@testing-library/react@^16.3.2` | `react@19.2.3` | RTL ≥ 16.3.0 required for React 19. Earlier RTL versions have peer-dep conflicts. |
+| `vitest@^4.1.0` | `@vitejs/plugin-react@^4.x` | Must use @vitejs/plugin-react (not @vitejs/plugin-react-swc) for jsdom compatibility. |
+| `@sentry/nextjs@^10.x` | `next@16.1.6` | Sentry v10 requires Next.js ≥ 13.2. Next.js 16 is fully supported. |
+| `eslint-config-next@16.1.6` | `eslint@^9` | Already installed. ESLint 9 flat config is the default. Do not use `.eslintrc.json` — use `eslint.config.mjs`. |
+| `husky@^9.x` | `npm` workspaces | husky v9 `prepare` script runs from the root; works with npm workspaces without extra config. |
+| `lint-staged@^16.x` | `husky@^9.x` | lint-staged v16 requires Node ≥ 18. Both are current and compatible. |
+| `prettier@^3.8.x` | `eslint-config-prettier@^9.x` | Always pair together. eslint-config-prettier v9 supports Prettier 3. |
 
 ---
 
 ## Sources
 
-- Codebase: `/Users/santiago.torres/codebases/personal/nasqa-live/packages/frontend/package.json` — verified versions (HIGH confidence)
-- Codebase: `/Users/santiago.torres/codebases/personal/nasqa-live/packages/functions/package.json` — verified versions (HIGH confidence)
-- Codebase: `/Users/santiago.torres/codebases/personal/nasqa-live/package.json` — root dependencies (HIGH confidence)
-- Codebase: `/Users/santiago.torres/codebases/personal/nasqa-live/.planning/codebase/STACK.md` — existing stack analysis (HIGH confidence)
-- Codebase: `/Users/santiago.torres/codebases/personal/nasqa-live/.planning/PROJECT.md` — requirements and constraints (HIGH confidence)
-- AppSync subscription union-type limitation: MEDIUM confidence (training data + known AppSync GQL spec constraint; verify against SST AppSync component docs before implementing)
-- WAF rate limiting via AppSync: MEDIUM confidence (training data; verify SST Ion supports WAF ACL attachment to AppSync in v4)
-- `@aws-amplify/api-graphql` as subscription client: MEDIUM confidence (training data; Amplify v6 API may have changed — verify current subscription API in Amplify Gen2 docs before implementing)
+- Codebase: `/packages/frontend/package.json` — verified installed versions (HIGH confidence)
+- Codebase: `/packages/functions/package.json` — verified versions (HIGH confidence)
+- Codebase: `/package.json` — root workspace dependencies (HIGH confidence)
+- Next.js docs: https://nextjs.org/docs/app/guides/testing/vitest — Vitest setup guide, updated 2026-02-27 (HIGH confidence)
+- Next.js docs: https://nextjs.org/docs/app/api-reference/functions/generate-metadata — generateMetadata API (HIGH confidence)
+- WebSearch: vitest v4.1.0 confirmed as current npm latest as of 2026-03-15 (HIGH confidence)
+- WebSearch: @testing-library/react v16.3.2 as React 19 compatible release, January 2026 (HIGH confidence)
+- WebSearch: @sentry/nextjs v10.43.0 as current stable, March 2026 (HIGH confidence)
+- WebSearch: husky v9.1.7 as current stable (MEDIUM confidence — last published 1 year ago per search, v9 is still the recommended line)
+- WebSearch: lint-staged v16.3.3 as current stable, March 2026 (HIGH confidence)
+- WebSearch: prettier v3.8.1 as current stable, January 2026 (HIGH confidence)
+- WebSearch: @playwright/test v1.58.2 as current stable, March 2026 (HIGH confidence)
+- WebSearch: vitest-axe maintenance status — 0.1.0 latest stable, 3 years inactive (HIGH confidence — validated by multiple sources)
+- WebSearch: Playwright vs Cypress comparison for 2025 — Playwright recommended for CI/parallel (MEDIUM confidence — multiple sources agree)
+
+---
+
+*Stack research for: Nasqa Live — enterprise hardening (v1.1)*
+*Researched: 2026-03-15*

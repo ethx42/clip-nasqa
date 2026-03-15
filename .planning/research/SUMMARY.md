@@ -1,263 +1,232 @@
 # Project Research Summary
 
-**Project:** Nasqa Live — real-time presentation session tool (live clipboard + Q&A)
-**Domain:** Live audience interaction / developer tooling
-**Researched:** 2026-03-13
-**Confidence:** HIGH (stack verified from installed packages; architecture from official docs; features from authoritative PROJECT.md; pitfalls from official AWS docs)
+**Project:** Nasqa Live — enterprise hardening (v1.1)
+**Domain:** Production hardening of an existing Next.js 16 + SST + AppSync real-time app
+**Researched:** 2026-03-15
+**Confidence:** HIGH
 
 ## Executive Summary
 
-Nasqa Live is a developer-focused live session tool that solves a gap no existing product addresses: sharing code with an audience in real time during a talk or workshop, combined with structured Q&A. The recommended architecture is a single AppSync GraphQL API driving one WebSocket subscription channel per session, backed by a DynamoDB single-table design with 24-hour TTL, deployed via SST Ion on AWS. Every design decision in the research — from single-table DynamoDB to single union-type subscription channel — is optimized for the 50–500 concurrent participant target in ephemeral conference sessions. The codebase is already scaffolded with the correct technology versions; the work is building features, not selecting infrastructure.
+Nasqa Live v1.0 is a fully scaffolded, feature-complete real-time presentation tool (live clipboard + Q&A). The v1.1 milestone is not about adding new product features — it is a production reliability layer that moves the codebase from "demo quality" to "production grade." The research confirms this is a well-understood problem domain: the patterns for testing, CI/CD, error tracking, and accessibility in Next.js 16 App Router are mature and well-documented, with official guidance from Next.js, Sentry, and Vitest covering most of the ground.
 
-The core product thesis is a pull-not-push clipboard model: the host pushes code to the audience's screen rather than the audience navigating to find it. This, combined with Shiki server-side syntax highlighting and the anonymous-by-default participant model, is what differentiates Nasqa from Slido, Mentimeter, and Pigeonhole Live, none of which have any code-aware features. The Q&A feed, upvoting, and host moderation are table stakes; the live clipboard is the hook that earns adoption.
+The recommended approach builds the hardening stack in dependency order: pre-commit hooks first (prevents any new quality debt from entering the repo during the hardening process itself), then CI pipeline (authoritative quality gate, independent of hooks), then test infrastructure (requires CI to run against), then error handling (pure Next.js file conventions, no external dependencies), then monitoring together with logging (Sentry requires error boundaries to exist), then SEO/metadata (independent), and finally accessibility (applied across all components, benefits from lint enforcement being in place). This order is not arbitrary — each layer depends on or reinforces the previous one, and deviating from it creates rework.
 
-The highest-risk technical areas are (1) AppSync subscription session isolation — a single wrong `null` argument leaks all sessions' events to all clients — and (2) the optimistic UI reconciliation pattern where local state and subscription-delivered server state must merge without duplication or phantom values. Both risks are mitigated by well-understood patterns documented in the architecture research: server-side enhanced subscription filtering by `sessionSlug`, and temp-ID-based optimistic reconciliation with an explicit dedup set.
+The critical risks are all avoidable with configuration discipline. Sentry will flood with AppSync WebSocket noise unless `beforeSend` filters are applied on day one. The `hostSecret` URL parameter will be leaked to Sentry's dashboard unless explicitly scrubbed. Pre-commit hooks are a developer convenience, not a security gate — CI must independently enforce the same checks. Vitest cannot test async Server Components; treating this as a workaround-able configuration problem wastes time. These risks are well-understood and mitigatable if addressed at the right phase, in the right order.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is fully scaffolded. All installed versions are pinned and must not be changed without testing: Next.js 16.1.6 with React 19.2.3 (App Router, Server Components, `useOptimistic`), AppSync via SST Ion 4.2.7, DynamoDB with the AWS SDK v3 modular client, Zod 4.3.6 for shared validation, and Tailwind CSS v4 with shadcn/base-ui for UI. Three packages are not yet installed and are required before any feature work: `ulid` (sortable DynamoDB IDs), `qrcode` (server-side SVG generation), and `@aws-amplify/api-graphql` (AppSync WebSocket subscription client).
+The v1.0 stack is pinned and production-ready (Next.js 16.1.6, React 19.2.3, AppSync, SST Ion v4, DynamoDB, Zod v4). The v1.1 additions are entirely additive — no existing dependencies change. For testing, Vitest 4.1.0 + React Testing Library 16.3.2 is the official Next.js recommendation for this ESM-first monorepo stack (the only RTL version with React 19 peer-dep compatibility). Playwright 1.58.0 handles E2E and async Server Component testing that Vitest cannot touch. Sentry 10.43.0 covers all three Next.js runtimes from a single SDK. Husky 9 + lint-staged 16.3.x provides pre-commit hooks; Prettier 3.8.x completes the formatter setup that is currently missing from the codebase.
 
-**Core technologies:**
-- **Next.js 16 + React 19:** App Router with Server Components for the SSR shell (sub-80kB payload); Client Components own all real-time state
-- **AWS AppSync:** GraphQL API + managed WebSocket subscriptions; single `onSessionUpdate` channel per session handles all event types via discriminated union
-- **DynamoDB (single-table):** All session entities behind `PK: SESSION#{slug}`; On-Demand billing; ULID sort keys for chronological ordering without GSIs; 24h TTL on all items
-- **SST Ion v4:** Single-command `sst deploy`; Pulumi backend eliminates CloudFormation drift from older SST versions
-- **Zod v4:** Shared validation schemas in `@nasqa/core`; same schema validates AppSync resolver input and frontend forms
-- **Shiki v4:** Server-side only, never shipped to client; dual-theme CSS variable output eliminates layout shift on dark/light toggle
-- **`@aws-amplify/api-graphql`:** The only supported AppSync WebSocket subscription client; handles keep-alive, reconnect, and exponential backoff automatically
+**Core technologies (v1.1 additions):**
+- **Vitest 4.1.0**: Unit + component test runner — ESM-native, 10-40x faster than Jest for this stack, official Next.js recommendation
+- **@testing-library/react 16.3.2**: Component rendering — only RTL version with React 19 peer-dep compatibility; earlier versions have conflicts
+- **Playwright 1.58.0**: E2E + async RSC tests — native parallelism (no paid tier), WebSocket network interception, cross-browser including WebKit
+- **@sentry/nextjs 10.43.0**: Error tracking — covers client/server/edge runtimes in a single SDK; App Router error boundary integration; Lambda function capture
+- **Husky 9 + lint-staged 16.3.x**: Pre-commit hooks — staged-file only linting (fast); Husky must be installed at repo root only
+- **Prettier 3.8.1**: Code formatter — currently missing from the codebase; must be paired with `eslint-config-prettier` to prevent ESLint rule conflicts
+- **pino + pino-lambda**: Structured Lambda logging — CloudWatch-native structured JSON; Lambda request ID injected automatically
+
+**What NOT to install:** Jest (requires Babel/SWC transform overhead on top of existing Vite config), vitest-axe (unmaintained, 0.1.0 three years old), jest-axe (Jest-specific, incompatible with Vitest), next-seo (Pages Router library — a no-op in App Router), eslint-plugin-prettier (runs Prettier as an ESLint rule, 2-5x lint slowdown), Cypress (paid parallelism, no WebKit, worse WebSocket interception than Playwright).
 
 ### Expected Features
 
-The MVP must prove one thing: a speaker pushes code and the audience sees it instantly, asks questions, and the best ones surface to the top. Everything else is Phase 2 or later.
+The v1.1 milestone is itself an MVP — an MVP of production hardening. The research draws a clear line between what must ship to call the app production-grade and what is a differentiator or future work.
 
-**Must have (table stakes — MVP blocks on these):**
-- Session creation with shareable slug + QR code — without this, nothing else works
-- Anonymous participation, no signup required — friction kills adoption at a conference
-- Real-time snippet + question delivery via AppSync subscriptions
-- Upvoting with vote-sorted Q&A feed — without sorting, the list is noise
-- Host moderation: delete content, ban participants — minimum viable trust model
-- Device fingerprint for identity — prerequisite for upvote dedup and ban enforcement
-- 24-hour TTL auto-expiry — operational hygiene and privacy feature from day one
-- Mobile-responsive participant view — most audience members join on phones
-- Visual "live" connection indicator — participants must know they are connected
+**Must have — v1.1 core (table stakes for production):**
+- Vitest + RTL test suite — unsafe to refactor without tests; CI quality gate blocks on this
+- GitHub Actions CI pipeline (lint + typecheck + test on every PR)
+- Error boundaries: `error.tsx` + `global-error.tsx` + `not-found.tsx` — must ship together with Sentry
+- Sentry error tracking — blind production debugging is unsustainable; must ship with error boundaries
+- Pre-commit hooks (Husky + lint-staged + Prettier)
+- Structured CloudWatch logging in Lambda resolvers (pino)
+- Dynamic SEO metadata via `generateMetadata` for landing and session pages
+- `robots.txt` — disallow `/live/` so ephemeral session pages are not indexed
+- ARIA labels on all icon-only buttons (Level A accessibility — lowest effort, highest impact)
+- Semantic HTML audit — replace `<div>` soup with landmark elements; foundational for accessibility
+- Keyboard navigation verification — WCAG 2.2 Level AA, legally required in EU since June 2025
+- TypeScript strict mode + tsconfig consistency audit
 
-**Should have (differentiators — Phase 2):**
-- Live code clipboard with Shiki syntax highlighting — the core hook of the product
-- Host-pushed clipboard model (audience does not navigate; code appears)
-- Hero prominence for the latest snippet — mirrors presenter's current focus
-- Focus mode (pin a question to signal "we are answering this now")
-- Speaker reply badge (emerald border + "Speaker" label)
-- Community downvote auto-hide (50% threshold against connected audience)
-- Auto-ban on 3-strike rule via device fingerprint
-- i18n (es + pt in addition to en)
-- Sub-100ms optimistic UI (correct first, fast second)
+**Should have — v1.x (add when core hardening is stable):**
+- Playwright E2E tests — happy path: create session, join, post question, upvote, host ban
+- Bundle size regression guard in CI
+- Static OG image for landing page
+- Dynamic OG image per session (session title in social link previews)
+- Prettier formatting already in pre-commit once Prettier is installed
 
-**Defer (v2+ or Phase 3+):**
-- Landing/marketing page — ship to early users first, then market
-- IaC polish / zero-ops `sst deploy` guide — scaffolding exists; document later
-- Polls, word clouds, reactions, slide upload — anti-features that dilute the product
+**Defer — v2+:**
+- Lighthouse CI score gate (high CI setup complexity; meaningful only after full a11y + SEO pass)
+- `useReportWebVitals` hook (needs traffic volume to generate useful field data)
+- Content Security Policy headers (AppSync WebSocket domain allowlisting is easy to break accidentally; defer until E2E tests can catch breakage)
+- `sitemap.xml` (only the landing page is indexable; marginal benefit at this scale)
 
-**Anti-features (never build):**
-- User accounts, persistent login, email notifications, native mobile app, nested threading, export/download, AI summarization, admin dashboard, audience clipboard posting
+**Anti-features (do not build):**
+- Integration tests against live AWS (cost, slowness, test pollution across runs)
+- 100% code coverage mandate (produces implementation-testing, not behavior-testing; chasing it generates brittle suites)
+- E2E tests on every PR (adds 5-15 minutes to every PR; run on main push only)
+- Storybook (Nasqa components are tightly coupled to real-time state and not reusable in isolation; no design team to consume it)
+- WCAG 2.1 Level AAA (technically infeasible for dynamic real-time UIs; target Level AA)
+- Datadog / New Relic APM (overkill for 50-500 users; adds latency and cost per invocation)
 
 ### Architecture Approach
 
-The architecture uses a strict Server/Client Component boundary in Next.js: the session page route is a Server Component that reads DynamoDB directly at render time and passes initial state as props to Client Component islands. The `SubscriptionProvider` Client Component owns the AppSync WebSocket lifecycle and writes incoming events to local state (Zustand or React Context), which all other Client Components consume. This yields SSR-fast initial loads with zero real-time logic on the server. All mutations go through AppSync HTTP, which invokes Lambda resolvers that validate with Zod, write to DynamoDB, and implicitly trigger subscription fanout. No VTL resolvers — all Lambda, all TypeScript.
+The hardening layer wraps the existing monorepo (`packages/frontend`, `packages/functions`, `packages/core`, `sst.config.ts`) without restructuring it. Every new component has a specific insertion point: Vitest config and test files live in `packages/frontend/`; Sentry requires three separate config files (one per Next.js runtime — browser, Node.js, Edge) plus `withSentryConfig` wrapping in `next.config.ts`; Husky and GitHub Actions workflows live at the repo root (not in any package). The build order follows dependency flow — each layer depends on the previous being in place.
 
-**Major components:**
-1. **`SessionShell` (Server Component)** — DynamoDB initial read, SSR hydration, locale/theme providers; zero real-time code
-2. **`SubscriptionProvider` (Client Component)** — AppSync WebSocket lifecycle; dispatches `SessionUpdate` events to local state by `eventType`
-3. **`ClipboardFeed` + `QuestionBoard` (Client Components)** — merge `initialData` props from SSR with live subscription events; own optimistic UI state
-4. **`HostControls` (Client Component)** — reads `hostSecret` from URL `?hostSecret=` param; sends all host mutations with the raw secret (Lambda compares SHA-256 hash)
-5. **Lambda Resolvers** — Zod validation + DynamoDB writes + host secret hash comparison per operation; one resolver per mutation
-6. **DynamoDB Single Table** — `SESSION#{slug}` partition key; ULID sort keys; On-Demand billing; TTL on every item
-7. **AppSync GraphQL API** — schema with `SessionEvent` interface + `@aws_subscribe` directives; enhanced subscription filter enforces `sessionSlug` isolation server-side
+**Major components and insertion points:**
+1. **Pre-commit layer** (`/.husky/pre-commit`, root `package.json` lint-staged config) — runs ESLint + Prettier on staged files only; type check deferred to CI to keep hooks fast (under 5 seconds)
+2. **CI pipeline** (`.github/workflows/ci.yml` + `deploy.yml`) — parallel lint/typecheck/test jobs; deploy gated on all quality jobs passing; AWS authentication via OIDC (no long-lived secrets stored)
+3. **Test layer** (`packages/frontend/vitest.config.mts`, `src/__tests__/`) — Vitest + RTL for Client Components and synchronous Server Components; Playwright for async RSCs and E2E flows; `vite-tsconfig-paths` required for `@/` alias resolution
+4. **Error handling layer** (`app/global-error.tsx`, `app/[locale]/error.tsx`, `app/not-found.tsx`) — must be present before Sentry is enabled; error boundaries must manually call `Sentry.captureException()` in `useEffect` — boundaries prevent Sentry's automatic global capture
+5. **Monitoring layer** (Sentry three-config setup, pino Lambda logger) — `beforeSend` AppSync noise filter; `hostSecret` URL scrubbing is non-optional security requirement; source map upload via Netlify env vars
+6. **SEO layer** (`generateMetadata` in session page, `robots.ts`) — dynamic session title in metadata; session pages disallowed from indexing; `hreflang` + `alternates.canonical` required to prevent i18n duplicate content penalty
+7. **Accessibility layer** (ARIA labels, semantic HTML, `aria-live` regions) — applied across existing components; `aria-live` regions must be unconditionally mounted before receiving content (architectural constraint, not cosmetic addition)
 
 ### Critical Pitfalls
 
-1. **AppSync subscription session isolation (Pitfall 2, Critical)** — passing `null` as the `sessionSlug` subscription argument subscribes to ALL sessions. Prevention: always pass a non-null slug AND add a server-side enhanced filter resolver that rejects events with mismatched `sessionSlug`. Test with two concurrent sessions before building any feature.
+1. **Sentry capturing `hostSecret` in URLs** — The host page URL contains `?hostSecret=[uuid]`. Sentry captures full request URLs by default. Add `beforeSend` to all three Sentry configs (client, server, edge) to strip `hostSecret` before the event is sent. This is non-optional and must be implemented before Sentry is enabled in any environment.
 
-2. **Stale WebSocket connections on conference WiFi (Pitfall 1, Critical)** — AppSync sends `ka` keep-alives; if the client does not monitor them, participants silently stop receiving updates with no error. Prevention: use `@aws-amplify/api-graphql` which handles reconnect/backoff automatically; expose a visible "Reconnecting..." indicator.
+2. **Error boundaries not catching layout errors** — `app/error.tsx` cannot catch errors thrown inside `app/layout.tsx` (correct React behavior, not a bug). `app/global-error.tsx` must also be present and must include its own `<html><body>` tags because it replaces the root layout when triggered. Without it, root layout crashes produce a blank white screen in production with no fallback UI.
 
-3. **Shiki in the client bundle (Pitfall 6, Critical)** — importing Shiki client-side violates the 80kB JS budget (TextMate grammars are multi-MB). Prevention: render Shiki exclusively in Server Components using `codeToHtml` with `defaultColor: false`; only pre-rendered HTML reaches the client.
+3. **Husky treated as the CI gate** — Pre-commit hooks can be bypassed (`git commit --no-verify`, GitHub web editor, certain IDE integrations). CI must independently run lint, typecheck, and tests regardless of whether hooks ran. Hooks are developer convenience; CI is the authoritative gate.
 
-4. **Optimistic UI duplicate items (Pitfall 7, Moderate)** — the originating client receives both its own optimistic update AND the WebSocket broadcast of the same mutation, causing duplicate items. Prevention: use a `tempId` for optimistic items; add confirmed IDs to a dedup Set; subscription handler skips events already in the Set.
+4. **Sentry flooded with AppSync WebSocket noise** — AppSync reconnect attempts, subscription keep-alive timeouts, and 401 responses during connection renegotiation all appear as errors to Sentry's default instrumentation. At 500 concurrent participants, this exhausts Sentry quotas in minutes and buries real errors. Add `beforeSend` filters to drop known-benign AppSync connection events on day one of Sentry setup.
 
-5. **DynamoDB TTL does not delete immediately (Pitfall 5, Critical)** — expired items remain queryable for hours or days after TTL. Prevention: filter all read paths with `expiresAt > :now`; do not rely on TTL for access control or slug uniqueness.
+5. **Vitest cannot test async Server Components** — Components with `async` at the top level cannot be rendered in jsdom. This is an architectural constraint, not a configuration problem. The Next.js team explicitly states this is unsupported. Test async RSCs with Playwright E2E; unit test their synchronous child components and extracted data-fetching functions instead.
+
+6. **lint-staged running wrong ESLint config in monorepo** — ESLint 9 flat config resolves relative to cwd. Running lint-staged from the repo root means ESLint cannot find `packages/frontend/eslint.config.mjs`. Use `--config packages/frontend/eslint.config.mjs` in the lint-staged glob pattern for frontend files.
+
+7. **`aria-live` regions conditionally mounted** — `aria-live` regions must be in the DOM before the first content change occurs. The accessibility tree only registers them at first render; conditionally mounting them causes initial announcements to be missed by screen readers. Render them unconditionally with empty content; populate the content when events fire.
 
 ## Implications for Roadmap
 
-Based on the feature dependency graph in FEATURES.md and the build order in ARCHITECTURE.md, the natural phase structure flows from infrastructure outward:
+Based on the feature dependency graph in FEATURES.md and the build order in ARCHITECTURE.md, the phase structure is dependency-driven. Deviating from this order creates rework: tests cannot run without CI, Sentry cannot capture React errors without error boundaries, and accessibility improvements require lint hooks to enforce them.
 
-### Phase 1: Foundation and Infrastructure
+### Phase 1: Developer Quality Gates
+**Rationale:** Pre-commit hooks must be in place before any other hardening work begins — they ensure no new quality debt enters the repo during the hardening process itself. This phase has zero external dependencies (no AWS account changes, no Sentry setup, no CI configuration needed).
+**Delivers:** Husky + lint-staged blocking commits with lint errors; Prettier config established; `eslint-config-prettier` preventing rule conflicts; TypeScript strict mode verified; tsconfig consistency across packages
+**Addresses:** TypeScript strict mode audit, Prettier formatting, pre-commit hooks (all P1 from FEATURES.md)
+**Avoids:** lint-staged wrong ESLint config pitfall — configure `--config packages/frontend/eslint.config.mjs` explicitly from the start; full typecheck in pre-commit anti-pattern (run ESLint only in hooks; defer tsc to CI)
+**Research flag:** Standard patterns — skip research-phase. Husky v9 `husky init` + lint-staged monorepo glob patterns are well-documented with official sources.
 
-**Rationale:** Everything else depends on a working DynamoDB table, AppSync API, and Lambda resolver infrastructure. No feature work is possible without this layer. Establishing it first also surfaces the SST Ion AppSync configuration risks early, when there is nothing else to break.
+### Phase 2: CI Pipeline
+**Rationale:** The authoritative quality gate must exist before tests are written — tests need somewhere to run and be verified against. GitHub Actions OIDC setup is one-time infrastructure work that unblocks all future deploys. Path-filtered jobs prevent the full monorepo from rebuilding on every trivial change.
+**Delivers:** `.github/workflows/ci.yml` (parallel lint + typecheck + test + build jobs on every PR); `.github/workflows/deploy.yml` (SST deploy on main push via OIDC role assumption); path-filtered jobs per package; `node_modules` caching; Netlify + Next.js 16 compatibility validated via preview deploy
+**Addresses:** CI pipeline (P1), AWS credential security
+**Avoids:** Husky-as-CI-gate pitfall; long-lived AWS credentials stored as GitHub secrets (use OIDC `aws-actions/configure-aws-credentials@v4`); full monorepo rebuild on every commit (use `dorny/paths-filter` or `on.push.paths`); Netlify + Next.js 16 edge function bundling failures (validate early with a staging preview deploy)
+**Research flag:** MEDIUM confidence — SST Ion + GitHub Actions OIDC IAM permissions scoping is not fully documented in official SST Ion docs. The OIDC role trust policy pattern is established but the exact IAM permissions required by `sst deploy` may need empirical validation during implementation.
 
-**Delivers:** Provisionable infrastructure (`sst dev` + `sst deploy`); stub GraphQL schema with all types defined; shared `@nasqa/core` Zod schemas and TypeScript types; DynamoDB single-table with On-Demand billing and TTL enabled; AppSync API Key auth; install missing packages (`ulid`, `qrcode`, `@aws-amplify/api-graphql`)
+### Phase 3: Testing Infrastructure
+**Rationale:** Tests require CI to run against (Phase 2). Writing tests before the pipeline is wired creates code that isn't automatically verified. This phase establishes the test conventions document first — which components are testable in Vitest vs. Playwright — before any test authoring begins. This prevents wasted effort writing tests for async Server Components that Vitest cannot run.
+**Delivers:** `vitest.config.mts` with jsdom + tsconfigPaths plugin; `src/__tests__/setup.ts`; first smoke tests for QuestionCard, VoteButton, Zod schemas in `@nasqa/core`, moderation threshold logic; `test` job added to CI workflow; coverage report as CI artifact
+**Uses:** Vitest 4.1.0, @testing-library/react 16.3.2, @testing-library/user-event 14.x, vite-tsconfig-paths, jsdom
+**Addresses:** Unit test suite (P1); minimum coverage targets (core schemas 90%, Lambda resolvers 80%, UI components 70%)
+**Avoids:** Vitest workspace config conflicts — install Vitest per-package, not at root, for this monorepo's current structure; async Server Component testing trap — document test strategy per component type before authoring begins
+**Research flag:** Standard patterns — skip research-phase. Official Next.js Vitest guide is current and comprehensive (updated 2026-02-27). The per-package vs. root Vitest install decision should be made explicitly at the start of this phase.
 
-**Addresses:** Table stakes prerequisite (session infrastructure); feature dependency root node
+### Phase 4: Error Handling
+**Rationale:** Pure Next.js file conventions — no external service dependencies. Delivers user-visible resilience immediately. Must precede Sentry setup because error boundaries are the capture points for React render errors; Sentry's automatic instrumentation does not reach errors caught by boundaries.
+**Delivers:** `app/global-error.tsx` (root layout crash fallback with standalone `<html><body>`); `app/[locale]/error.tsx` (session-scoped error boundary with retry button and "try again" UX); `app/[locale]/live/[slug]/error.tsx` (session-specific "session unavailable, reconnecting" message); `app/not-found.tsx` with expired session detection and graceful "this session has ended" message
+**Addresses:** Error boundaries + global-error.tsx + not-found.tsx (P1); graceful expired session UX
+**Avoids:** `error.tsx` not catching layout errors pitfall — `global-error.tsx` must be present and must include `<html><body>`; error boundaries testing gap — test each boundary explicitly with a development-only throw button, not just in the Next.js dev overlay
+**Research flag:** Standard patterns — skip research-phase. Next.js App Router error boundary file conventions are stable and well-documented.
 
-**Avoids:** DynamoDB hot partition (Pitfall 3) — On-Demand billing from the start; GSI throttling (Pitfall 4) — no GSIs in v1; TTL false safety (Pitfall 5) — add `expiresAt` filter to all read paths immediately
+### Phase 5: Monitoring and Observability
+**Rationale:** Requires error boundaries (Phase 4) to already exist. Requires an external Sentry project to be created before implementation begins. The `hostSecret` scrubbing and AppSync noise filter must be configured before any production traffic reaches Sentry — these are not optional post-hoc improvements.
+**Delivers:** Sentry three-runtime config (client/server/edge init files); `withSentryConfig` wrapping in `next.config.ts`; `beforeSend` AppSync noise filter dropping reconnect events; `hostSecret` URL scrubbing in all three configs; source map upload configured via Netlify env vars (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`); `tracesSampleRate: 0.1` in production (not 1.0); pino structured logger in Lambda resolvers with `LOG_LEVEL` env var per stage
+**Uses:** @sentry/nextjs 10.43.0, pino, pino-lambda
+**Addresses:** Sentry error tracking (P1), structured CloudWatch logging (P1)
+**Avoids:** Sentry capturing hostSecret (non-optional security requirement); Sentry flooded with AppSync noise (exhausts quota during active sessions); source maps missing in production (stack traces become unreadable minified paths); `tracesSampleRate: 1.0` exhausting quota at 500 participants
+**Research flag:** MEDIUM confidence — the exact AppSync error message signatures that need filtering in `beforeSend` cannot be fully specified from documentation alone. Must be validated against a real test session after deployment. Plan for one tuning iteration on the `beforeSend` filter after first production session.
 
-**Research flag:** NEEDS RESEARCH — verify SST Ion v4 WAF ACL attachment to AppSync (MEDIUM confidence in STACK.md); verify `@aws-amplify/api-graphql` v6 subscription API surface before writing `SubscriptionProvider`
+### Phase 6: SEO and Metadata
+**Rationale:** Independent of testing and monitoring work. Can run in parallel with Phase 5 or immediately after Phase 4. Fixing the "Create Next App" default title is a professionalism issue that should not block on other hardening phases. The `robots.txt` must be in place before the app is indexed at all.
+**Delivers:** Static metadata on landing page (title, description, OG, Twitter); `generateMetadata` on session page (dynamic session title fetched from DynamoDB, `noIndex: true`); `robots.ts` (disallow `/live/`); `hreflang` + `alternates.canonical` for en/es/pt locale variants to prevent duplicate content penalty; graceful fallback metadata for expired sessions
+**Addresses:** Dynamic SEO metadata (P1), robots.txt (P1), i18n duplicate content prevention
+**Avoids:** OG metadata not dynamic per session — `generateMetadata` in `app/[locale]/live/[slug]/page.tsx` fetches session title; static `metadata` export and `generateMetadata` in same file conflict (Next.js silently ignores one); missing hreflang/canonical i18n duplicate content penalty; `await params` gotcha in App Router (params are Promises in Next.js 16 — must be awaited before accessing `locale`)
+**Research flag:** Standard patterns for `generateMetadata`. The `await params` requirement for i18n params is a known gotcha to flag in implementation notes but does not require research-phase.
 
-### Phase 2: Session Creation and Host Authentication
+### Phase 7: Accessibility
+**Rationale:** Applied across all existing components. Done last in the core hardening sequence so lint hooks (Phase 1) and CI (Phase 2) are in place to enforce a11y rules and block regressions as changes are made. The `aria-live` architecture for real-time feeds is the highest-risk item — it must be treated as an architectural decision, not a cosmetic addition.
+**Delivers:** ARIA labels on all icon-only buttons (upvote, downvote, copy snippet, delete snippet, theme toggle, language switcher); semantic HTML landmarks (`<main>`, `<section>`, `<article>`, `<header>`, `<footer>`); unconditionally-mounted `aria-live="polite"` on Q&A question list (with 500ms debounce for rapid upvote counter updates); `aria-live="assertive"` on connection status (reconnecting notification only); `role="status"` on connection indicator; skip link at layout root; `focus-visible:ring` verification on all interactive elements; keyboard navigation audit (Tab order, Enter/Space on buttons)
+**Addresses:** ARIA labels (P1), semantic HTML audit (P1), keyboard navigation (P1)
+**Avoids:** ARIA bolted on after the fact — `aria-live` regions designed as architectural components, not cosmetic additions; `aria-live` regions conditionally mounted — always mounted, content populated by events; upvote counter spamming screen readers — debounce aria-live updates with 500ms quiet period; focus ring hidden with `outline: none` in global CSS
+**Research flag:** MEDIUM confidence — the exact debounce implementation for `aria-live` upvote counter updates in React needs screen reader testing (VoiceOver/NVDA) to validate. The general pattern is correct but the timing and state management details require empirical validation during implementation.
 
-**Rationale:** Session creation is the entry point for every user flow. Host authentication (SHA-256 secret comparison) must be correct before any host mutations exist. Slug collision prevention must be implemented here, not retrofitted later.
-
-**Delivers:** `createSession` Lambda resolver (writes `METADATA` item, returns slug + raw secret); host URL with `?hostSecret=` param; QR code SVG (server-side, `qrcode` package); slug uniqueness via UUID fragment; SHA-256 hash storage
-
-**Addresses:** Session creation + QR code join flow (table stakes); anonymous no-signup model
-
-**Avoids:** Host secret in URL logs (Pitfall 10) — evaluate hash fragment approach; slug collision (Pitfall 14) — UUID fragment appended to slug from day one; secret stored only as SHA-256 hash, never plaintext
-
-**Research flag:** Standard patterns — host auth via hashed secret and QR code generation are well-documented
-
-### Phase 3: Real-Time Subscription Channel
-
-**Rationale:** The subscription channel is the infrastructure that all real-time features ride on. Build it once, correctly, before building any feature that depends on it. Session isolation must be tested with two concurrent sessions before any audience-facing feature ships.
-
-**Delivers:** `onSessionUpdate` subscription field with `@aws_subscribe` directive; `SessionEvent` interface with `eventType` discriminator; enhanced subscription filter resolver (server-side `sessionSlug` isolation); `SubscriptionProvider` Client Component with `@aws-amplify/api-graphql`; keep-alive monitoring and reconnect logic; visible "Live / Reconnecting" connection indicator
-
-**Addresses:** Real-time delivery (sub-200ms target); anonymous read path for lurkers
-
-**Avoids:** Cross-session leakage (Pitfall 2) — server-side filter is non-negotiable; stale connections (Pitfall 1) — Amplify client handles reconnect; 200 subscriptions/connection limit (Pitfall 11) — single union channel enforced; server-side slug filter bypass (Pitfall 15)
-
-**Research flag:** NEEDS RESEARCH — validate AppSync enhanced filtering JavaScript resolver API with current SST Ion AppSync component before implementation
-
-### Phase 4: Session View (SSR Shell + Read Path)
-
-**Rationale:** Once the subscription channel works, build the page that participants land on. The SSR initial load pattern (Server Component reads DynamoDB, passes `initialData` to Client Components, subscription merges on top) must be established before any feature-specific Client Components are added.
-
-**Delivers:** Next.js route `/[locale]/live/[slug]`; `SessionShell` Server Component with initial DynamoDB read (METADATA + snippets + questions); `ClipboardFeed` + `QuestionBoard` Client Components wired to `SubscriptionProvider`; device fingerprint (`localStorage` UUID with Safari Private Browsing guard); `VoteButton` with `localStorage` dedup; lurker read path (no interaction required); dark/light theme with no flash
-
-**Addresses:** Mobile-responsive participant view; content visible without interaction; visual "live" indicator; 24h TTL display
-
-**Avoids:** Server Component for real-time state anti-pattern (ARCHITECTURE.md); Safari Private Browsing crash (Pitfall 13) — wrap all `localStorage` in try-catch from the start; Shiki in client bundle (Pitfall 6) — server-render only
-
-**Research flag:** Standard patterns — Next.js Server/Client Component boundary is well-documented
-
-### Phase 5: Core Q&A Loop
-
-**Rationale:** With the read path working, add the write path for participants. Upvoting, question submission, and host moderation are the core Q&A loop. Rate limiting and vote dedup must ship with this phase, not later.
-
-**Delivers:** `postQuestion` Lambda resolver (Zod validation, rate-limit counter in DynamoDB, fingerprint stored); `upvoteQuestion` Lambda resolver (atomic `ADD upvoteCount :1`); `downvoteQuestion` Lambda resolver; `QuestionBoard` sorted by upvotes; host delete/hide mutations; `HostControls` Client Component (reads `hostSecret` from URL); rate limiting (3 questions/min per fingerprint via DynamoDB minute-bucket counter); optimistic UI for upvotes with temp-ID reconciliation
-
-**Addresses:** Question submission + upvoting + vote-sorted feed (all table stakes); host moderation minimum viable trust model
-
-**Avoids:** Optimistic duplicate items (Pitfall 7) — temp-ID pattern implemented from the start; fingerprint spoofing (Pitfall 8) — rate limits applied server-side, not just client-side
-
-**Research flag:** Standard patterns — DynamoDB atomic increments and rate-limit counter patterns are well-documented
-
-### Phase 6: Live Clipboard (Core Differentiator)
-
-**Rationale:** The clipboard is the product's core differentiator and the reason to use Nasqa over Slido or Mentimeter. It ships after the Q&A loop is solid because it depends on the same subscription channel, the same host auth model, and the same Client Component patterns — building it on proven infrastructure reduces risk.
-
-**Delivers:** `postSnippet` Lambda resolver (host-only, Zod validates language attribute); `deleteSnippet` + `clearClipboard` resolvers; `ClipboardFeed` Client Component with hero prominence (latest snippet as large top card); Shiki server-side highlighting with dual-theme CSS variable output; language detection/selection in host UI; optimistic snippet insert
-
-**Addresses:** Live code clipboard with syntax highlighting (core differentiator); host-pushed clipboard model; hero prominence; dual theme with no layout shift; server-rendered QR code
-
-**Avoids:** Shiki bundle size (Pitfall 6) — enforced by rendering in Server Component; layout shift on theme toggle — dual-theme `codeToHtml` with `defaultColor: false`
-
-**Research flag:** NEEDS RESEARCH — verify Shiki v4 `createHighlighterCore` with `createOnigurumaEngine` in a Next.js Server Component context; test bundle output with `@next/bundle-analyzer` to confirm Shiki is absent from client chunks
-
-### Phase 7: Advanced Moderation and Community Features
-
-**Rationale:** Community downvote moderation, auto-ban, focus mode, and speaker replies are differentiators that require the basic Q&A loop to be solid first. The connected-count denominator problem (Pitfall 12) makes downvote threshold calculation the most complex piece in this phase.
-
-**Delivers:** Community downvote auto-hide (50% threshold against connected count); auto-ban 3-strike logic in Lambda; connected participant count tracking (DynamoDB atomic increment/decrement via AppSync connection/disconnection events); focus mode (`isFocused` toggle + pulsing glow); speaker reply with emerald border + badge; optional participant name (localStorage `nasqa:name` field)
-
-**Addresses:** Community-driven downvote moderation (differentiator); auto-ban for repeat bad actors; focus mode; speaker reply badge; one-level reply threading
-
-**Avoids:** Wrong downvote denominator (Pitfall 12) — track connected count via AppSync connection events from the start of this phase; fingerprint spoofing via rapid downvotes (Pitfall 8) — rate-limit downvotes at 5/min per fingerprint
-
-**Research flag:** NEEDS RESEARCH — AppSync connection/disconnection event handling for connected-count tracking is not well-documented; verify Lambda resolver access to connection lifecycle events in SST Ion
-
-### Phase 8: i18n, Polish, and Deployment Hardening
-
-**Rationale:** i18n and deployment hardening are the final layer. They wrap the completed product without changing any feature behavior. Doing them last avoids retrofitting locale-aware routing into every route as it is built.
-
-**Delivers:** next-intl v4 middleware for `en/es/pt` locale routing; `getTranslations()` in all Server Components; `useTranslations()` in Client Components; WAF Web ACL rate limits (10/min host, 3/min public) attached to AppSync; `sst deploy` single-command deployment guide; bundle size audit (`< 80kB` gzipped confirmed); staging environment smoke test
-
-**Addresses:** i18n (en/es/pt); rate limiting hardening (WAF); zero-ops deployment
-
-**Avoids:** next-intl + CloudFront caching conflict (Pitfall 9) — lean middleware, `Cache-Control: no-store` on redirect responses, test on staging deploy not just `next dev`
-
-**Research flag:** NEEDS RESEARCH — next-intl v4 middleware behavior in SST Ion CloudFront/Lambda@Edge context is LOW confidence; must test on a real staging SST deploy
+### Phase 8: E2E Tests and Hardening Polish (v1.x, after core)
+**Rationale:** Deferred from the core v1.1 phases because it requires a stable staging deploy and adds 10-15 minutes to CI. The value is high but the prerequisite — established baseline, stable deployment pipeline, proven unit test suite — is not met until Phases 1-7 are complete.
+**Delivers:** Playwright happy-path E2E (create session, join, post question, upvote, host ban flow); `@axe-core/playwright` accessibility audits on landing page, host view, audience view; bundle size regression guard (baseline measurement first, then threshold enforcement); static OG image for landing page; dynamic OG image per session using Next.js `ImageResponse`
+**Addresses:** Playwright E2E (P2), bundle size guard (P2), static OG image (P2), dynamic OG image (P2)
+**Avoids:** E2E tests on every PR (run on main push only; not every PR); `axe-core` full page scan in every RTL test (run only in dedicated a11y test files via Playwright)
+**Research flag:** NEEDS RESEARCH — Playwright + AppSync WebSocket fixture design for multi-tab host+participant testing is not well-documented. The network interception API for WebSocket is available but the session-specific fixture setup pattern needs research-phase before implementation begins.
 
 ### Phase Ordering Rationale
 
-- Infrastructure must precede everything because AppSync, DynamoDB, and Lambda resolvers are required by every feature. Discovering SST Ion configuration issues in Phase 1 is cheap; discovering them in Phase 6 is expensive.
-- Subscription channel (Phase 3) must precede any real-time feature. Session isolation correctness tested in Phase 3 protects every subsequent phase.
-- Read path (Phase 4) before write path (Phase 5) ensures the display layer exists before mutations can populate it.
-- Q&A loop (Phase 5) before Clipboard (Phase 6) because the Q&A infrastructure (host auth, rate limits, optimistic UI patterns) is shared by the clipboard and should be proven first. The clipboard also has the highest UX risk (Shiki bundle size) and benefits from the patterns established in Phase 5.
-- Moderation (Phase 7) after Q&A (Phase 5) because downvote threshold depends on existing question + vote infrastructure.
-- i18n last (Phase 8) to avoid retrofitting locale-aware routing into routes as they are built.
+- **Phases 1-2 before everything else** — they are the quality enforcement mechanisms. All other phases produce code that benefits from having hooks and CI enforcing it immediately.
+- **Phase 3 after Phase 2** — tests need a CI pipeline to run in; writing tests before CI creates dead code that isn't automatically verified after each commit.
+- **Phase 4 before Phase 5** — Sentry requires error boundaries; errors caught by boundaries do not automatically reach Sentry's global handler. Each `error.tsx` must explicitly call `captureException`.
+- **Phase 6 can run in parallel with Phase 5** — SEO/metadata work has no dependencies on monitoring. If there are two developers, these phases can be run concurrently.
+- **Phase 7 last among core phases** — modifies all components; benefits from lint enforcement (Phase 1), CI verification (Phase 2), and unit tests (Phase 3) being in place to catch regressions as a11y changes are made across the codebase.
+- **Phase 8 deferred** — requires stable staging environment and test baseline from Phase 3.
 
 ### Research Flags
 
 Phases needing deeper research during planning:
+- **Phase 2 (CI Pipeline):** SST Ion + GitHub Actions OIDC IAM permissions — the exact IAM policy for `sst deploy --stage production` is not documented in official SST Ion docs. Empirical derivation or community source validation needed.
+- **Phase 5 (Monitoring):** Sentry + AppSync WebSocket `beforeSend` filter signatures — specific error message patterns from Amplify reconnect behavior need empirical validation against a live session; cannot be fully pre-specified.
+- **Phase 8 (E2E):** Playwright + AppSync WebSocket multi-tab fixture design — not well-documented; needs research-phase before implementation.
 
-- **Phase 1:** SST Ion WAF ACL attachment to AppSync (MEDIUM confidence); `@aws-amplify/api-graphql` v6 subscription API current surface (MEDIUM confidence)
-- **Phase 3:** AppSync enhanced subscription filtering JavaScript resolver API compatibility with SST Ion AppSync component (MEDIUM confidence)
-- **Phase 6:** Shiki v4 `createHighlighterCore` in Next.js Server Component context; confirm zero client-bundle footprint via bundle analyzer
-- **Phase 7:** AppSync connection/disconnection lifecycle event access in Lambda resolvers for connected-count tracking (LOW confidence)
-- **Phase 8:** next-intl v4 middleware in SST Ion CloudFront/Lambda@Edge context — must test on staging, not local dev (LOW confidence)
-
-Phases with standard, well-documented patterns (skip research-phase):
-
-- **Phase 2:** Session creation, SHA-256 hashing, QR code server-side generation — all well-documented
-- **Phase 4:** Next.js Server/Client Component boundary, `initialData` + subscription merge pattern — official docs, HIGH confidence
-- **Phase 5:** DynamoDB atomic increments, rate-limit counter pattern, temp-ID optimistic reconciliation — well-documented
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (Pre-commit hooks):** Husky v9 + lint-staged monorepo patterns are well-documented with official sources.
+- **Phase 3 (Testing):** Official Next.js Vitest guide is current and comprehensive (updated 2026-02-27).
+- **Phase 4 (Error handling):** Next.js App Router error boundary file conventions are stable.
+- **Phase 6 (SEO):** `generateMetadata` API is fully documented; `robots.ts` convention is standard.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All versions verified from installed `package.json` files; alternatives evaluated with rationale |
-| Features | MEDIUM | Table stakes from domain expertise (cutoff Aug 2025); PROJECT.md authoritative for Nasqa scope; competitive feature sets not verified against live product pages |
-| Architecture | HIGH | Official AWS AppSync and Next.js documentation; DynamoDB official best practices; existing codebase analysis |
-| Pitfalls | HIGH (critical), MEDIUM (moderate), LOW (minor) | Critical pitfalls verified via official AWS docs; moderate pitfalls from architectural reasoning + training data; Shiki + next-intl/SST interaction needs staging validation |
+| Stack | HIGH | All v1.0 versions verified from installed package.json files. v1.1 addition versions verified against npm current as of 2026-03-15 and official docs. |
+| Features | HIGH | Based on Next.js official production checklist (updated 2026-02-27) and WCAG 2.2 official sources. P1/P2/P3 priority tiers are well-justified from dependency analysis. |
+| Architecture | HIGH | Build order and insertion points verified against official Next.js, Sentry, and GitHub Actions docs. Monorepo-specific patterns verified from official Husky and lint-staged docs. |
+| Pitfalls | HIGH (testing, CI, error handling, Sentry source maps) / MEDIUM (Sentry + AppSync noise, Netlify edge cases) | Testing and CI pitfalls have multiple verified sources including official Next.js docs. Sentry + AppSync WebSocket noise filter specifics and Netlify + Next.js 16 edge function bundling are MEDIUM — community sources corroborate but exact signatures are not officially documented. |
 
-**Overall confidence:** MEDIUM-HIGH
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **`@aws-amplify/api-graphql` v6 subscription API:** The specific method signatures and configuration for AppSync WebSocket subscriptions in Amplify v6 should be verified against current Amplify Gen2 docs before writing `SubscriptionProvider`. The API may have changed since training data cutoff.
-- **SST Ion WAF ACL attachment:** SST Ion v4 WAF resource support for AppSync should be verified in the SST Ion changelog/docs before committing to WAF as the rate-limiting strategy. If unsupported, the fallback is per-fingerprint DynamoDB minute-bucket rate limiting (already described in ARCHITECTURE.md).
-- **next-intl + SST Ion CloudFront:** Must be validated in a real staging deployment, not local `next dev`. Do not assume local behavior matches production until this test passes.
-- **AppSync connection lifecycle for connected-count:** The mechanism for tracking connected participant count via Lambda (connection/disconnection events) is LOW confidence. If not supported, the fallback is a fixed downvote threshold (e.g., 5 downvotes regardless of audience size) for MVP moderation.
-- **Competitive feature verification:** Slido, Mentimeter, and Pigeonhole Live feature sets were based on training data (cutoff Aug 2025). If claiming competitive parity in marketing, verify against current product pages.
+- **SST Ion OIDC IAM permissions:** The exact IAM policy for `sst deploy --stage production` is not specified in official SST Ion docs. Needs empirical derivation during Phase 2 planning — start with CloudFormation + Lambda + DynamoDB + AppSync + S3 + CloudFront; tighten via CloudTrail.
+- **AppSync `beforeSend` filter signatures:** The exact error message strings emitted by the Amplify WebSocket client during reconnect/keep-alive cannot be pre-specified from documentation. Validate against a real test session during Phase 5 implementation; plan for one tuning iteration.
+- **Netlify + Next.js 16 Edge Functions compatibility:** Currently MEDIUM confidence based on community reports of build failures. Validate with a staging Netlify preview deploy early in Phase 2, before other phases assume stable deployment.
+- **`aria-live` debounce for rapid upvote updates:** The 500ms quiet-period debounce pattern is well-understood in principle but the React state management implementation for rapid real-time updates needs screen reader (VoiceOver/NVDA) testing to validate. Address empirically during Phase 7.
+- **Playwright + AppSync WebSocket fixture design:** Multi-tab host+participant session testing pattern is not documented for Playwright + Amplify/AppSync. Needs research-phase before Phase 8 planning begins.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/packages/frontend/package.json`, `/packages/functions/package.json`, root `package.json` — installed versions verified
-- `.planning/PROJECT.md` — authoritative product requirements and constraints
-- `.planning/codebase/STACK.md`, `.planning/codebase/ARCHITECTURE.md` — existing codebase analysis
-- AWS AppSync Real-Time Subscription docs — https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-data.html
-- AWS AppSync Enhanced Subscription Filtering — https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-enhanced-filtering.html
-- AWS AppSync WebSocket Client Protocol — https://docs.aws.amazon.com/appsync/latest/devguide/real-time-websocket-client.html
-- AWS AppSync Service Quotas — https://docs.aws.amazon.com/general/latest/gr/appsync.html
-- AWS DynamoDB Partition Key Design — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
-- AWS DynamoDB GSI — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
-- AWS DynamoDB TTL — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
-- Next.js Server and Client Components — https://nextjs.org/docs/app/getting-started/server-and-client-components
+- Next.js Vitest testing guide: https://nextjs.org/docs/app/guides/testing/vitest (updated 2026-02-27) — test runner setup, async RSC limitations
+- Next.js production checklist: https://nextjs.org/docs/app/guides/production-checklist (updated 2026-02-27) — feature completeness standards
+- Next.js error handling: https://nextjs.org/docs/app/getting-started/error-handling — error boundary file conventions and layout limitation
+- Next.js generateMetadata: https://nextjs.org/docs/app/api-reference/functions/generate-metadata — SEO API reference
+- Next.js accessibility: https://nextjs.org/docs/architecture/accessibility — a11y patterns and eslint-plugin-jsx-a11y
+- Sentry for Next.js: https://docs.sentry.io/platforms/javascript/guides/nextjs/ — SDK setup and configuration
+- Sentry manual setup: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/ — three-config pattern, source map upload
+- Vitest projects config: https://vitest.dev/guide/projects — monorepo workspace configuration
+- aws-actions/configure-aws-credentials: https://github.com/aws-actions/configure-aws-credentials — OIDC authentication for GitHub Actions
+- Codebase package.json files (`/packages/frontend/package.json`, `/packages/functions/package.json`, root) — all v1.0 versions verified from installed packages
 
 ### Secondary (MEDIUM confidence)
-- Domain knowledge of Slido, Mentimeter, Pigeonhole Live, Kahoot feature sets (training data, cutoff Aug 2025)
-- next-intl v4 App Router routing — https://nextjs.org/docs/app/guides/internationalization
-- Optimistic UI race condition patterns — architectural reasoning + training data
-- Safari Private Browsing localStorage behavior — documented browser behavior
-- URL query parameter logging risk — architectural reasoning
+- Netlify + Next.js 16 build failures: https://answers.netlify.com/t/next-js-16-project-build-fails-on-netlify/157791 — edge function bundling failures
+- SST + GitHub Actions OIDC: https://towardsthecloud.com/blog/sst-nextjs-preview-environments-github-actions — OIDC role pattern for SST deploys
+- lint-staged monorepo configuration: https://www.horacioh.com/writing/setup-lint-staged-on-a-monorepo/ — per-package ESLint config routing with `--config`
+- SEO i18n hreflang with next-intl: https://dev.to/oikon/seo-and-i18n-implementation-guide-for-nextjs-app-router-dynamic-metadata-and-internationalization-3eol
+- GitHub Actions monorepo CI patterns: https://dev.to/pockit_tools/github-actions-in-2026-the-complete-guide-to-monorepo-cicd-and-self-hosted-runners-1jop
+- Playwright vs Cypress 2025 comparison: https://www.frugaltesting.com/blog/playwright-vs-cypress-the-ultimate-2025-e2e-testing-showdown
+- Husky + lint-staged setup guide: https://betterstack.com/community/guides/scaling-nodejs/husky-and-lint-staged/
 
 ### Tertiary (LOW confidence)
-- Shiki v4 `createHighlighterCore` bundle behavior in Next.js Server Components — needs validation against https://shiki.style/guide/bundles
-- next-intl v4 + SST Ion CloudFront middleware interaction — needs staging deployment validation
-- AppSync connection/disconnection lifecycle Lambda event access — needs validation against current SST Ion AppSync component docs
+- None — all findings have at least MEDIUM confidence support.
 
 ---
-*Research completed: 2026-03-13*
+*Research completed: 2026-03-15*
 *Ready for roadmap: yes*
