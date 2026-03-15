@@ -1,4 +1,4 @@
-# Requirements: Nasqa Live v1.1 — Enterprise Hardening
+# Requirements: Nasqa Live
 
 **Defined:** 2026-03-15
 **Core Value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
@@ -49,12 +49,39 @@
 - [ ] **A11Y-02**: ARIA labels on all icon-only buttons and live regions for real-time updates
 - [ ] **A11Y-03**: Keyboard navigation — logical tab order, visible focus rings, modal focus traps
 
+## v1.2 Requirements
+
+### Reactions Data Model
+
+- [ ] **RXN-01**: Participant can add one reaction per emoji type per Question (6 fixed emojis: 👍 ❤️ 🎉 😂 🤔 👀)
+- [ ] **RXN-02**: Participant can add one reaction per emoji type per Reply (same 6 emojis)
+- [ ] **RXN-03**: Participant can toggle off their own reaction on a Question or Reply
+- [ ] **RXN-04**: Reaction counts per emoji are visible to all connected participants in real-time
+- [ ] **RXN-05**: Reactions are deduplicated per device fingerprint per emoji per item (no double-counting)
+
+### Reactions Backend
+
+- [ ] **RXN-06**: Reaction mutations enforce ban check — banned participants cannot react
+- [ ] **RXN-07**: Reactions are rate-limited at 30/min per fingerprint in a separate namespace from question rate limits
+- [ ] **RXN-08**: Reaction updates propagate via existing AppSync SessionUpdate subscription channel
+- [ ] **RXN-09**: Subscription payloads contain only emoji counts, never reactor fingerprints
+
+### Reactions UI
+
+- [ ] **RXN-10**: Inline ReactionBar component renders below Question and Reply content with per-emoji count badges
+- [ ] **RXN-11**: User's own active reactions are visually highlighted (distinct from unselected state)
+- [ ] **RXN-12**: Toggling a reaction applies optimistic UI update before server confirmation
+- [ ] **RXN-13**: Reaction buttons have ARIA labels and meet 44px minimum touch target for mobile
+- [ ] **RXN-14**: Emoji palette is defined as a shared constant in `@nasqa/core` validated by Zod schema
+
 ## Future Requirements
 
 - **TEST-06**: E2E tests with Playwright for multi-tab real-time scenarios
 - **TEST-07**: Lighthouse CI score gate in GitHub Actions
 - **MON-01**: Sentry error tracking across client, server, and edge runtimes
 - **SEC-01**: Content Security Policy (CSP) headers
+- **RXN-15**: Reactions on Snippets (audience feedback on shared code)
+- **RXN-16**: Reaction analytics visible to host (most-reacted questions)
 
 ## Out of Scope
 
@@ -67,6 +94,10 @@
 | Storybook                          | No design team; components coupled to real-time state    |
 | WCAG AAA                           | Level AA is realistic; AAA conflicts with real-time UI   |
 | Datadog/New Relic                  | Overkill at 50-500 users                                 |
+| Emoji picker library               | Bundle budget (80kB); fixed palette prevents abuse       |
+| Flying/floating emoji animations   | Accessibility conflicts, bundle cost, CPU overhead       |
+| "Who reacted" tooltip              | Privacy concern for anonymous sessions; 24h TTL          |
+| Reactions affecting sort order     | Upvotes handle ranking; reactions are sentiment only     |
 
 ## Traceability
 
@@ -96,12 +127,29 @@
 | A11Y-02     | Phase 8 | Pending  |
 | A11Y-03     | Phase 8 | Pending  |
 
+| RXN-01 | TBD | Pending |
+| RXN-02 | TBD | Pending |
+| RXN-03 | TBD | Pending |
+| RXN-04 | TBD | Pending |
+| RXN-05 | TBD | Pending |
+| RXN-06 | TBD | Pending |
+| RXN-07 | TBD | Pending |
+| RXN-08 | TBD | Pending |
+| RXN-09 | TBD | Pending |
+| RXN-10 | TBD | Pending |
+| RXN-11 | TBD | Pending |
+| RXN-12 | TBD | Pending |
+| RXN-13 | TBD | Pending |
+| RXN-14 | TBD | Pending |
+
 **Coverage:**
 
-- v1.1 requirements: 23 total
-- Mapped to phases: 23
-- Unmapped: 0
+- v1.1 requirements: 23 total (3 complete, 20 pending)
+- v1.2 requirements: 14 total
+- Mapped to phases: 23 (v1.1) + 0 (v1.2)
+- Unmapped: 14 (v1.2 — pending roadmap)
 
 ---
 
 _Requirements defined: 2026-03-15_
+_Last updated: 2026-03-15 after v1.2 requirements definition_
