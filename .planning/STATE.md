@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 5 of 8 (Code Quality Gates)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-15 — v1.1 roadmap created; 23 requirements mapped across Phases 5-8
+Plan: 1 of 2 complete
+Status: In progress
+Last activity: 2026-03-15 — 05-01 complete: pre-commit quality gate toolchain installed and configured
 
-Progress: [████████░░░░░░░░░░░░] 40% (v1.0 complete, v1.1 starting)
+Progress: [████████░░░░░░░░░░░░] 42% (v1.0 complete, v1.1 Phase 5 started)
 
 ## Performance Metrics
 
@@ -50,6 +50,9 @@ Recent decisions affecting current work:
 - [v1.1 Research]: Vitest cannot test async Server Components — test strategy document needed before authoring begins (Playwright handles async RSCs)
 - [v1.1 Research]: Sentry `hostSecret` URL scrubbing is non-optional security requirement — must be in all three Sentry configs before any production traffic
 - [v1.1 Research]: `aria-live` regions must be unconditionally mounted before content appears — architectural constraint, not cosmetic addition
+- [05-01]: eslint-disable-next-line for react-hooks/set-state-in-effect must be on the line before the first setState call inside the effect, not before the useEffect() declaration
+- [05-01]: lint-staged.config.mjs (ESM extension) avoids needing "type: module" in root package.json
+- [05-01]: Defensive "prepare": "husky || true" prevents CI failures when devDependencies are skipped
 
 ### Pending Todos
 
@@ -64,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-15
-Stopped at: v1.1 roadmap created — ready to plan Phase 5
+Stopped at: Completed 05-01-PLAN.md (pre-commit quality gate toolchain)
 Resume file: None

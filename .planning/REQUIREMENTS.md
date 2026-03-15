@@ -7,8 +7,8 @@
 
 ### Code Quality
 
-- [ ] **QUAL-01**: Pre-commit hooks block commits that fail lint or typecheck (Husky + lint-staged)
-- [ ] **QUAL-02**: Prettier enforces consistent formatting on staged files with import sorting
+- [x] **QUAL-01**: Pre-commit hooks block commits that fail lint or typecheck (Husky + lint-staged)
+- [x] **QUAL-02**: Prettier enforces consistent formatting on staged files with import sorting
 - [ ] **QUAL-03**: TypeScript strict mode standardized across all packages (root, core, frontend, functions)
 
 ### Testing
@@ -72,8 +72,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QUAL-01 | Phase 5 | Pending |
-| QUAL-02 | Phase 5 | Pending |
+| QUAL-01 | Phase 5 | Complete |
+| QUAL-02 | Phase 5 | Complete |
 | QUAL-03 | Phase 5 | Pending |
 | TEST-01 | Phase 6 | Pending |
 | TEST-02 | Phase 6 | Pending |
