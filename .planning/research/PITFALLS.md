@@ -1,353 +1,284 @@
 # Pitfalls Research
 
-**Domain:** Real-time presentation session tool — enterprise hardening (testing, CI/CD, monitoring, error handling, pre-commit hooks, SEO, accessibility)
+**Domain:** Emoji reactions on Q&A in real-time presentation tool — adding reactions to an existing Next.js + DynamoDB + AppSync system
 **Researched:** 2026-03-15
-**Confidence:** HIGH for testing/CI/CD patterns (multiple verified sources); MEDIUM for Sentry/AppSync interaction and Netlify-specific edge cases; LOW for SST Ion + GitHub Actions OIDC specifics (limited current official docs found)
+**Confidence:** HIGH for DynamoDB and AppSync limits (official docs verified); HIGH for React optimistic update patterns (Context7/official docs verified); MEDIUM for rate-limiting edge cases and UX patterns (community sources, multiple corroborating)
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause pipeline failures, production blind spots, or rework when adding enterprise hardening to an existing Next.js + SST monorepo.
+Mistakes that cause silent data corruption, item write failures, or subscription storms when bolting emoji reactions onto an existing real-time Q&A system.
 
 ---
 
-### Pitfall 1: Vitest Workspace Config Conflicts with npm Workspaces
+### Pitfall 1: Storing Reactor Fingerprints on the Question/Reply Item Violates the 400KB DynamoDB Limit
 
 **What goes wrong:**
-Teams install Vitest per-package (in `packages/frontend`, `packages/core`, `packages/functions`) and discover that running `vitest` from the monorepo root ignores workspace packages unless a root `vitest.config.ts` with the `projects` array is also present. Conversely, running `vitest` inside a package directory ignores the root `vitest.workspace.ts` entirely — it runs as a standalone config. The two modes are mutually exclusive and not symmetric.
+The existing `upvoteQuestion` resolver stores voter deduplication in a `voters` SS (String Set) attribute directly on the Question item. Copying this pattern for reactions — adding a `reactor_<emoji>` SS attribute per emoji type — means each item accretes one fingerprint string per reactor per emoji. At 500 participants reacting with all 6 emojis, a single Question item could accumulate 3,000 fingerprint strings (~50-100 bytes each), pushing the item toward or past DynamoDB's hard 400KB item size limit. When the item exceeds 400KB, DynamoDB rejects the write with `ValidationException: Item size has exceeded the maximum allowed size`, causing all reaction mutations to silently fail for popular questions.
 
 **Why it happens:**
-The Vitest `workspace` feature (renamed to `projects` in Vitest 3.2+) is opt-in from the root only. Developers accustomed to Jest or monorepo runners (Turborepo, Nx) assume that test discovery propagates automatically through npm workspaces — it does not.
+The existing vote system stores `voters` as a Set on the item because the total voter deduplication set is bounded by connected participants (~500 max), and only one vote type exists. With 6 emoji types each maintaining a full Set of reactors, the multiplier blows the same budget. Developers copy the working vote pattern without accounting for the 6x amplification.
 
 **How to avoid:**
-- Install Vitest only at the monorepo root (`devDependencies` in root `package.json`), not in each package.
-- Create a single `vitest.config.ts` at the root that uses the `projects` array (Vitest 3.2+) pointing to each package: `['packages/*/vitest.config.ts']`.
-- Each per-package config uses `defineProject` (not `defineConfig`) and inherits shared setup from the root config via `extends`.
-- Add a single `npm run test` script at the root that runs `vitest` from root — packages should NOT have competing `test` scripts that create parallel Vitest instances.
+Do NOT store reactor fingerprints per-emoji on the Question/Reply item itself. Use one of two patterns:
+
+Option A (preferred — separate item per reaction): Model each reaction as a separate DynamoDB item with PK: `SESSION#slug`, SK: `REACTION#questionId#emoji#fingerprint`. The Question/Reply item only stores aggregate counts as a Map attribute: `reactionCounts: { "👍": 3, "❤️": 12 }`. Deduplication is enforced via the unique SK (a second PUT with the same SK is a no-op if the fingerprint already exists, or use a conditional expression).
+
+Option B (acceptable for small scale): Keep one `reactors` SS on the item but scope it as a global dedup set (any reaction by fingerprint counts once). This caps item growth at max connected participants × 1 fingerprint, matching the vote pattern. Loses per-emoji dedup granularity.
+
+For Nasqa Live's 50-500 participant scale, Option A is the right choice. It also makes it trivial to load aggregate counts without scanning reactor sets.
 
 **Warning signs:**
-- `npm run test` passes but per-package `cd packages/frontend && vitest` fails (or vice versa)
-- Coverage reports only include one package's files
-- Two different test watch sessions needed to cover all packages
 
-**Phase to address:** Testing infrastructure (first phase of hardening)
+- Popular questions stop accepting reactions silently (DynamoDB `ValidationException` swallowed in resolver error handler)
+- `ReturnValues: "ALL_NEW"` on update returning smaller count than expected
+- CloudWatch Lambda error logs showing `Item size has exceeded maximum allowed size`
+
+**Phase to address:** Phase 1 (DynamoDB schema and resolver design) — the data model must be decided before writing any resolver code
 
 ---
 
-### Pitfall 2: Testing Async Server Components with Vitest — Not Supported
+### Pitfall 2: The Existing `voters` Set Will Conflict if Reaction Dedup Is Added to the Same Item
 
 **What goes wrong:**
-Next.js App Router Server Components are `async` functions. Vitest's jsdom environment does not support rendering async Server Components via React Testing Library — calling `render(<AsyncServerComponent />)` throws or silently returns null because the component's `async` is treated as returning a Promise, not a React element.
+The existing `upvoteQuestion` mutation stores `voters` (a SS attribute) on the Question item. If the reactions implementation also attempts to add a `voters` or `reactors` Set to the same item, the two systems will share or collide on the same attribute namespace. Worse, if reaction dedup is added naively as a second attribute on the Question item alongside the upvote `voters` Set, any future migration that needs to separate them requires a full table scan to rewrite items. Additionally, the existing `upvoteQuestion` UpdateExpression uses `ADD ... DELETE voters :fpSet` — mixing Set operations across two different interaction types on the same item creates concurrent write contention (both vote and reaction mutations could be in-flight simultaneously on the same item, each attempting a conditional SET operation).
 
 **Why it happens:**
-React's server-rendering model for async components requires a Node.js runtime with React's server renderer (`react-dom/server`), not the browser simulation environment (jsdom). This is a fundamental incompatibility, not a configuration issue.
+Reactions feel like "another kind of vote" and developers reach for the same DynamoDB item as the natural home. The existing schema has no explicit separation between voting state and reaction state.
 
 **How to avoid:**
-- Do NOT write React Testing Library tests for async Server Components. This is explicitly unsupported by the Next.js team as of 2025.
-- For async Server Components: test them via E2E tests (Playwright) that spin up the actual Next.js server.
-- For synchronous Server Components and all Client Components: RTL + Vitest works fine.
-- Extract async data-fetching logic into pure functions in `packages/core` or data layer files. Unit test those functions in isolation (they're plain async TS functions, not React components).
-- Document which components are Server Components and which are Client Components so testers know the correct test strategy for each.
+Model reactions as entirely separate DynamoDB items (separate SK prefix: `REACTION#`). The Question item retains its existing `voters`, `upvoteCount`, `downvoteCount` attributes with zero modification. Reaction counts are a separate `reactionCounts` Map attribute OR are derived from separate REACTION# items. This ensures:
+
+- Zero risk of concurrent write contention between vote and reaction mutations on the same item
+- Existing vote tests pass without modification
+- Reaction data can be cleared, migrated, or extended independently
 
 **Warning signs:**
-- `render()` returning empty or throwing for components with `async function Component()`
-- Tests passing but asserting against an empty DOM
-- Vitest error: "Objects are not valid as a React child (found: Promise)"
 
-**Phase to address:** Testing infrastructure phase — set this boundary in test conventions doc before any test authoring begins
+- The reaction resolver touches the same DynamoDB Key (PK + SK) as `upvoteQuestion`
+- `ConditionalCheckFailedException` rate rising on upvote mutations after reactions are deployed
+- Unit tests for upvoteQuestion starting to fail after reaction code merges
+
+**Phase to address:** Phase 1 (schema design review) — the resolver must never write to the same item key as an existing mutation without explicit coordination
 
 ---
 
-### Pitfall 3: Husky Hooks Not Running in CI — Silent Quality Gate Bypass
+### Pitfall 3: Reaction Updates Flood the AppSync Subscription Channel
 
 **What goes wrong:**
-Husky pre-commit hooks prevent bad code from being committed locally but do nothing in CI. If the CI pipeline does not independently run lint, typecheck, and tests as separate steps, a developer who bypasses hooks (`git commit --no-verify`) or commits from a tool that skips hooks (GitHub web editor, certain IDE integrations) ships unchecked code to production.
+The existing `onSessionUpdate` subscription fires for every mutation listed in the `@aws_subscribe` directive. If `reactToItem` is added to that list, each reaction click by any participant triggers a WebSocket broadcast to all 50-500 connected clients. A session with 200 participants where each reacts to a popular question generates 200 subscription messages in rapid succession, each containing the full `SessionUpdate` payload. AppSync charges per 5KB of outbound subscription data and has a default limit of 1,000 outbound messages per second per API. In practice, the problem is UI thrashing: every client's React tree re-renders on each incoming subscription event, causing jank and dropped frames in the question feed when reaction events flood in.
 
 **Why it happens:**
-Teams treat Husky as the quality gate rather than as a developer convenience layer. The gate must live in CI, not in the client-side hook.
+The union-type single-channel subscription is an intentional architecture decision for simplicity, and it works well for low-frequency events (snippets, questions, replies). Reactions are fundamentally higher frequency — they are designed to be clicked repeatedly and quickly. Treating them identically to "QUESTION_ADDED" events mismatches the frequency assumption of the subscription design.
 
 **How to avoid:**
-- CI pipeline must always run lint, typecheck, and tests independently — regardless of whether Husky hooks ran.
-- Treat Husky as fast feedback for developers, not as the authoritative quality gate.
-- Add `--frozen-lockfile` (or `npm ci`) to CI install steps so lockfile drift is caught immediately.
-- In the GitHub Actions workflow, add a step that explicitly fails if `npm ci` modifies `package-lock.json`.
+
+- Keep reaction mutations on the subscription channel (it is the right channel) but debounce the broadcast on the server side: the reaction resolver should coalesce rapid reaction updates for the same `(questionId, emoji)` pair within a 500ms window before publishing the subscription event. The Lambda resolver can use DynamoDB's `UpdateItem` with `ReturnValues: "ALL_NEW"` to get the latest aggregate count after any number of updates, then publish only one subscription event per debounce window. (Note: debouncing in Lambda requires a short-lived cache or conditional TTL logic — simplest approach is: only broadcast if the count changed by >= 1 and at least 500ms has passed since the last broadcast for that item.)
+- Alternatively, on the frontend, debounce subscription event processing for `REACTION_UPDATED` events specifically: buffer incoming events for 300ms and apply only the latest count, rather than re-rendering on every event.
+- Keep the `payload` for reaction events minimal: only `{ questionId, replyId, emoji, count }` — never include the full reactor fingerprint list.
 
 **Warning signs:**
-- CI pipeline only calls `npm test` but has no explicit lint or typecheck step
-- Teammates reporting "the hook never ran" on certain machines
-- Commits arriving at main that violate ESLint rules that are enforced locally
 
-**Phase to address:** CI/CD pipeline phase — before Husky is considered complete
+- React DevTools Profiler showing dozens of re-renders per second during a reaction burst
+- AppSync subscription message count in CloudWatch spiking 10x above baseline when reactions are added
+- UI frame rate dropping below 30fps during reaction activity in Chrome Performance tab
+
+**Phase to address:** Phase 1 (resolver design) and Phase 2 (frontend subscription handler) — the payload shape must be defined before frontend integration
 
 ---
 
-### Pitfall 4: lint-staged Running Wrong Config in Monorepo — Files Linted Against Wrong Rules
+### Pitfall 4: Optimistic UI Produces Stale Counts When Two Users React Simultaneously
 
 **What goes wrong:**
-With npm workspaces, `lint-staged` run from the root will lint all staged files, but ESLint config files (`eslint.config.mjs`) live inside `packages/frontend/`, not at the root. ESLint called from root on frontend files can't find the config, falls back to default rules, and either passes silently or uses the wrong ruleset. This masks real lint errors.
+The existing vote system applies optimistic UI by immediately incrementing a local counter and rolling back on error. For reactions, this pattern has a subtle flaw: if User A and User B both react with "👍" at the same moment, User A's optimistic state shows count=1, the server resolves both reactions atomically to count=2, and the subscription broadcast delivers count=2 to both clients. User A's TanStack Query cache holds the optimistic count=1. When the query invalidation triggers a refetch, the cache snaps from 1 to 2 — this is a visible count jump that contradicts the optimistic update. For the vote system this is acceptable because votes are rare. For reactions in a popular session this can happen dozens of times per minute.
 
 **Why it happens:**
-ESLint 9 (flat config) resolves config files relative to the current working directory. When lint-staged runs from the monorepo root, it runs ESLint with root cwd, not the package cwd. The config at `packages/frontend/eslint.config.mjs` is not discovered.
+Optimistic updates assume the local state IS the server state until confirmed. In a multi-user real-time system, the server state is being mutated by other clients concurrently. The optimistic update correctly reflects the local user's action, but the subscription channel continuously delivers ground truth that conflicts with it.
 
 **How to avoid:**
-- In the root `.lintstagedrc` (or `package.json` `lint-staged` key), use the `--cwd` flag explicitly:
-  ```json
-  {
-    "packages/frontend/**/*.{ts,tsx}": "eslint --config packages/frontend/eslint.config.mjs --fix"
-  }
-  ```
-- Alternatively, use per-package `lint-staged` configs (one in each package directory) and configure Husky to run `lint-staged --cwd packages/frontend` etc. per directory.
-- Always verify by running `lint-staged` manually and checking which config path ESLint reports using `--debug`.
+Use a "last-write-wins with subscription merge" strategy:
+
+- On the frontend, maintain a `localDelta` for each `(itemId, emoji)` pair rather than an absolute count. Display `serverCount + localDelta` optimistically.
+- When a `REACTION_UPDATED` subscription event arrives, apply `serverCount` from the event to the base count and reset `localDelta` to 0 (if the mutation has completed) or keep `localDelta` intact (if the mutation is still in-flight).
+- Never revert the subscription-delivered count to the pre-reaction state during rollback — only revert the `localDelta`.
+
+TanStack Query's `cancelQueries` + `setQueryData` pattern from the existing vote system is correct for the "prevent stale override" part, but the subscription handler must be aware of in-flight mutations and not overwrite optimistic state with a subscription event that arrived before the mutation resolved.
 
 **Warning signs:**
-- `lint-staged` completes with zero errors on files that contain obvious lint violations
-- ESLint `--debug` output showing "No config file found" or falling back to base config
-- TypeScript JSX errors not caught during pre-commit on `.tsx` files
 
-**Phase to address:** Pre-commit hooks phase
+- Reaction counts visibly "jumping" during active sessions (up 1 then down 1 then up 2)
+- TanStack Query devtools showing frequent cache invalidations for reaction-bearing items during load testing
+- User reports that their reaction "disappeared" and then "came back" in the UI
+
+**Phase to address:** Phase 2 (frontend optimistic update implementation) — requires a deliberate state merging strategy before any optimistic code is written
 
 ---
 
-### Pitfall 5: Sentry Capturing AppSync WebSocket Noise as Real Errors
+### Pitfall 5: Rate Limiting Reactions Using the Same Bucket as Questions Creates Unintended Cross-Throttling
 
 **What goes wrong:**
-AppSync WebSocket connections emit network events that Sentry's default fetch/XHR instrumentation captures as errors: WebSocket reconnect attempts, subscription keep-alive timeouts, and 401 responses during connection renegotiation all generate Sentry issues. In a session with 500 participants on spotty conference WiFi, this creates thousands of noisy Sentry events per session that bury real errors.
+The existing `checkRateLimit` function keys its DynamoDB bucket on the fingerprint alone: `RATELIMIT#${fingerprint}` + `BUCKET#${bucket}`. If reaction mutations are added to the same rate limiter with the same key pattern, a participant who reacts quickly (6 emojis in 6 seconds) consumes rate limit budget shared with their ability to ask questions. The inverse is also true: a participant who asks 3 questions in a minute (hitting the 3/min question limit) cannot react to anything for the rest of that minute. This is not the intended behavior — reactions should have an independent, higher-frequency rate limit.
+
+Additionally, the existing rate limiter is a "count per window" bucket. For toggle behavior (react + unreact), an attacker can rapidly toggle a reaction on/off to inflate the subscription broadcast count without actually consuming rate limit budget (toggle-off is a remove, which the current logic counts the same as a toggle-on). 10 rapid toggles = 10 subscription events to all connected clients.
 
 **Why it happens:**
-Sentry's automatic instrumentation wraps `fetch`, `XMLHttpRequest`, and WebSocket events by default. The Amplify/AppSync WebSocket client's internal retry behavior (which is intentional and handled) appears as a stream of errors to Sentry.
+Reactions look like another action by the participant, so developers pass `fingerprint` as the rate limit key and reuse `checkRateLimit`. The semantic difference (reactions are higher-frequency, toggleable, and have different abuse profiles) is not obvious until load testing.
 
 **How to avoid:**
-- Add `beforeSend` / `beforeSendTransaction` filters in `sentry.client.config.ts` to drop known-benign AppSync errors:
+
+- Use a separate rate limit key namespace for reactions: `RATELIMIT#REACTION#${fingerprint}` instead of `RATELIMIT#${fingerprint}`.
+- Set a higher limit for reactions (e.g., 30 reactions/minute vs 3 questions/minute).
+- For toggle-off (unreact) operations: do NOT call `checkRateLimit` at all — removing a reaction should be free. Only rate-limit adding reactions.
+- Add a short per-item cooldown: a participant cannot react to the same `(itemId, emoji)` more than once per 10 seconds. This prevents rapid-toggle abuse without penalizing normal use. Enforce via a conditional DynamoDB expression on the REACTION# item's `createdAt` timestamp.
+
+**Warning signs:**
+
+- Users reporting "can't ask questions" after reacting to several items in quick succession
+- Rate limit errors appearing in the console during normal reaction use
+- Load test showing that 6 rapid reactions blocks the question submission UI
+
+**Phase to address:** Phase 1 (resolver design) — the rate limit key and logic must be defined before the resolver is written
+
+---
+
+### Pitfall 6: Reaction Subscription Events Contain the Full `payload` JSON Including Fingerprints — Privacy and Size Issue
+
+**What goes wrong:**
+The existing `upvoteQuestion` resolver returns `payload: JSON.stringify({ questionId, upvoteCount: newUpvoteCount })` — only aggregate counts, no fingerprints. If a reaction resolver naively returns `payload: JSON.stringify({ questionId, emoji, reactors: [...fingerprints] })` to let clients derive counts from the Set, every subscriber receives every reactor's fingerprint. In a session context, fingerprints are the only identity token participants have — broadcasting them in subscription events means any participant can harvest all other participants' device fingerprints from WebSocket frames, enabling targeted ban circumvention analysis and privacy violation.
+
+Even ignoring privacy: at 500 participants each with a 36-character fingerprint UUID, the reactors array alone is 18KB per emoji type × 6 emojis = 108KB per payload. AppSync's documented maximum outbound message size is 240KB (raised from 128KB in 2024). A full reactor-list payload approaches that limit.
+
+**Why it happens:**
+Developers want clients to be able to compute counts AND dedup state locally without a refetch. Sending the full reactor set seems efficient. The privacy implication of broadcasting device fingerprints is non-obvious.
+
+**How to avoid:**
+
+- Reaction subscription payloads MUST only contain aggregate counts: `{ questionId, replyId, emoji, count, userHasReacted: boolean }`.
+- The `userHasReacted` boolean is computed server-side per subscriber (if using AppSync enhanced subscription filters with Lambda resolvers) OR derived client-side from localStorage (if the client tracks its own reactions).
+- For Nasqa Live: the client tracks its own reactions in localStorage (same pattern as upvotes). The payload only needs `{ itemId, emoji, count }`.
+- Never put fingerprints in the subscription payload.
+
+**Warning signs:**
+
+- Subscription payload JSON containing a `reactors` or `fingerprints` array
+- Browser Network tab showing WebSocket frames > 10KB for reaction events
+- Privacy audit flagging device fingerprint exposure in subscription channel
+
+**Phase to address:** Phase 1 (resolver design) — the payload schema is defined when the resolver is written
+
+---
+
+### Pitfall 7: Emoji Rendering Bundle Budget Violation
+
+**What goes wrong:**
+The project has a hard constraint: initial JS payload < 80KB gzipped. The 6-emoji fixed palette uses native OS emoji (rendered by the browser as text). This is zero bundle cost. However, if any developer adds an emoji rendering library (twemoji, emoji-mart, EmojiButton, etc.) to "ensure consistent cross-platform appearance," the bundle cost is immediate and severe: twemoji adds ~30-80KB gzipped, emoji-mart adds ~100-200KB gzipped. Either addition would push the page over the 80KB budget.
+
+Cross-platform emoji inconsistency (Android vs iOS vs Windows renders the same emoji differently) is a real concern that makes these libraries tempting. The constraint must be documented as a deliberate decision or the library will appear in a PR.
+
+**Why it happens:**
+Native emoji rendering produces visually inconsistent output across platforms. Developers see this inconsistency during testing on different devices and reach for an image-based emoji library to normalize appearance. The bundle impact is not checked until CI runs the bundle analyzer.
+
+**How to avoid:**
+
+- Explicitly document that native emoji rendering is required. No emoji libraries. No SVG sprite sheets for emoji.
+- Use native emoji characters as `button` content with an `aria-label` attribute describing the reaction. The visual rendering is intentionally platform-native.
+- Add a bundle size CI check (already planned in v1.1) that fails if the initial JS payload exceeds 80KB gzipped. This is the enforcement mechanism.
+- If visual consistency becomes a product requirement in a future milestone, the correct approach is a self-hosted SVG sprite (not a library), with per-emoji SVGs of the specific emojis only (~2-3KB total for 6 emojis at ~400-500 bytes each compressed).
+
+**Warning signs:**
+
+- `import { Emoji } from 'emoji-mart'` or `import twemoji` appearing in any component file
+- Bundle size increasing by > 5KB for a "small" reactions feature
+- CI bundle check failing after the reactions PR merges
+
+**Phase to address:** Phase 2 (frontend component implementation) — the constraint must be in the component design brief before any code is written
+
+---
+
+### Pitfall 8: `aria-label` Missing or Wrong on Reaction Buttons — Screen Readers Read Raw Emoji Characters
+
+**What goes wrong:**
+Reaction buttons that render as `<button>👍</button>` with no `aria-label` cause screen readers to announce the emoji's Unicode description ("thumbs up sign") or nothing at all depending on the OS and screen reader version. The button's purpose is "React with thumbs up (3 reactions)" — the count is the critical missing piece. Additionally, after a user reacts, the button state changes (active/toggled) but if `aria-pressed` is not set, screen readers have no way to convey the "you have reacted" state. This renders the entire reaction system inaccessible to keyboard and screen reader users.
+
+**Why it happens:**
+Emoji buttons look "obviously" meaningful visually. The accessible name and state management for interactive emoji elements is a non-trivial concern that is addressed post-implementation or not at all.
+
+**How to avoid:**
+
+- Every reaction button must have: `aria-label="React with [emoji name]: [count] reactions"` and `aria-pressed={userHasReacted}`.
+- Update `aria-label` dynamically when count changes: `aria-label="React with thumbs up: 4 reactions"`.
+- The reaction count span should be `aria-hidden="true"` (it is redundant with `aria-label`).
+- Group the 6 reaction buttons in a `role="group"` with `aria-label="Reactions"` to give screen reader users context.
+- All 6 buttons must be keyboard-reachable via Tab and activatable via Enter/Space.
+- Use `next-intl` translation keys for the `aria-label` format string so all three locales (en, es, pt) have correct labels.
+
+**Warning signs:**
+
+- `axe-core` or `eslint-plugin-jsx-a11y` flagging empty accessible name on button elements
+- Screen reader announcing "Button, 3" (just the count) instead of the full label
+- Keyboard Tab navigation skipping over reaction buttons because `<button>` content is only emoji with no accessible name
+
+**Phase to address:** Phase 2 (frontend component implementation) — ARIA attributes must be in the initial component, not bolted on afterward
+
+---
+
+### Pitfall 9: Mobile Touch Targets for Reaction Buttons Are Too Small
+
+**What goes wrong:**
+Six emoji reaction buttons displayed in a horizontal row on a question card must each be at least 44×44px to meet WCAG 2.2 success criterion 2.5.8 (Target Size Minimum). In a typical compact Q&A feed layout, reaction buttons are rendered small (24px emoji with 4px padding = ~32×32px) to avoid dominating the card UI. On mobile, participants miss the intended target and accidentally trigger adjacent reactions. The error rate for small touch targets on touch screens is documented; the 44px minimum is specifically for mobile interaction.
+
+**Why it happens:**
+Designers size buttons for visual proportion, not touch ergonomics. The buttons look fine on desktop. Mobile testing with touch is often deferred.
+
+**How to avoid:**
+
+- Each reaction button: minimum `min-h-[44px] min-w-[44px]` with `flex items-center justify-center`. Use padding to expand the hit area without enlarging the visual emoji size.
+- Alternatively, use a transparent pseudo-element or CSS `::after` to expand the touch target without changing layout.
+- Test on a real iOS and Android device, not just browser DevTools mobile emulation. Browser emulation does not replicate touch accuracy.
+- Run axe-core in mobile testing mode to flag target size violations.
+
+**Warning signs:**
+
+- Reaction buttons with `h-8 w-8` (32px) or smaller Tailwind classes
+- Repeated accidental reactions reported in user testing
+- axe-core reporting "Target Size" WCAG 2.5.8 violations
+
+**Phase to address:** Phase 2 (frontend component implementation) — minimum touch target size is a design constraint, not a post-ship fix
+
+---
+
+### Pitfall 10: Reaction Counts Re-render All Questions on Every Subscription Event
+
+**What goes wrong:**
+In the current architecture, `getSessionData` returns all questions and replies in a single query. The TanStack Query cache key is likely `['sessionData', sessionSlug]`. When a reaction subscription event arrives, if the handler invalidates the entire `sessionData` cache key, all questions and replies re-render simultaneously — including items with no reaction activity. In a session with 100 questions and 500 participants reacting actively, this means 100 question components re-rendering on every reaction event.
+
+**Why it happens:**
+The single-query `getSessionData` pattern is simple and efficient for initial load. It becomes a liability when fine-grained real-time updates need to avoid full-list re-renders. The existing vote system has this same problem, but upvotes are low-frequency (one per participant). Reactions are high-frequency (multiple per participant per item).
+
+**How to avoid:**
+
+- Handle `REACTION_UPDATED` subscription events with surgical cache updates, NOT cache invalidation. Use TanStack Query's `queryClient.setQueryData` to update only the specific item in the cached list:
   ```typescript
-  beforeSend(event) {
-    if (event.request?.url?.includes('appsync.amazonaws.com')) {
-      if (event.level === 'warning' || isReconnectError(event)) return null;
-    }
-    return event;
-  }
+  queryClient.setQueryData(["sessionData", sessionSlug], (old) => ({
+    ...old,
+    questions: old.questions.map((q) =>
+      q.id === questionId
+        ? { ...q, reactionCounts: { ...q.reactionCounts, [emoji]: newCount } }
+        : q,
+    ),
+  }));
   ```
-- Use `ignoreErrors` config option for specific AppSync WebSocket error messages.
-- Set `tracesSampleRate` to 0.1 (10%) in production — sampling 100% of AppSync subscription transactions will exhaust Sentry quotas in minutes during an active session.
-- Separately monitor real application errors (Lambda resolver failures, DynamoDB errors) from connection-layer noise.
+- Use React `memo` on `QuestionCard` and `ReplyCard` components with a stable props equality check, so only the single updated item re-renders.
+- Keep reaction counts as a `Map` attribute on the item (or derived from REACTION# items on initial load) so the data shape supports surgical updates.
 
 **Warning signs:**
-- Sentry dashboard flooded with "WebSocket is closed" or "network error" issues immediately after deployment
-- Sentry event quota exhausted within hours of a session starting
-- Real errors buried under hundreds of reconnect-related issues
 
-**Phase to address:** Monitoring / Sentry setup phase
+- React DevTools Profiler showing all `QuestionCard` components re-rendering when a single reaction fires
+- Frame drops visible in the browser when reacting during a session with > 20 questions
+- TanStack Query devtools showing full `sessionData` invalidation on every `REACTION_UPDATED` event
 
----
-
-### Pitfall 6: Sentry Source Maps Not Uploaded — Stack Traces Useless in Production
-
-**What goes wrong:**
-Sentry captures errors in production with minified stack traces. Without source map upload, every error shows `bundle.js:1:47329` instead of `components/QuestionCard.tsx:83`. This makes production debugging effectively impossible, which defeats the purpose of adding Sentry.
-
-**Why it happens:**
-Source map upload is a build-time step that requires a Sentry auth token and project slug configured in the build environment. Teams add Sentry as a runtime dependency but forget to configure the `@sentry/nextjs` Webpack plugin that handles source map upload automatically.
-
-**How to avoid:**
-- Add `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` to Netlify environment variables (not hardcoded in source).
-- The `@sentry/nextjs` package automatically uploads source maps during `next build` when these env vars are present. Verify by checking Sentry's "Source Maps" tab after the first CI deploy.
-- Add `sentry.server.config.ts` and `sentry.client.config.ts` files. The Sentry Next.js wizard auto-generates these — do not skip it.
-- In CI, add a smoke-check step after deploy: trigger a known error and verify Sentry shows a readable stack trace.
-
-**Warning signs:**
-- Sentry errors showing minified file paths after production deployment
-- Sentry "Releases" page showing no source map artifacts
-- Stack traces with anonymous function names and byte offsets
-
-**Phase to address:** Monitoring / Sentry setup phase, verified during first CI deploy
-
----
-
-### Pitfall 7: Next.js `error.tsx` Does Not Catch Layout or Root-Level Errors
-
-**What goes wrong:**
-Teams add `app/error.tsx` expecting it to catch all unhandled errors. It does not. Errors thrown inside `app/layout.tsx` or any parent segment's `layout.tsx` are not caught by `error.tsx` at the same level — they propagate up and crash the entire page with a browser error screen in production.
-
-**Why it happens:**
-The Next.js App Router error boundary wraps the `page.tsx` of a segment, not its `layout.tsx`. This is correct React behavior (a boundary cannot catch errors in itself or its siblings) but surprises developers who expect `error.tsx` to be a global catch-all.
-
-**How to avoid:**
-- Add `app/global-error.tsx` at the root alongside `app/layout.tsx`. This file wraps the root layout and catches errors that escape all other boundaries. It must include its own `<html>` and `<body>` tags because it replaces the root layout when triggered.
-- Add `error.tsx` at every route segment that has its own `layout.tsx` (e.g., `app/[locale]/live/[slug]/error.tsx`).
-- Test error boundaries explicitly: add a development-only "throw error" button in each route segment to verify the correct boundary catches it.
-- Never assume `app/error.tsx` is a global catch-all.
-
-**Warning signs:**
-- In production, errors in `layout.tsx` rendering logic show a blank white page with no error UI
-- `global-error.tsx` is absent from the codebase
-- Error boundaries tested only in development (where Next.js shows its own error overlay anyway)
-
-**Phase to address:** Error boundaries phase
-
----
-
-### Pitfall 8: GitHub Actions AWS Credentials Stored as Long-Lived Secrets
-
-**What goes wrong:**
-Teams store `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as GitHub Actions repository secrets and use them to deploy SST. Long-lived IAM user credentials accumulate over time, are hard to rotate, and create a high-severity blast radius if the repository is compromised or secrets are leaked in a workflow log.
-
-**Why it happens:**
-Long-lived credentials are the path of least resistance and are described in most tutorials. OIDC-based auth requires more initial configuration.
-
-**How to avoid:**
-- Use GitHub Actions OIDC with `aws-actions/configure-aws-credentials@v4`. This generates short-lived credentials scoped to each workflow run. No long-lived secrets are stored.
-- Create an IAM role with a trust policy that allows GitHub Actions from the specific repository (not `token.actions.githubusercontent.com` wildcard) to assume it.
-- Scope the IAM role's permissions to exactly what `sst deploy` needs: CloudFormation, Lambda, DynamoDB, AppSync, S3, CloudFront — deny everything else.
-- Add a Husky pre-commit hook or lint-staged check using `detect-secrets` or `gitleaks` to scan for accidental credential commits.
-
-**Warning signs:**
-- `AWS_ACCESS_KEY_ID` present as a static GitHub Actions secret (not an OIDC role ARN)
-- IAM user credentials that do not rotate (last rotated > 90 days)
-- Workflow logs that print environment variables without masking
-
-**Phase to address:** CI/CD pipeline phase
-
----
-
-### Pitfall 9: CI Pipeline Rebuilds All Packages on Every Commit — Slow and Wasteful
-
-**What goes wrong:**
-A naive GitHub Actions workflow runs `npm ci && npm run lint && npm run typecheck && npm test && npm run build` on every push, regardless of which packages changed. In a monorepo, a change to `packages/core` triggers a full frontend rebuild. A change to `packages/functions` (Lambda resolvers) triggers a frontend build. This is unnecessary and slows CI to 5–10 minutes for trivial changes.
-
-**Why it happens:**
-Monorepo-aware CI requires path-based job filtering. GitHub Actions supports this via `paths` in `on.push`, but it requires per-job scoping, not one global job.
-
-**How to avoid:**
-- Use `on.push.paths` filters per job in the GitHub Actions workflow:
-  ```yaml
-  jobs:
-    test-frontend:
-      if: contains(github.event.commits[*].modified, 'packages/frontend')
-  ```
-- Alternatively, use a change detection step (`dorny/paths-filter@v3`) at the top of the workflow to set output variables, then use `if: steps.changes.outputs.frontend == 'true'` on each job.
-- Always build shared packages (`packages/core`) before building packages that depend on them — use `needs:` job dependencies in GitHub Actions.
-- Cache `node_modules` and Next.js build cache (`.next/cache`) between runs using `actions/cache@v4`.
-
-**Warning signs:**
-- CI always runs for > 5 minutes regardless of which file was changed
-- A one-line change in a Lambda resolver triggers a full Next.js build and Netlify deploy
-- `npm ci` is not caching `node_modules` — watch for "cache miss" in every run
-
-**Phase to address:** CI/CD pipeline phase
-
----
-
-### Pitfall 10: Open Graph Image Not Generated for Session Pages — OG Preview Shows Generic Metadata
-
-**What goes wrong:**
-Teams add static OG metadata to `app/layout.tsx` but forget that session pages (`/[locale]/live/[slug]`) have dynamic session titles. Sharing a session link on Slack/Twitter/WhatsApp shows the generic app title instead of the session's title. The QR code flow that participants use to join depends on the shared link looking credible — generic OG metadata undermines this.
-
-**Why it happens:**
-Dynamic metadata requires `generateMetadata` exported from `app/[locale]/live/[slug]/page.tsx`, which requires an async data fetch for the session title. Teams who add static metadata in the root layout assume it propagates to all pages.
-
-**How to avoid:**
-- Export `generateMetadata` from every dynamic route segment that has unique content:
-  ```typescript
-  export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const session = await getSession(params.slug);
-    return {
-      title: session.title,
-      openGraph: { title: session.title, description: `Join ${session.title} on Nasqa Live` },
-    };
-  }
-  ```
-- Do not export both a static `metadata` object and a `generateMetadata` function from the same file — Next.js ignores one silently.
-- For session pages that may be expired (24h TTL), return a fallback metadata object gracefully instead of throwing.
-- Test OG tags using `opengraph.xyz` or the LinkedIn post inspector after deploy.
-
-**Warning signs:**
-- Sharing a session link shows "Nasqa Live" as the title with no session-specific description
-- `generateMetadata` absent from session page files
-- OG image showing the generic app logo instead of session context
-
-**Phase to address:** SEO / metadata phase
-
----
-
-### Pitfall 11: i18n `alternates` / `hreflang` Tags Missing or Wrong — Duplicate Content Penalty
-
-**What goes wrong:**
-With locale-based routing (`/en/live/slug`, `/es/live/slug`, `/pt/live/slug`), search engines see three URLs with identical content (since user-generated content is not translated — only UI chrome is). Without `hreflang` tags and canonical consolidation, Google treats them as duplicate pages and may penalize or de-rank all three.
-
-**Why it happens:**
-`next-intl` does locale-based routing automatically but does not add `hreflang` tags. Teams must explicitly add `alternates` to `generateMetadata` output.
-
-**How to avoid:**
-- In `generateMetadata`, include `alternates` with canonical and `languages` map:
-  ```typescript
-  alternates: {
-    canonical: `https://nasqa.live/en/live/${slug}`,
-    languages: {
-      'en': `https://nasqa.live/en/live/${slug}`,
-      'es': `https://nasqa.live/es/live/${slug}`,
-      'pt': `https://nasqa.live/pt/live/${slug}`,
-      'x-default': `https://nasqa.live/en/live/${slug}`,
-    }
-  }
-  ```
-- For session pages: canonicalize to the English version (since content is identical) to consolidate SEO value.
-- Do not use the same canonical URL for every locale — search engines ignore hreflang when canonical conflicts with it.
-
-**Warning signs:**
-- Google Search Console showing duplicate content issues across locale variants
-- Session pages ranking for the wrong locale in search results
-- Missing `x-default` hreflang value
-
-**Phase to address:** SEO / metadata phase
-
----
-
-### Pitfall 12: Accessibility (a11y) Added as a Checkbox After Implementation — ARIA Bolted On
-
-**What goes wrong:**
-Teams add ARIA attributes after implementing real-time UI features, resulting in broken semantics: `role="button"` on a `<div>` that doesn't receive keyboard events, `aria-live` regions that never announce updates because they were added to the wrong DOM node, or `aria-expanded` attributes that don't update state.
-
-The real-time aspects of Nasqa Live (question feed updates, upvote counters, connection status) are especially vulnerable because dynamic DOM changes require `aria-live` regions to be present in the DOM before the first change occurs — adding them after the fact means screen readers miss announcements.
-
-**Why it happens:**
-Accessibility is treated as a post-implementation concern rather than a design constraint. `aria-live` regions must be rendered before they receive content — placing an `aria-live` region inside a component that conditionally mounts means it is not registered with the accessibility tree until it first renders, causing initial announcements to be missed.
-
-**How to avoid:**
-- Render `aria-live` regions unconditionally (always present in DOM) but with empty content. Populate the content when an event occurs. Never conditionally mount the region.
-- Use `aria-live="polite"` for question feed updates (non-urgent) and `aria-live="assertive"` for connection status changes only.
-- Add `role="status"` to the connection indicator that shows "Live" / "Reconnecting..." — this announces state changes without requiring `aria-live`.
-- Use `axe-core` via `@axe-core/react` in development mode to catch ARIA violations at render time, before code review.
-- Run `eslint-plugin-jsx-a11y` (already included in `eslint-config-next`) and fix all warnings before any PR merges.
-
-**Warning signs:**
-- `axe-core` flagging violations in development
-- Screen reader (VoiceOver, NVDA) not announcing question feed updates
-- Keyboard navigation stopping at interactive components that have no `tabIndex` or `role`
-
-**Phase to address:** Accessibility phase — but `aria-live` regions must be designed before real-time event integration
-
----
-
-### Pitfall 13: Netlify `@netlify/plugin-nextjs` Lagging Behind Next.js 16 — Build Failures
-
-**What goes wrong:**
-As of early 2026, there are documented reports of Next.js 16 builds failing on Netlify during the Edge Functions bundling step even when the local build succeeds. The `@netlify/plugin-nextjs` adapter (via OpenNext) has a version coupling to Next.js releases. Upgrading Next.js without checking compatibility first breaks production deploys.
-
-**Why it happens:**
-Netlify's adapter wraps Next.js server internals. Each Next.js minor or major version can change internal APIs that the adapter depends on. The adapter is maintained separately from Next.js and sometimes lags.
-
-**How to avoid:**
-- Before upgrading Next.js, check the Netlify Next.js compatibility matrix and open GitHub issues for the OpenNext adapter.
-- Pin `@netlify/plugin-nextjs` to a version that is explicitly tested against the current Next.js version.
-- Add a CI check that deploys to a preview URL on every PR, not just on main merges. Build failures are caught before merging.
-- Keep Next.js version upgrades as a dedicated PR with no other changes — isolate the upgrade to make rollback straightforward.
-
-**Warning signs:**
-- Netlify build succeeding locally but failing in Netlify CI on "Edge Functions bundling" step
-- Error messages referencing `@netlify/plugin-nextjs` or `opennextjs-netlify` in the build log
-- Next.js changelog showing "internal API changes" in its release notes
-
-**Phase to address:** CI/CD pipeline phase — verify Netlify compatibility before any Next.js upgrade
+**Phase to address:** Phase 2 (frontend subscription handler) — the cache update strategy must be designed before the subscription handler is written
 
 ---
 
@@ -355,90 +286,90 @@ Netlify's adapter wraps Next.js server internals. Each Next.js minor or major ve
 
 Shortcuts that seem reasonable but create long-term problems.
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Skipping E2E tests for real-time flows | Faster initial test setup | Real-time subscription bugs go undetected until production | Never — real-time is the core value prop |
-| Using `any` type in test mocks for AppSync context | Tests compile faster | Type errors in resolvers not caught in tests | Only for initial scaffolding, fix within same PR |
-| Setting `tracesSampleRate: 1.0` in Sentry production | Full observability | Sentry quota exhausted in one session at 500 participants | Development only |
-| Adding `/* eslint-disable */` to pass lint in CI | CI goes green | Lint debt accumulates, violations hidden | Never in production code |
-| Co-locating test files with components without test naming convention | Flexible organization | Test discovery breaks across packages | Only if all packages agree on same convention |
-| Ignoring `aria-live` implementation until a11y phase | Faster shipping | Retrofitting live regions requires component restructuring | Never — live regions are architectural, not cosmetic |
+| Shortcut                                                            | Immediate Benefit                            | Long-term Cost                                                                 | When Acceptable                                |
+| ------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------- |
+| Storing reactor fingerprints as a Set on the Question item          | Matches existing vote pattern, simple        | 400KB item limit hit at ~1,000 reactors across 6 emoji types                   | Never — separate REACTION# items from day one  |
+| Reusing the same `RATELIMIT#${fingerprint}` key for reactions       | No new code                                  | Questions and reactions share rate budget; reactions block question submission | Never — reactions need their own namespace     |
+| Sending full reactor fingerprint list in subscription payload       | Client can compute counts and state locally  | Privacy exposure, payload bloat approaching AppSync 240KB limit                | Never — always send only aggregate counts      |
+| Using an emoji library (twemoji, emoji-mart) for visual consistency | Consistent emoji appearance across platforms | Bundle budget violated immediately; breaks 80KB gzip constraint                | Never in v1.2 — native emoji only              |
+| Invalidating full `sessionData` cache on reaction events            | Simple, consistent with existing patterns    | All 100 questions re-render on every reaction; frame drops in active sessions  | Only acceptable with < 10 questions in session |
+| Skipping `aria-label` and `aria-pressed` on emoji buttons           | Faster initial implementation                | Reaction UI inaccessible to screen reader users; violates WCAG 2.2 AA          | Never — ARIA attributes are not optional       |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting hardening tools to the existing stack.
+Common mistakes when wiring reactions into the existing stack.
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Sentry + Next.js | Not running Sentry wizard (`npx @sentry/wizard@latest -i nextjs`) and configuring manually | Run the wizard — it generates all required config files and wires source map upload |
-| Sentry + AppSync WebSocket | Letting Sentry capture all network errors including WebSocket reconnects | Add `beforeSend` filter to drop known-benign AppSync connection events |
-| Vitest + `@nasqa/core` workspace package | Importing from `@nasqa/core` fails in tests because npm workspace symlink not resolved by Vitest | Add `vite-tsconfig-paths` plugin to vitest config; verify `tsconfig.json` `paths` are included |
-| Husky + npm workspaces | Installing Husky in each package separately | Install Husky at root only; `.husky/` lives at repo root |
-| lint-staged + ESLint flat config | Running `eslint` from root without `--config` pointing to package-level `eslint.config.mjs` | Use `--config packages/frontend/eslint.config.mjs` in lint-staged glob pattern |
-| GitHub Actions + SST deploy | Using long-lived IAM user credentials as secrets | Use OIDC role assumption via `aws-actions/configure-aws-credentials@v4` |
-| Netlify + Next.js 16 | Upgrading Next.js without checking `@netlify/plugin-nextjs` compatibility | Pin plugin version; test on preview deploy before merging |
-| `generateMetadata` + next-intl | Calling `getTranslations()` inside `generateMetadata` without `await`ing the locale param | Params in App Router `generateMetadata` are Promises — must `await params` before accessing `locale` |
+| Integration                          | Common Mistake                                                                             | Correct Approach                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| DynamoDB + reaction dedup            | Adding `reactor_👍` SS attribute on Question item                                          | Separate REACTION# SK items; aggregate counts stored as Map on Question item                                              |
+| AppSync schema + reactions           | Adding `reactToItem` to existing `@aws_subscribe` list without testing broadcast frequency | Add to subscription list but implement server-side coalescing or frontend event debouncing                                |
+| GraphQL schema + `SessionUpdate`     | Adding a new `eventType` value (`REACTION_UPDATED`) without updating the union enum        | Add `REACTION_UPDATED` to `SessionEventType` enum in `schema.graphql` AND in `@nasqa/core` types before any resolver code |
+| Rate limiter + reactions             | Calling `checkRateLimit(fingerprint, 30, 60)` with the existing key pattern                | Use `checkRateLimit('REACTION#' + fingerprint, 30, 60)` — separate namespace                                              |
+| TanStack Query + subscription events | `queryClient.invalidateQueries(['sessionData'])` on every reaction event                   | `queryClient.setQueryData` surgical update — never invalidate the full session list for reaction events                   |
+| next-intl + reaction `aria-label`    | Hardcoding English strings in `aria-label`                                                 | Define i18n keys for all 6 reaction labels in `@nasqa/core/i18n.ts` and use `useTranslations()`                           |
+| Subscription handler + optimistic UI | `setQueryData` from subscription overwriting in-flight optimistic state                    | Check for in-flight mutations before applying subscription updates; use `isMutating` from TanStack Query                  |
 
 ---
 
 ## Performance Traps
 
-Patterns that work locally but fail or degrade at real session load.
+Patterns that work locally but degrade at session load.
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Sentry `tracesSampleRate: 1.0` in production | Sentry quota exhausted mid-session; events dropped | Set to 0.1 in production; 1.0 in dev/staging only | At > 100 concurrent participants in a session |
-| Running Vitest with `--coverage` on every CI run | CI 3x slower; coverage upload timeout | Run coverage only on main branch push, not on PRs | At > 200 test files |
-| Full monorepo rebuild on every commit | CI consistently > 8 minutes | Path-filtered jobs; build cache with `actions/cache` | Immediately — wastes time from first commit |
-| `axe-core` full page scan in every RTL test | Test suite takes minutes | Run `axe-core` only in dedicated a11y test files | At > 50 component tests |
-| Source maps included in production client bundle | Initial page payload bloated by source maps | Set `productionBrowserSourceMaps: false` in `next.config.ts` | Immediately if source maps are accidentally shipped |
+| Trap                                                                 | Symptoms                                                                    | Prevention                                                                                        | When It Breaks                                                |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Invalidating full `sessionData` cache on reaction events             | All questions re-render simultaneously; visible frame drops                 | Surgical `setQueryData` for reaction-bearing items only                                           | At > 20 questions + > 50 concurrent reactors                  |
+| No debounce on subscription event processing for reactions           | UI re-renders at the rate of incoming WebSocket events (potentially 50/sec) | Buffer `REACTION_UPDATED` events for 200-300ms and apply latest count                             | At > 10 concurrent participants reacting simultaneously       |
+| DynamoDB GET to verify fingerprint dedup on every reaction           | Latency doubles for reaction mutations; Lambda timeout risk at scale        | Use conditional PutItem on REACTION# item (fails if duplicate) instead of a GET + conditional PUT | At > 200 reactions/minute on a single session                 |
+| Reactor fingerprint Set on Question item growing unbounded           | DynamoDB `ValidationException` on reaction mutations for popular questions  | Separate REACTION# items with dedup enforced by SK uniqueness                                     | At ~1,000 total reactions per question across all emoji types |
+| Rendering 6 reaction buttons per question × 100 questions with state | React tree has 600 interactive buttons; initial render slow                 | Defer rendering reaction buttons until a question card is in viewport (Intersection Observer)     | At > 50 questions in the feed                                 |
 
 ---
 
 ## Security Mistakes
 
-Domain-specific security issues introduced during hardening.
+Domain-specific security issues in the reactions feature.
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Committing Sentry DSN to source | DSN leaks allow event injection and quota abuse | Store DSN in environment variable; gitignore `.env.local` |
-| AWS credentials in GitHub Actions secrets (not OIDC) | Credential leak = full AWS account access | Replace with OIDC role assumption |
-| Sentry capturing `hostSecret` in error context | Host secret exposed in Sentry event metadata | Add `hostSecret` to Sentry `denyUrls` or scrub from event `request.query` in `beforeSend` |
-| Source maps shipped to client in production | Application structure exposed; easier reverse engineering | Set `productionBrowserSourceMaps: false`; upload to Sentry only |
-| Pre-commit hook skippable with `--no-verify` | Hooks are not a security boundary | CI is the authoritative gate; hooks are developer convenience only |
+| Mistake                                                   | Risk                                                                                                                    | Prevention                                                                                                                     |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Broadcasting reactor fingerprints in subscription payload | Any participant can harvest all other participants' device fingerprints; enables ban circumvention analysis             | Payload contains only `{ itemId, emoji, count }` — never fingerprints                                                          |
+| Not enforcing ban check on reaction mutations             | Banned participants can still react, cluttering the feed and bypassing moderation intent                                | Call `checkNotBanned(sessionSlug, fingerprint)` at the start of the reaction resolver, same as `addQuestion`                   |
+| No input validation on emoji type in reaction resolver    | Arbitrary emoji injection into DynamoDB; storage of unexpected characters                                               | Validate `emoji` argument against the fixed allowlist `['👍', '❤️', '🎉', '😂', '🤔', '👀']` using Zod before any DB operation |
+| Rate limit toggle abuse (rapid react/unreact)             | 100 toggle events = 100 subscription broadcasts to all clients with no rate limit consumed                              | Apply rate limit to toggle-on only; add per-item cooldown of 10s for re-reaction after toggle-off                              |
+| hostSecret not required for reactions                     | No attack vector since reactions are public, but the convention for public mutations is consistent fingerprint tracking | Use fingerprint + ban check as the auth pattern; hostSecret is not needed for reactions                                        |
 
 ---
 
 ## UX Pitfalls
 
-User experience mistakes specific to adding enterprise hardening to a real-time presentation app.
+User experience mistakes specific to reactions in a live session Q&A context.
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Error boundary showing technical error message in production | Attendees see "An error occurred" with no context during a live session | Error boundary UI should say "Session temporarily unavailable — reconnecting" with a retry button |
-| OG image showing generic title when sharing session link | QR code context lost; participants confused about what they're joining | Dynamic `generateMetadata` per session fetches title and session context |
-| Accessibility focus ring hidden with `outline: none` in global CSS | Keyboard-only users cannot navigate question feed or upvote buttons | Remove `outline: none` from global CSS; use `:focus-visible` to show ring only for keyboard focus |
-| `aria-live` region announcing every upvote increment | Screen reader reads "42 upvotes, 43 upvotes, 44 upvotes" in rapid succession during popular sessions | Debounce `aria-live` updates; announce only "Question has 44 votes" after 500ms quiet period |
-| 404 page for expired sessions (24h TTL) instead of graceful message | Participants scanning QR after session ends see a blank error page | Detect `SESSION_EXPIRED` from DynamoDB and render an informative "This session has ended" page via `not-found.tsx` or a session-level error boundary |
+| Pitfall                                                               | User Impact                                                                                                     | Better Approach                                                                                                                 |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| No visual distinction between "you reacted" vs "others reacted"       | Users cannot tell if they already reacted; double-tap causes confused toggle                                    | Highlighted/filled button state when `userHasReacted === true`; persist per `(fingerprint, itemId, emoji)` in localStorage      |
+| Reaction counts updating too aggressively (every event)               | Numbers flickering rapidly during popular sessions; visually distracting                                        | Debounce count display updates by 300ms — show the latest count after a brief quiet period                                      |
+| Reaction buttons visible but disabled during session load             | Users click reactions before WebSocket is connected; mutation fires but subscription confirmation never arrives | Show reaction buttons only after subscription connection is confirmed; use connection state from the existing WebSocket context |
+| `aria-live` announcing every count increment during a popular session | Screen reader reads "4 reactions, 5 reactions, 6 reactions" continuously                                        | Debounce `aria-live` announcements for reaction counts; announce at most once per 2 seconds per item                            |
+| No i18n for reaction tooltip/aria-label format                        | en/es/pt users see English-only accessible labels                                                               | Add i18n keys `reactions.thumbsUp`, `reactions.heart`, etc. in `@nasqa/core/i18n.ts`; use in `aria-label` format string         |
+| Reactions allowed on banned/hidden questions                          | Audiences react to content that is community-moderated as problematic                                           | Hide reaction buttons on `isHidden === true` and `isBanned === true` items; do not render the interaction affordance at all     |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete but are missing critical pieces — specific to enterprise hardening on this stack.
+Things that appear complete but are missing critical pieces — specific to reactions integration.
 
-- [ ] **Sentry integration:** Sentry catches errors but source maps not uploaded — verify by checking Sentry's Releases > Source Maps after first CI deploy shows readable stack traces.
-- [ ] **Error boundaries:** `app/error.tsx` exists but `app/global-error.tsx` is absent — errors in root layout crash the app silently in production.
-- [ ] **Pre-commit hooks:** Husky installed and hooks run locally but CI has no equivalent lint/typecheck steps — `git commit --no-verify` bypasses all gates.
-- [ ] **Test coverage:** Tests exist but only for Client Components — Server Component business logic untested because async RSCs can't be rendered in jsdom.
-- [ ] **SEO metadata:** `generateMetadata` returns static title in session pages — session title not fetched; all session OG previews look identical.
-- [ ] **i18n SEO:** `hreflang` and `alternates.canonical` absent from session page metadata — three locale variants treated as duplicate content.
-- [ ] **CI caching:** GitHub Actions workflow runs `npm ci` without `actions/cache` — every run downloads all dependencies fresh.
-- [ ] **AWS credentials:** OIDC role configured but with overly broad permissions (`*`) — scoped-down IAM policy not defined.
-- [ ] **Accessibility:** ESLint a11y rules pass but `aria-live` regions for real-time updates not present — screen readers miss question feed changes.
-- [ ] **Netlify compatibility:** Next.js and `@netlify/plugin-nextjs` versions compatible in local build but Edge Functions bundling untested — only a staging Netlify deploy confirms compatibility.
+- [ ] **DynamoDB schema:** Reaction REACTION# items created but aggregate `reactionCounts` Map not backfilled on Question/Reply items — `getSessionData` returns items with no `reactionCounts` key, causing undefined errors in the frontend count display.
+- [ ] **GraphQL schema:** `REACTION_UPDATED` event type added to `schema.graphql` but NOT added to `SessionEventType` enum in `@nasqa/core/src/types.ts` — TypeScript compile passes but runtime events are `unknown` type.
+- [ ] **Subscription list:** `reactToItem` mutation added to `@aws_subscribe(mutations: [...])` in the schema but the mutation was not actually deployed via `sst deploy` — subscription silently ignores reaction events.
+- [ ] **Rate limiting:** Reaction resolver calls `checkRateLimit` but does NOT call `checkNotBanned` — banned participants can still flood reactions.
+- [ ] **Optimistic UI:** Reaction buttons show optimistic count but do NOT persist `userHasReacted` to localStorage — page refresh causes the button to show "not reacted" even though the server has the reaction recorded.
+- [ ] **Emoji validation:** Resolver accepts any string as `emoji` argument — Zod validation not added, allowing arbitrary character injection.
+- [ ] **Touch targets:** Reaction button renders correctly on desktop but is 32×32px on mobile — the 44px minimum was not applied to the mobile breakpoint.
+- [ ] **aria-label:** `aria-label` is static ("React with thumbs up") but does not include the current count or the user's reaction state — screen readers cannot convey reaction totals or toggle state.
+- [ ] **i18n:** `aria-label` strings hardcoded in English in the component — es/pt locales receive English labels.
+- [ ] **Reactions on hidden items:** Reaction buttons render on `isHidden === true` questions — the conditional render guard was not added.
 
 ---
 
@@ -446,15 +377,14 @@ Things that appear complete but are missing critical pieces — specific to ente
 
 When pitfalls occur despite prevention, how to recover.
 
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Sentry flooded with AppSync noise | LOW | Add `beforeSend` filter, redeploy, manually resolve noise issues in Sentry |
-| Source maps missing in Sentry | LOW | Add `SENTRY_AUTH_TOKEN` env var, trigger a new deploy, artifacts upload automatically |
-| CI pipeline broken by Vitest workspace config | MEDIUM | Revert to per-package Vitest, consolidate to root config in a dedicated PR |
-| AWS credentials leaked in logs | HIGH | Rotate immediately in IAM, audit CloudTrail for unauthorized access, migrate to OIDC |
-| Netlify build failing after Next.js upgrade | MEDIUM | Pin Next.js to previous version, monitor OpenNext release for compatibility fix |
-| `global-error.tsx` absent and root layout crashes | LOW | Add the file; it follows the same pattern as `error.tsx` but with standalone HTML |
-| ARIA live regions not announcing real-time updates | MEDIUM | Refactor to mount `aria-live` regions unconditionally in layout; re-test with screen reader |
+| Pitfall                                                               | Recovery Cost | Recovery Steps                                                                                                                                                                                     |
+| --------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reactor fingerprints stored on Question item, approaching 400KB limit | HIGH          | Write a DynamoDB migration script to extract fingerprints from Question items into separate REACTION# items; update resolvers; backfill aggregate counts; requires downtime or double-write period |
+| Rate limit namespace collision with questions                         | LOW           | Deploy updated resolver with separate `RATELIMIT#REACTION#` key; existing rate limit counters expire naturally within 1 minute                                                                     |
+| Subscription flooding all clients with reaction events                | MEDIUM        | Add debounce logic in Lambda resolver; redeploy; optionally add frontend event buffer as immediate mitigation before resolver deploy                                                               |
+| Full `sessionData` cache invalidation causing re-renders              | LOW           | Update subscription handler to use `setQueryData` surgical update; deploy frontend update                                                                                                          |
+| Emoji library accidentally added, bundle size exceeded                | MEDIUM        | Remove library, replace with native emoji, adjust styling; re-run bundle analysis to confirm budget compliance                                                                                     |
+| Fingerprints exposed in subscription payload                          | HIGH          | Hotfix resolver to strip fingerprints from payload; rotate fingerprint tokens for affected sessions (sessions are 24h TTL — natural expiry limits blast radius)                                    |
 
 ---
 
@@ -462,46 +392,36 @@ When pitfalls occur despite prevention, how to recover.
 
 How roadmap phases should address these pitfalls.
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Vitest workspace config conflicts (Pitfall 1) | Testing infrastructure | Run `npm test` from root; confirm all three packages' tests execute |
-| Async Server Components not testable in RTL (Pitfall 2) | Testing infrastructure | Document test strategy per component type; E2E covers async RSCs |
-| Husky not a CI gate (Pitfall 3) | CI/CD pipeline | CI workflow must have explicit lint + typecheck steps independent of hooks |
-| lint-staged wrong ESLint config (Pitfall 4) | Pre-commit hooks | Run `lint-staged` manually on a file with a known lint error; verify it fails |
-| Sentry AppSync noise (Pitfall 5) | Monitoring / Sentry | Check Sentry dashboard during a test session; no WebSocket reconnect noise |
-| Sentry source maps missing (Pitfall 6) | Monitoring / Sentry | Trigger test error in production; verify readable stack trace in Sentry |
-| `error.tsx` not catching layout errors (Pitfall 7) | Error boundaries | Test error in `layout.tsx` explicitly; `global-error.tsx` must be present |
-| Long-lived AWS credentials in CI (Pitfall 8) | CI/CD pipeline | Verify no static `AWS_ACCESS_KEY_ID` secrets; OIDC role ARN used instead |
-| Full monorepo rebuild on every commit (Pitfall 9) | CI/CD pipeline | Measure CI time for a change to single package; should be < 2 minutes |
-| OG metadata not dynamic per session (Pitfall 10) | SEO / metadata | Share session link to OG debugger; title must show session name |
-| Missing `hreflang` / canonical (Pitfall 11) | SEO / metadata | Check rendered HTML for `alternates` meta tags on session pages |
-| ARIA live regions absent (Pitfall 12) | Accessibility | Test with screen reader; question feed updates must be announced |
-| Netlify + Next.js 16 build failures (Pitfall 13) | CI/CD pipeline | Staging deploy on Netlify as part of every PR via preview deploy |
+| Pitfall                                                                    | Prevention Phase                                      | Verification                                                                                                            |
+| -------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Reactor fingerprints on Question item violate 400KB limit (Pitfall 1)      | Phase 1: DynamoDB schema design                       | Write a test that simulates 500 participants reacting with all 6 emojis; confirm Question item size stays under 50KB    |
+| Reaction dedup collides with existing `voters` Set (Pitfall 2)             | Phase 1: Resolver design review                       | Confirm reaction resolver NEVER touches the same DynamoDB Key as `upvoteQuestion`; unit test both resolvers in parallel |
+| Reaction subscription events flood the channel (Pitfall 3)                 | Phase 1 (payload shape) + Phase 2 (frontend debounce) | Load test with 100 concurrent reactors; measure subscription message rate in CloudWatch                                 |
+| Optimistic UI stale counts from concurrent reactions (Pitfall 4)           | Phase 2: Frontend subscription handler design         | Test with two browser windows reacting simultaneously; counts must converge without visible flicker                     |
+| Rate limit namespace collision between questions and reactions (Pitfall 5) | Phase 1: Resolver implementation                      | Verify reacting 30 times does not trigger RATE_LIMIT_EXCEEDED on question submission                                    |
+| Fingerprints in subscription payload (Pitfall 6)                           | Phase 1: Resolver payload schema                      | Assert in resolver unit tests that `payload` JSON never contains a `fingerprint`, `reactors`, or `voters` key           |
+| Emoji library violating 80KB bundle budget (Pitfall 7)                     | Phase 2: Frontend component PR review                 | Bundle size CI check must pass; no emoji library imports permitted                                                      |
+| Missing ARIA on reaction buttons (Pitfall 8)                               | Phase 2: Frontend component implementation            | axe-core scan returns zero violations for reaction button elements; keyboard navigation test passes                     |
+| Mobile touch targets too small (Pitfall 9)                                 | Phase 2: Frontend component implementation            | Real device test on iOS and Android; all 6 buttons must have >= 44px hit area                                           |
+| Full session re-render on reaction events (Pitfall 10)                     | Phase 2: Subscription handler                         | React Profiler during load test; only the reacted item's component should highlight as re-rendered                      |
 
 ---
 
 ## Sources
 
-- Vitest projects/workspace configuration (verified, HIGH confidence): https://vitest.dev/guide/projects
-- Vitest workspace not detecting tests in monorepo (verified, HIGH confidence): https://github.com/vitest-dev/vitest/issues/5336
-- Next.js testing documentation — async Server Components caveat (verified, HIGH confidence): https://nextjs.org/docs/app/guides/testing/vitest
-- Running RTL + Vitest on async Server Components (verified, MEDIUM confidence): https://aurorascharff.no/posts/running-tests-with-rtl-and-vitest-on-internationalized-react-server-components-in-nextjs-app-router/
-- lint-staged monorepo configuration — multiple config files and `--cwd` pattern (verified, MEDIUM confidence): https://www.horacioh.com/writing/setup-lint-staged-on-a-monorepo/
-- lint-staged multiple instances issue in monorepo (verified, MEDIUM confidence): https://github.com/okonet/lint-staged/issues/988
-- Next.js error.tsx and global-error.tsx pitfalls (verified, HIGH confidence): https://nextjs.org/docs/app/api-reference/file-conventions/error
-- Next.js error handling — layout boundary limitation (verified, HIGH confidence): https://nextjs.org/docs/app/getting-started/error-handling
-- Sentry Next.js manual setup and source maps (verified, HIGH confidence): https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-- Netlify Next.js 16 build failures (MEDIUM confidence — community reports): https://answers.netlify.com/t/next-js-16-project-build-fails-on-netlify/157791
-- Next.js dynamic SEO with generateMetadata (verified, HIGH confidence): https://nextjs.org/docs/app/api-reference/functions/generate-metadata
-- SEO i18n hreflang and alternates with next-intl (verified, MEDIUM confidence): https://dev.to/oikon/seo-and-i18n-implementation-guide-for-nextjs-app-router-dynamic-metadata-and-internationalization-3eol
-- GitHub Actions monorepo CI patterns (MEDIUM confidence): https://dev.to/pockit_tools/github-actions-in-2026-the-complete-guide-to-monorepo-cicd-and-self-hosted-runners-1jop
-- Pre-commit hooks and secret detection (verified, HIGH confidence): https://trufflesecurity.com/blog/do-pre-commit-hooks-prevent-secrets-leakage
-- AWS Labs git-secrets (verified, HIGH confidence): https://github.com/awslabs/git-secrets
-- Next.js accessibility documentation (verified, HIGH confidence): https://nextjs.org/docs/architecture/accessibility
-- axe-core integration for React testing (verified, MEDIUM confidence): https://www.deque.com/blog/building-accessible-apps-with-next-js-and-axe-devtools/
-- Canonical and hreflang in Next.js 16 (verified, MEDIUM confidence): https://www.buildwithmatija.com/blog/nextjs-advanced-seo-multilingual-canonical-tags
+- DynamoDB item size constraints — 400KB limit including attribute names (verified, HIGH confidence): https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+- DynamoDB limits overview — practical implications of the 400KB limit (MEDIUM confidence): https://www.alexdebrie.com/posts/dynamodb-limits/
+- DynamoDB one-to-many modeling — separate items vs. nested Sets for unbounded relationships (HIGH confidence): https://www.alexdebrie.com/posts/dynamodb-one-to-many/
+- AppSync subscription message size limit — 240KB maximum outbound payload per message (verified, MEDIUM confidence): https://aws.amazon.com/about-aws/whats-new/2024/04/aws-appsync-increases-service-quota-adds-subscription/
+- AppSync real-time subscriptions documentation — connection and throughput limits (HIGH confidence): https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-data.html
+- TanStack Query optimistic updates — concurrent mutation handling and `setQueryData` (HIGH confidence): https://tanstack.com/query/v5/docs/react/guides/optimistic-updates
+- TanStack Query concurrent optimistic updates blog (MEDIUM confidence): https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
+- DynamoDB race conditions and conditional writes (MEDIUM confidence): https://awsfundamentals.com/blog/understanding-and-handling-race-conditions-at-dynamodb
+- Emoji accessibility best practices — `aria-label` requirements for emoji buttons (HIGH confidence): https://www.boia.org/blog/emojis-and-web-accessibility-best-practices
+- WCAG 2.2 Target Size Minimum (2.5.8) — 44×44px mobile touch target requirement (HIGH confidence): https://a11ypros.com/blog/mobile-accessibility-testing-checklist-2025-edition
+- AppSync enhanced subscription filtering — limits and field restrictions (HIGH confidence): https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-enhanced-filtering.html
 
 ---
 
-*Pitfalls research for: enterprise hardening of Next.js + SST monorepo (testing, CI/CD, monitoring, error boundaries, pre-commit hooks, SEO, accessibility)*
-*Researched: 2026-03-15*
+_Pitfalls research for: emoji reactions on Q&A in a real-time Next.js + DynamoDB + AppSync presentation session tool_
+_Researched: 2026-03-15_

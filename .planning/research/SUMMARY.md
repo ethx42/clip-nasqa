@@ -1,232 +1,190 @@
 # Project Research Summary
 
-**Project:** Nasqa Live — enterprise hardening (v1.1)
-**Domain:** Production hardening of an existing Next.js 16 + SST + AppSync real-time app
+**Project:** Nasqa Live v1.2 — Emoji Reactions on Q&A Items
+**Domain:** Real-time audience engagement — per-item emoji reactions in a live presentation Q&A tool
 **Researched:** 2026-03-15
-**Confidence:** HIGH
+**Confidence:** HIGH (stack and architecture derived from live codebase; features MEDIUM from competitive analysis + HIGH for implementation specifics)
 
 ## Executive Summary
 
-Nasqa Live v1.0 is a fully scaffolded, feature-complete real-time presentation tool (live clipboard + Q&A). The v1.1 milestone is not about adding new product features — it is a production reliability layer that moves the codebase from "demo quality" to "production grade." The research confirms this is a well-understood problem domain: the patterns for testing, CI/CD, error tracking, and accessibility in Next.js 16 App Router are mature and well-documented, with official guidance from Next.js, Sentry, and Vitest covering most of the ground.
+Nasqa Live v1.2 adds emoji reactions as a sentiment layer on top of an already-shipped real-time Q&A system (Next.js 16 / AppSync / DynamoDB / Lambda). The core challenge is not inventing new infrastructure — it is extending a battle-tested data model and real-time subscription pipeline without breaking any existing behavior. Every reaction pattern (dedup, optimistic UI, rate limiting, ban enforcement, subscription broadcast) has a direct analogue in the existing upvote system. The work is an extension, not a greenfield build. The recommended approach is to model reactions with flat per-emoji DynamoDB attributes on the Question/Reply item, extend the existing `SessionUpdate` subscription channel with a new `REACTION_UPDATED` event type, and reuse the established `checkNotBanned` + `checkRateLimit` + `useFingerprint` patterns from the upvote system without modification.
 
-The recommended approach builds the hardening stack in dependency order: pre-commit hooks first (prevents any new quality debt from entering the repo during the hardening process itself), then CI pipeline (authoritative quality gate, independent of hooks), then test infrastructure (requires CI to run against), then error handling (pure Next.js file conventions, no external dependencies), then monitoring together with logging (Sentry requires error boundaries to exist), then SEO/metadata (independent), and finally accessibility (applied across all components, benefits from lint enforcement being in place). This order is not arbitrary — each layer depends on or reinforces the previous one, and deviating from it creates rework.
+No surveyed competitor (Slido, Mentimeter, Pigeonhole, Zoom) attaches per-item reactions at individual Q&A question and reply granularity. Slido attaches reactions to poll answer options; Mentimeter and Pigeonhole use session-level ambient signals; Zoom reactions float at the meeting level. Nasqa Live's design — reactions pinned to specific questions and replies in a threaded Q&A — occupies a different and more actionable design space. This differentiator is already specified in the v1.2 design; no additional product work is needed to capture it. The six-emoji fixed palette (👍 ❤️ 🎉 😂 🤔 👀) is industry-standard, carries zero bundle cost as native OS emoji characters, and has no risk to the 80 kB JS budget constraint.
 
-The critical risks are all avoidable with configuration discipline. Sentry will flood with AppSync WebSocket noise unless `beforeSend` filters are applied on day one. The `hostSecret` URL parameter will be leaked to Sentry's dashboard unless explicitly scrubbed. Pre-commit hooks are a developer convenience, not a security gate — CI must independently enforce the same checks. Vitest cannot test async Server Components; treating this as a workaround-able configuration problem wastes time. These risks are well-understood and mitigatable if addressed at the right phase, in the right order.
+The primary risks are a DynamoDB data model decision and a rate limit namespace mistake that must be resolved before writing any resolver code. Storing per-emoji reactor fingerprint Sets on the Question/Reply item multiplies item size by 6x and risks hitting DynamoDB's hard 400 KB item limit at scale with active sessions. Using the same `RATELIMIT#${fingerprint}` key for reactions consumes the question-submission rate budget, causing reactions to block participants from asking questions. Both risks are straightforwardly avoided by the patterns prescribed in ARCHITECTURE.md. A secondary risk is subscription channel flooding under high reaction velocity, mitigated by frontend event debouncing and surgical TanStack Query cache updates.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The v1.0 stack is pinned and production-ready (Next.js 16.1.6, React 19.2.3, AppSync, SST Ion v4, DynamoDB, Zod v4). The v1.1 additions are entirely additive — no existing dependencies change. For testing, Vitest 4.1.0 + React Testing Library 16.3.2 is the official Next.js recommendation for this ESM-first monorepo stack (the only RTL version with React 19 peer-dep compatibility). Playwright 1.58.0 handles E2E and async Server Component testing that Vitest cannot touch. Sentry 10.43.0 covers all three Next.js runtimes from a single SDK. Husky 9 + lint-staged 16.3.x provides pre-commit hooks; Prettier 3.8.x completes the formatter setup that is currently missing from the codebase.
+The production stack is fully established and must not change for v1.2. All additions are pure extensions on already-installed dependencies. See `.planning/research/STACK.md` for the complete version inventory.
 
-**Core technologies (v1.1 additions):**
-- **Vitest 4.1.0**: Unit + component test runner — ESM-native, 10-40x faster than Jest for this stack, official Next.js recommendation
-- **@testing-library/react 16.3.2**: Component rendering — only RTL version with React 19 peer-dep compatibility; earlier versions have conflicts
-- **Playwright 1.58.0**: E2E + async RSC tests — native parallelism (no paid tier), WebSocket network interception, cross-browser including WebKit
-- **@sentry/nextjs 10.43.0**: Error tracking — covers client/server/edge runtimes in a single SDK; App Router error boundary integration; Lambda function capture
-- **Husky 9 + lint-staged 16.3.x**: Pre-commit hooks — staged-file only linting (fast); Husky must be installed at repo root only
-- **Prettier 3.8.1**: Code formatter — currently missing from the codebase; must be paired with `eslint-config-prettier` to prevent ESLint rule conflicts
-- **pino + pino-lambda**: Structured Lambda logging — CloudWatch-native structured JSON; Lambda request ID injected automatically
+**Core technologies for reactions work:**
 
-**What NOT to install:** Jest (requires Babel/SWC transform overhead on top of existing Vite config), vitest-axe (unmaintained, 0.1.0 three years old), jest-axe (Jest-specific, incompatible with Vitest), next-seo (Pages Router library — a no-op in App Router), eslint-plugin-prettier (runs Prettier as an ESLint rule, 2-5x lint slowdown), Cypress (paid parallelism, no WebKit, worse WebSocket interception than Playwright).
+- **Next.js 16 + React 19**: Server Actions handle `reactAction`; `useOptimistic` enables <100 ms optimistic toggle with zero new libraries
+- **AWS AppSync (via SST Ion 4.2.7)**: Extend the existing `onSessionUpdate` subscription by adding `react` to the `@aws_subscribe` mutations list — no new WebSocket channel; union-type event pattern already in production
+- **AWS DynamoDB (via SST)**: Flat `rxn_<emoji>_count` + `rxn_<emoji>_reactors` attributes on Question/Reply items; atomic `ADD` operations on top-level attributes ensure race-free counter increments
+- **TanStack Query 5.x**: Surgical `setQueryData` on `REACTION_UPDATED` events — never `invalidateQueries` for reactions
+- **Zod 4.x**: Input validation on `emoji` argument against the fixed allowlist before any DynamoDB write
+- **next-intl 4.x**: Required for i18n `aria-label` strings on reaction buttons (en/es/pt)
+
+**No new dependencies are needed.** Reactions are implemented entirely within the existing installed stack.
 
 ### Expected Features
 
-The v1.1 milestone is itself an MVP — an MVP of production hardening. The research draws a clear line between what must ship to call the app production-grade and what is a differentiator or future work.
+See `.planning/research/FEATURES.md` for full competitive analysis and prioritization matrix.
 
-**Must have — v1.1 core (table stakes for production):**
-- Vitest + RTL test suite — unsafe to refactor without tests; CI quality gate blocks on this
-- GitHub Actions CI pipeline (lint + typecheck + test on every PR)
-- Error boundaries: `error.tsx` + `global-error.tsx` + `not-found.tsx` — must ship together with Sentry
-- Sentry error tracking — blind production debugging is unsustainable; must ship with error boundaries
-- Pre-commit hooks (Husky + lint-staged + Prettier)
-- Structured CloudWatch logging in Lambda resolvers (pino)
-- Dynamic SEO metadata via `generateMetadata` for landing and session pages
-- `robots.txt` — disallow `/live/` so ephemeral session pages are not indexed
-- ARIA labels on all icon-only buttons (Level A accessibility — lowest effort, highest impact)
-- Semantic HTML audit — replace `<div>` soup with landmark elements; foundational for accessibility
-- Keyboard navigation verification — WCAG 2.2 Level AA, legally required in EU since June 2025
-- TypeScript strict mode + tsconfig consistency audit
+**Must have (P1 — table stakes, not shippable without these):**
 
-**Should have — v1.x (add when core hardening is stable):**
-- Playwright E2E tests — happy path: create session, join, post question, upvote, host ban
-- Bundle size regression guard in CI
-- Static OG image for landing page
-- Dynamic OG image per session (session title in social link previews)
-- Prettier formatting already in pre-commit once Prettier is installed
+- Fixed 6-emoji palette (👍 ❤️ 🎉 😂 🤔 👀) on every Question card and Reply card
+- Toggle own reaction on/off (one reaction per emoji per device fingerprint)
+- Real-time count propagation via existing AppSync subscription (new `REACTION_UPDATED` event)
+- Inline count display ("👍 3") hidden when count is 0
+- Rate limiting for reactions at 10/minute per device, separate namespace from question limit
+- Ban enforcement: banned participants cannot react
+- Optimistic UI: local toggle flips instantly, reconciled on subscription broadcast
 
-**Defer — v2+:**
-- Lighthouse CI score gate (high CI setup complexity; meaningful only after full a11y + SEO pass)
-- `useReportWebVitals` hook (needs traffic volume to generate useful field data)
-- Content Security Policy headers (AppSync WebSocket domain allowlisting is easy to break accidentally; defer until E2E tests can catch breakage)
-- `sitemap.xml` (only the landing page is indexable; marginal benefit at this scale)
+**Should have (P2 — accessibility polish, add after P1 is confirmed working):**
 
-**Anti-features (do not build):**
-- Integration tests against live AWS (cost, slowness, test pollution across runs)
-- 100% code coverage mandate (produces implementation-testing, not behavior-testing; chasing it generates brittle suites)
-- E2E tests on every PR (adds 5-15 minutes to every PR; run on main push only)
-- Storybook (Nasqa components are tightly coupled to real-time state and not reusable in isolation; no design team to consume it)
-- WCAG 2.1 Level AAA (technically infeasible for dynamic real-time UIs; target Level AA)
-- Datadog / New Relic APM (overkill for 50-500 users; adds latency and cost per invocation)
+- `aria-label="React with [emoji name]: [count] reactions"` + `aria-pressed` on all reaction buttons
+- i18n aria-label strings in en/es/pt via next-intl translation keys
+
+**Defer (v2+):**
+
+- "Most reacted" secondary sort toggle — risks conflating sentiment with ranking; build only on explicit user demand
+- Custom emoji palette per session — host UX complexity not warranted at v1.2 scale
+- Floating emoji animations — violates 80 kB bundle budget; CSS `scale` pulse on click is the correct substitute
+- Full emoji picker — ~100 kB bundle cost; fixed palette covers 95% of live Q&A sentiment expression
+
+**Anti-features (explicitly excluded by design):**
+
+- Reactions on Snippets — host-curated content should not be publicly rated
+- Multiple same-emoji reactions from one user — undermines signal value for hosts
+- Reactions influence sort order — upvote delta exclusively drives sort; 🤔 and ❤️ have opposite valences and cannot be averaged
 
 ### Architecture Approach
 
-The hardening layer wraps the existing monorepo (`packages/frontend`, `packages/functions`, `packages/core`, `sst.config.ts`) without restructuring it. Every new component has a specific insertion point: Vitest config and test files live in `packages/frontend/`; Sentry requires three separate config files (one per Next.js runtime — browser, Node.js, Edge) plus `withSentryConfig` wrapping in `next.config.ts`; Husky and GitHub Actions workflows live at the repo root (not in any package). The build order follows dependency flow — each layer depends on the previous being in place.
+The implementation follows an 8-step build order flowing data-model-up to UI, mirroring the existing upvote system at every layer. See `.planning/research/ARCHITECTURE.md` for exact file-level change list, TypeScript interfaces, and code patterns.
 
-**Major components and insertion points:**
-1. **Pre-commit layer** (`/.husky/pre-commit`, root `package.json` lint-staged config) — runs ESLint + Prettier on staged files only; type check deferred to CI to keep hooks fast (under 5 seconds)
-2. **CI pipeline** (`.github/workflows/ci.yml` + `deploy.yml`) — parallel lint/typecheck/test jobs; deploy gated on all quality jobs passing; AWS authentication via OIDC (no long-lived secrets stored)
-3. **Test layer** (`packages/frontend/vitest.config.mts`, `src/__tests__/`) — Vitest + RTL for Client Components and synchronous Server Components; Playwright for async RSCs and E2E flows; `vite-tsconfig-paths` required for `@/` alias resolution
-4. **Error handling layer** (`app/global-error.tsx`, `app/[locale]/error.tsx`, `app/not-found.tsx`) — must be present before Sentry is enabled; error boundaries must manually call `Sentry.captureException()` in `useEffect` — boundaries prevent Sentry's automatic global capture
-5. **Monitoring layer** (Sentry three-config setup, pino Lambda logger) — `beforeSend` AppSync noise filter; `hostSecret` URL scrubbing is non-optional security requirement; source map upload via Netlify env vars
-6. **SEO layer** (`generateMetadata` in session page, `robots.ts`) — dynamic session title in metadata; session pages disallowed from indexing; `hreflang` + `alternates.canonical` required to prevent i18n duplicate content penalty
-7. **Accessibility layer** (ARIA labels, semantic HTML, `aria-live` regions) — applied across existing components; `aria-live` regions must be unconditionally mounted before receiving content (architectural constraint, not cosmetic addition)
+**Major components:**
+
+1. **`reactions.ts` Lambda resolver** — handles `react` mutation: ban check → rate limit → DynamoDB conditional ADD/DELETE on flat attributes → returns `REACTION_UPDATED` subscription event with authoritative count snapshot
+2. **`reaction-bar.tsx` frontend component** — renders fixed 6-emoji palette with toggle state, count display (hidden at 0), ARIA attributes, and 44 px touch targets
+3. **`use-reactions.ts` frontend hook** — orchestrates optimistic dispatch, localStorage gate, and Server Action call; uses `localDelta` strategy to avoid stale-count conflicts under concurrent reactions
+4. **DynamoDB flat attributes** (`rxn_thumbsup_count`, `rxn_thumbsup_reactors`, etc. × 6) on existing Question/Reply items — chosen over a Map attribute because DynamoDB `ADD` is only atomic on top-level attributes, not nested Map values
+
+**Key patterns to follow:**
+
+- **Atomic Set-Based Dedup**: `ADD rxn_thumbsup_count :delta` + conditional `ADD/DELETE rxn_thumbsup_reactors :fpSet` — identical to existing `upvoteQuestion` resolver; battle-tested at production scale
+- **Authoritative Snapshot in Subscription Payload**: send all 6 emoji counts per event (never a delta); reducer does full replacement ensuring convergence under out-of-order or missed events
+- **Emoji Key Normalization**: UI displays glyph (👍), DynamoDB attributes and API arguments use ASCII key (`thumbsup`); mapping lives once in `EMOJI_PALETTE` constant — prevents ExpressionAttributeNames escaping issues with Unicode in DynamoDB expressions
 
 ### Critical Pitfalls
 
-1. **Sentry capturing `hostSecret` in URLs** — The host page URL contains `?hostSecret=[uuid]`. Sentry captures full request URLs by default. Add `beforeSend` to all three Sentry configs (client, server, edge) to strip `hostSecret` before the event is sent. This is non-optional and must be implemented before Sentry is enabled in any environment.
+See `.planning/research/PITFALLS.md` for all 10 pitfalls with recovery strategies, warning signs, and phase assignments.
 
-2. **Error boundaries not catching layout errors** — `app/error.tsx` cannot catch errors thrown inside `app/layout.tsx` (correct React behavior, not a bug). `app/global-error.tsx` must also be present and must include its own `<html><body>` tags because it replaces the root layout when triggered. Without it, root layout crashes produce a blank white screen in production with no fallback UI.
+1. **Reactor fingerprint Sets on the Question/Reply item hit the 400 KB DynamoDB limit** — At 500 participants × 6 emojis, a single item accumulates 3,000 fingerprints (~18 KB for reactors alone). DynamoDB rejects writes silently with `ValidationException` when the item exceeds 400 KB. Solution: store only aggregate counts as flat number attributes on the Question/Reply item; use conditional `ConditionExpression: NOT contains(rxn_thumbsup_reactors, :fp)` — the reactors Set is bounded per-emoji (one fingerprint per user) not unbounded.
 
-3. **Husky treated as the CI gate** — Pre-commit hooks can be bypassed (`git commit --no-verify`, GitHub web editor, certain IDE integrations). CI must independently run lint, typecheck, and tests regardless of whether hooks ran. Hooks are developer convenience; CI is the authoritative gate.
+2. **Rate limit namespace collision with question submissions** — Using the same `RATELIMIT#${fingerprint}` key for reactions causes 10 rapid reactions to exhaust the 3-question/minute budget. Solution: use `RATELIMIT#REACTION#${fingerprint}` as the key; set the ceiling to 10/minute; do NOT apply rate limiting to toggle-off operations (removing a reaction should be free).
 
-4. **Sentry flooded with AppSync WebSocket noise** — AppSync reconnect attempts, subscription keep-alive timeouts, and 401 responses during connection renegotiation all appear as errors to Sentry's default instrumentation. At 500 concurrent participants, this exhausts Sentry quotas in minutes and buries real errors. Add `beforeSend` filters to drop known-benign AppSync connection events on day one of Sentry setup.
+3. **Subscription channel flooding under high reaction velocity** — 500 users reacting generates 5,000 writes/minute, each broadcasting to all subscribers; UI thrashing and frame drops follow. Solution: frontend buffers `REACTION_UPDATED` events for 300 ms and applies only the latest count snapshot; `setQueryData` for surgical cache update rather than `invalidateQueries`.
 
-5. **Vitest cannot test async Server Components** — Components with `async` at the top level cannot be rendered in jsdom. This is an architectural constraint, not a configuration problem. The Next.js team explicitly states this is unsupported. Test async RSCs with Playwright E2E; unit test their synchronous child components and extracted data-fetching functions instead.
+4. **Optimistic UI stale counts during concurrent reactions** — Two users reacting simultaneously produce a visible count jump as the optimistic increment conflicts with the authoritative subscription broadcast. Solution: maintain `localDelta` per `(itemId, emoji)` pair; display `serverCount + localDelta` optimistically; subscription broadcast replaces base count while preserving any in-flight delta.
 
-6. **lint-staged running wrong ESLint config in monorepo** — ESLint 9 flat config resolves relative to cwd. Running lint-staged from the repo root means ESLint cannot find `packages/frontend/eslint.config.mjs`. Use `--config packages/frontend/eslint.config.mjs` in the lint-staged glob pattern for frontend files.
-
-7. **`aria-live` regions conditionally mounted** — `aria-live` regions must be in the DOM before the first content change occurs. The accessibility tree only registers them at first render; conditionally mounting them causes initial announcements to be missed by screen readers. Render them unconditionally with empty content; populate the content when events fire.
+5. **Fingerprints in subscription payload** — Broadcasting the reactor `SS` Set exposes device fingerprints to all participants, enabling ban circumvention analysis and approaching AppSync's 240 KB message limit. Solution: payload contains only `{ targetId, targetType, emoji, counts: ReactionCounts }` — never include fingerprint arrays.
 
 ## Implications for Roadmap
 
-Based on the feature dependency graph in FEATURES.md and the build order in ARCHITECTURE.md, the phase structure is dependency-driven. Deviating from this order creates rework: tests cannot run without CI, Sentry cannot capture React errors without error boundaries, and accessibility improvements require lint hooks to enforce them.
+The architecture research provides an explicit 8-step build order with clear dependencies. The natural phase boundary falls between backend (data model + resolver + schema) and frontend (state management + UI). Both phases have well-understood implementation patterns derived directly from the existing codebase.
 
-### Phase 1: Developer Quality Gates
-**Rationale:** Pre-commit hooks must be in place before any other hardening work begins — they ensure no new quality debt enters the repo during the hardening process itself. This phase has zero external dependencies (no AWS account changes, no Sentry setup, no CI configuration needed).
-**Delivers:** Husky + lint-staged blocking commits with lint errors; Prettier config established; `eslint-config-prettier` preventing rule conflicts; TypeScript strict mode verified; tsconfig consistency across packages
-**Addresses:** TypeScript strict mode audit, Prettier formatting, pre-commit hooks (all P1 from FEATURES.md)
-**Avoids:** lint-staged wrong ESLint config pitfall — configure `--config packages/frontend/eslint.config.mjs` explicitly from the start; full typecheck in pre-commit anti-pattern (run ESLint only in hooks; defer tsc to CI)
-**Research flag:** Standard patterns — skip research-phase. Husky v9 `husky init` + lint-staged monorepo glob patterns are well-documented with official sources.
+### Phase 1: Data Model and Backend
 
-### Phase 2: CI Pipeline
-**Rationale:** The authoritative quality gate must exist before tests are written — tests need somewhere to run and be verified against. GitHub Actions OIDC setup is one-time infrastructure work that unblocks all future deploys. Path-filtered jobs prevent the full monorepo from rebuilding on every trivial change.
-**Delivers:** `.github/workflows/ci.yml` (parallel lint + typecheck + test + build jobs on every PR); `.github/workflows/deploy.yml` (SST deploy on main push via OIDC role assumption); path-filtered jobs per package; `node_modules` caching; Netlify + Next.js 16 compatibility validated via preview deploy
-**Addresses:** CI pipeline (P1), AWS credential security
-**Avoids:** Husky-as-CI-gate pitfall; long-lived AWS credentials stored as GitHub secrets (use OIDC `aws-actions/configure-aws-credentials@v4`); full monorepo rebuild on every commit (use `dorny/paths-filter` or `on.push.paths`); Netlify + Next.js 16 edge function bundling failures (validate early with a staging preview deploy)
-**Research flag:** MEDIUM confidence — SST Ion + GitHub Actions OIDC IAM permissions scoping is not fully documented in official SST Ion docs. The OIDC role trust policy pattern is established but the exact IAM permissions required by `sst deploy` may need empirical validation during implementation.
+**Rationale:** All frontend work depends on the GraphQL schema and Lambda resolver being in place. TypeScript strict mode propagates compile errors from `@nasqa/core` types through every downstream layer — these must exist first. The flat-attribute DynamoDB pattern must be locked before any resolver code is written because reversing it post-deployment requires a full table scan migration.
 
-### Phase 3: Testing Infrastructure
-**Rationale:** Tests require CI to run against (Phase 2). Writing tests before the pipeline is wired creates code that isn't automatically verified. This phase establishes the test conventions document first — which components are testable in Vitest vs. Playwright — before any test authoring begins. This prevents wasted effort writing tests for async Server Components that Vitest cannot run.
-**Delivers:** `vitest.config.mts` with jsdom + tsconfigPaths plugin; `src/__tests__/setup.ts`; first smoke tests for QuestionCard, VoteButton, Zod schemas in `@nasqa/core`, moderation threshold logic; `test` job added to CI workflow; coverage report as CI artifact
-**Uses:** Vitest 4.1.0, @testing-library/react 16.3.2, @testing-library/user-event 14.x, vite-tsconfig-paths, jsdom
-**Addresses:** Unit test suite (P1); minimum coverage targets (core schemas 90%, Lambda resolvers 80%, UI components 70%)
-**Avoids:** Vitest workspace config conflicts — install Vitest per-package, not at root, for this monorepo's current structure; async Server Component testing trap — document test strategy per component type before authoring begins
-**Research flag:** Standard patterns — skip research-phase. Official Next.js Vitest guide is current and comprehensive (updated 2026-02-27). The per-package vs. root Vitest install decision should be made explicitly at the start of this phase.
+**Delivers:** Working `react` GraphQL mutation with DynamoDB persistence, real-time subscription broadcast, rate limiting, and ban enforcement. Testable via AppSync console or integration test before any UI exists.
 
-### Phase 4: Error Handling
-**Rationale:** Pure Next.js file conventions — no external service dependencies. Delivers user-visible resilience immediately. Must precede Sentry setup because error boundaries are the capture points for React render errors; Sentry's automatic instrumentation does not reach errors caught by boundaries.
-**Delivers:** `app/global-error.tsx` (root layout crash fallback with standalone `<html><body>`); `app/[locale]/error.tsx` (session-scoped error boundary with retry button and "try again" UX); `app/[locale]/live/[slug]/error.tsx` (session-specific "session unavailable, reconnecting" message); `app/not-found.tsx` with expired session detection and graceful "this session has ended" message
-**Addresses:** Error boundaries + global-error.tsx + not-found.tsx (P1); graceful expired session UX
-**Avoids:** `error.tsx` not catching layout errors pitfall — `global-error.tsx` must be present and must include `<html><body>`; error boundaries testing gap — test each boundary explicitly with a development-only throw button, not just in the Next.js dev overlay
-**Research flag:** Standard patterns — skip research-phase. Next.js App Router error boundary file conventions are stable and well-documented.
+**Addresses:** Rate limiting at 10/minute with separate namespace, ban enforcement, real-time count propagation, one-reaction-per-emoji-per-user dedup
 
-### Phase 5: Monitoring and Observability
-**Rationale:** Requires error boundaries (Phase 4) to already exist. Requires an external Sentry project to be created before implementation begins. The `hostSecret` scrubbing and AppSync noise filter must be configured before any production traffic reaches Sentry — these are not optional post-hoc improvements.
-**Delivers:** Sentry three-runtime config (client/server/edge init files); `withSentryConfig` wrapping in `next.config.ts`; `beforeSend` AppSync noise filter dropping reconnect events; `hostSecret` URL scrubbing in all three configs; source map upload configured via Netlify env vars (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`); `tracesSampleRate: 0.1` in production (not 1.0); pino structured logger in Lambda resolvers with `LOG_LEVEL` env var per stage
-**Uses:** @sentry/nextjs 10.43.0, pino, pino-lambda
-**Addresses:** Sentry error tracking (P1), structured CloudWatch logging (P1)
-**Avoids:** Sentry capturing hostSecret (non-optional security requirement); Sentry flooded with AppSync noise (exhausts quota during active sessions); source maps missing in production (stack traces become unreadable minified paths); `tracesSampleRate: 1.0` exhausting quota at 500 participants
-**Research flag:** MEDIUM confidence — the exact AppSync error message signatures that need filtering in `beforeSend` cannot be fully specified from documentation alone. Must be validated against a real test session after deployment. Plan for one tuning iteration on the `beforeSend` filter after first production session.
+**Avoids:** Pitfall 1 (400 KB item limit — flat attributes, not Sets-on-item), Pitfall 2 (rate limit namespace collision), Pitfall 5 (fingerprints in payload), Anti-Pattern 2 (separate subscription channel)
 
-### Phase 6: SEO and Metadata
-**Rationale:** Independent of testing and monitoring work. Can run in parallel with Phase 5 or immediately after Phase 4. Fixing the "Create Next App" default title is a professionalism issue that should not block on other hardening phases. The `robots.txt` must be in place before the app is indexed at all.
-**Delivers:** Static metadata on landing page (title, description, OG, Twitter); `generateMetadata` on session page (dynamic session title fetched from DynamoDB, `noIndex: true`); `robots.ts` (disallow `/live/`); `hreflang` + `alternates.canonical` for en/es/pt locale variants to prevent duplicate content penalty; graceful fallback metadata for expired sessions
-**Addresses:** Dynamic SEO metadata (P1), robots.txt (P1), i18n duplicate content prevention
-**Avoids:** OG metadata not dynamic per session — `generateMetadata` in `app/[locale]/live/[slug]/page.tsx` fetches session title; static `metadata` export and `generateMetadata` in same file conflict (Next.js silently ignores one); missing hreflang/canonical i18n duplicate content penalty; `await params` gotcha in App Router (params are Promises in Next.js 16 — must be awaited before accessing `locale`)
-**Research flag:** Standard patterns for `generateMetadata`. The `await params` requirement for i18n params is a known gotcha to flag in implementation notes but does not require research-phase.
+**Build sequence within this phase:**
 
-### Phase 7: Accessibility
-**Rationale:** Applied across all existing components. Done last in the core hardening sequence so lint hooks (Phase 1) and CI (Phase 2) are in place to enforce a11y rules and block regressions as changes are made. The `aria-live` architecture for real-time feeds is the highest-risk item — it must be treated as an architectural decision, not a cosmetic addition.
-**Delivers:** ARIA labels on all icon-only buttons (upvote, downvote, copy snippet, delete snippet, theme toggle, language switcher); semantic HTML landmarks (`<main>`, `<section>`, `<article>`, `<header>`, `<footer>`); unconditionally-mounted `aria-live="polite"` on Q&A question list (with 500ms debounce for rapid upvote counter updates); `aria-live="assertive"` on connection status (reconnecting notification only); `role="status"` on connection indicator; skip link at layout root; `focus-visible:ring` verification on all interactive elements; keyboard navigation audit (Tab order, Enter/Space on buttons)
-**Addresses:** ARIA labels (P1), semantic HTML audit (P1), keyboard navigation (P1)
-**Avoids:** ARIA bolted on after the fact — `aria-live` regions designed as architectural components, not cosmetic additions; `aria-live` regions conditionally mounted — always mounted, content populated by events; upvote counter spamming screen readers — debounce aria-live updates with 500ms quiet period; focus ring hidden with `outline: none` in global CSS
-**Research flag:** MEDIUM confidence — the exact debounce implementation for `aria-live` upvote counter updates in React needs screen reader testing (VoiceOver/NVDA) to validate. The general pattern is correct but the timing and state management details require empirical validation during implementation.
+1. Core types (`@nasqa/core/src/types.ts`) — `ReactionCounts` interface, `reactions` field on `Question`/`Reply`, `REACTION_UPDATED` in `SessionEventType` enum
+2. GraphQL schema (`infra/schema.graphql`) — `ReactionCounts` type, `react` mutation, `REACTION_UPDATED` enum value, add `react` to `@aws_subscribe` list
+3. Lambda resolver (`packages/functions/src/resolvers/reactions.ts`) — ban check, rate limit with separate namespace, DynamoDB flat-attribute ADD/DELETE, REACTION_UPDATED payload (counts only, no fingerprints)
+4. Server Action (`packages/frontend/src/actions/reactions.ts`) — thin wrapper calling `appsyncMutation(REACT, args)`; REACT mutation string in `mutations.ts`
 
-### Phase 8: E2E Tests and Hardening Polish (v1.x, after core)
-**Rationale:** Deferred from the core v1.1 phases because it requires a stable staging deploy and adds 10-15 minutes to CI. The value is high but the prerequisite — established baseline, stable deployment pipeline, proven unit test suite — is not met until Phases 1-7 are complete.
-**Delivers:** Playwright happy-path E2E (create session, join, post question, upvote, host ban flow); `@axe-core/playwright` accessibility audits on landing page, host view, audience view; bundle size regression guard (baseline measurement first, then threshold enforcement); static OG image for landing page; dynamic OG image per session using Next.js `ImageResponse`
-**Addresses:** Playwright E2E (P2), bundle size guard (P2), static OG image (P2), dynamic OG image (P2)
-**Avoids:** E2E tests on every PR (run on main push only; not every PR); `axe-core` full page scan in every RTL test (run only in dedicated a11y test files via Playwright)
-**Research flag:** NEEDS RESEARCH — Playwright + AppSync WebSocket fixture design for multi-tab host+participant testing is not well-documented. The network interception API for WebSocket is available but the session-specific fixture setup pattern needs research-phase before implementation begins.
+### Phase 2: Frontend State and UI
+
+**Rationale:** Depends on Phase 1 schema and resolver being deployed. The optimistic update strategy (`localDelta`) must be designed into the reducer before any hook or component code is written — retrofitting it after the fact requires rewriting the entire frontend state layer.
+
+**Delivers:** `ReactionBar` component integrated into `QuestionCard` and `ReplyCard` with optimistic toggle, real-time count updates, 300 ms subscription event debounce, ARIA labels with i18n, and 44 px mobile touch targets.
+
+**Addresses:** Full P1 feature set — optimistic UI, per-item reactions on questions and replies, inline count display (hidden at 0), toggle on/off, mobile accessibility. P2 accessibility labels.
+
+**Avoids:** Pitfall 3 (subscription flooding — 300 ms event debounce), Pitfall 4 (optimistic stale counts — `localDelta` strategy), Pitfall 7 (emoji library bundle violation — native emoji only), Pitfall 8 (missing ARIA — `aria-label` + `aria-pressed` from day one), Pitfall 9 (44 px touch targets — mobile-first sizing), Pitfall 10 (full-list re-render — `setQueryData` surgical update)
+
+**Build sequence within this phase:** 5. State reducer (`use-session-state.ts`) — `ADD_REACTION_OPTIMISTIC` and `REACTION_UPDATED` action cases; `localDelta` pattern 6. `useFingerprint` extension + `useReactions` hook — localStorage gate with lazy per-item loading, optimistic dispatch, Server Action call 7. Subscription handler (`use-session-updates.ts`) — `REACTION_UPDATED` case with 300 ms debounce and `setQueryData` surgical update 8. `ReactionBar` component (`reaction-bar.tsx`) — fixed palette, toggle state display, ARIA labels with `aria-pressed`, `role="group"`, 44 px touch targets; integrate into `QuestionCard` and `ReplyCard`
 
 ### Phase Ordering Rationale
 
-- **Phases 1-2 before everything else** — they are the quality enforcement mechanisms. All other phases produce code that benefits from having hooks and CI enforcing it immediately.
-- **Phase 3 after Phase 2** — tests need a CI pipeline to run in; writing tests before CI creates dead code that isn't automatically verified after each commit.
-- **Phase 4 before Phase 5** — Sentry requires error boundaries; errors caught by boundaries do not automatically reach Sentry's global handler. Each `error.tsx` must explicitly call `captureException`.
-- **Phase 6 can run in parallel with Phase 5** — SEO/metadata work has no dependencies on monitoring. If there are two developers, these phases can be run concurrently.
-- **Phase 7 last among core phases** — modifies all components; benefits from lint enforcement (Phase 1), CI verification (Phase 2), and unit tests (Phase 3) being in place to catch regressions as a11y changes are made across the codebase.
-- **Phase 8 deferred** — requires stable staging environment and test baseline from Phase 3.
+- **Phase 1 before Phase 2**: TypeScript strict mode means the frontend will not compile without the `@nasqa/core` type additions. The AppSync schema must be deployed for the Server Action to call a valid mutation.
+- **Data model decision first within Phase 1**: The flat-attribute pattern is the single most consequential architectural choice in v1.2. Changing it post-deployment requires a DynamoDB migration scan. No code is written until this is settled.
+- **Optimistic strategy before UI in Phase 2**: `useReactions` orchestrates `useFingerprint`, `useSessionState`, and the Server Action — it must be designed before the component that calls it. The `localDelta` pattern is an architectural decision that flows through the entire layer.
+- **Accessibility from initial component (not bolted on)**: `aria-label` + `aria-pressed` + `role="group"` + 44 px touch targets must be in the `ReactionBar` from the first commit; retrofitting accessible semantics onto interactive emoji buttons creates rework and is error-prone.
 
 ### Research Flags
 
-Phases needing deeper research during planning:
-- **Phase 2 (CI Pipeline):** SST Ion + GitHub Actions OIDC IAM permissions — the exact IAM policy for `sst deploy --stage production` is not documented in official SST Ion docs. Empirical derivation or community source validation needed.
-- **Phase 5 (Monitoring):** Sentry + AppSync WebSocket `beforeSend` filter signatures — specific error message patterns from Amplify reconnect behavior need empirical validation against a live session; cannot be fully pre-specified.
-- **Phase 8 (E2E):** Playwright + AppSync WebSocket multi-tab fixture design — not well-documented; needs research-phase before implementation.
+**Phases with well-documented patterns — skip additional research:**
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Pre-commit hooks):** Husky v9 + lint-staged monorepo patterns are well-documented with official sources.
-- **Phase 3 (Testing):** Official Next.js Vitest guide is current and comprehensive (updated 2026-02-27).
-- **Phase 4 (Error handling):** Next.js App Router error boundary file conventions are stable.
-- **Phase 6 (SEO):** `generateMetadata` API is fully documented; `robots.ts` convention is standard.
+- **Phase 1 (backend)**: Every pattern is a direct extension of the existing `upvoteQuestion` resolver. Resolver structure, DynamoDB expressions, AppSync schema conventions, and subscription wiring are established in the live codebase. No novel territory.
+- **Phase 2 (frontend)**: TanStack Query surgical update patterns, React optimistic UI, and `useFingerprint` localStorage extension are thoroughly documented. Component structure mirrors existing `QuestionCard` patterns.
+
+**No phases require `/gsd:research-phase` during planning.** ARCHITECTURE.md already provides exact file-level change lists, TypeScript interfaces, reducer cases, DynamoDB expressions, and build order. This is the most implementation-ready research output in the project's history.
 
 ## Confidence Assessment
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | HIGH | All v1.0 versions verified from installed package.json files. v1.1 addition versions verified against npm current as of 2026-03-15 and official docs. |
-| Features | HIGH | Based on Next.js official production checklist (updated 2026-02-27) and WCAG 2.2 official sources. P1/P2/P3 priority tiers are well-justified from dependency analysis. |
-| Architecture | HIGH | Build order and insertion points verified against official Next.js, Sentry, and GitHub Actions docs. Monorepo-specific patterns verified from official Husky and lint-staged docs. |
-| Pitfalls | HIGH (testing, CI, error handling, Sentry source maps) / MEDIUM (Sentry + AppSync noise, Netlify edge cases) | Testing and CI pitfalls have multiple verified sources including official Next.js docs. Sentry + AppSync WebSocket noise filter specifics and Netlify + Next.js 16 edge function bundling are MEDIUM — community sources corroborate but exact signatures are not officially documented. |
+| Area         | Confidence                                                                                                                                                                      | Notes                                                                                                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack        | HIGH                                                                                                                                                                            | All versions verified from live `package.json` files. No version guessing. No new dependencies required.                                                                                                                                                      |
+| Features     | MEDIUM (competitive UX) / HIGH (implementation specifics)                                                                                                                       | Competitive analysis via platform docs for Slido, Mentimeter, Pigeonhole, Zoom. No Context7 coverage for live Q&A reaction UX patterns. Implementation specifics (DynamoDB/AppSync patterns) are HIGH — mirrors existing upvote system already in production. |
+| Architecture | HIGH                                                                                                                                                                            | All integration points derived from direct source code analysis of the existing codebase. Exact file paths, TypeScript interfaces, reducer cases, DynamoDB expressions, and build order provided.                                                             |
+| Pitfalls     | HIGH for DynamoDB/AppSync limits (official docs verified); MEDIUM for rate-limiting edge cases and subscription debounce thresholds (community sources, multiple corroborating) |                                                                                                                                                                                                                                                               |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **SST Ion OIDC IAM permissions:** The exact IAM policy for `sst deploy --stage production` is not specified in official SST Ion docs. Needs empirical derivation during Phase 2 planning — start with CloudFormation + Lambda + DynamoDB + AppSync + S3 + CloudFront; tighten via CloudTrail.
-- **AppSync `beforeSend` filter signatures:** The exact error message strings emitted by the Amplify WebSocket client during reconnect/keep-alive cannot be pre-specified from documentation. Validate against a real test session during Phase 5 implementation; plan for one tuning iteration.
-- **Netlify + Next.js 16 Edge Functions compatibility:** Currently MEDIUM confidence based on community reports of build failures. Validate with a staging Netlify preview deploy early in Phase 2, before other phases assume stable deployment.
-- **`aria-live` debounce for rapid upvote updates:** The 500ms quiet-period debounce pattern is well-understood in principle but the React state management implementation for rapid real-time updates needs screen reader (VoiceOver/NVDA) testing to validate. Address empirically during Phase 7.
-- **Playwright + AppSync WebSocket fixture design:** Multi-tab host+participant session testing pattern is not documented for Playwright + Amplify/AppSync. Needs research-phase before Phase 8 planning begins.
+- **Subscription debounce threshold**: 300 ms is the recommended frontend event buffer, but the right value depends on observed reaction velocity in real sessions. Treat as the starting point; tune after the first production session with >100 participants.
+- **AppSync subscription cost at scale**: At 500 subscribers × 5,000 reactions/minute, AppSync charges ~$2.50/minute per session ($1.00/million messages). Acceptable for current target audience; monitor in CloudWatch if session sizes grow materially. Server-side coalescing (batch broadcasts per 500 ms window) is the mitigation if costs exceed expectations.
+- **Toggle-off UX confirmation**: No surveyed competitor explicitly confirmed their toggle-off behavior for reactions. The "click active reaction to deactivate" model is assumed from GitHub/Slack/Discord patterns. If users in testing expect no toggle-off, the DynamoDB pattern supports both models — this is a UX decision, not an architecture change.
+- **Touch target validation**: The 44 px minimum must be validated on real iOS and Android devices, not just browser DevTools mobile emulation. Plan one real-device test pass after Phase 2 completes.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Next.js Vitest testing guide: https://nextjs.org/docs/app/guides/testing/vitest (updated 2026-02-27) — test runner setup, async RSC limitations
-- Next.js production checklist: https://nextjs.org/docs/app/guides/production-checklist (updated 2026-02-27) — feature completeness standards
-- Next.js error handling: https://nextjs.org/docs/app/getting-started/error-handling — error boundary file conventions and layout limitation
-- Next.js generateMetadata: https://nextjs.org/docs/app/api-reference/functions/generate-metadata — SEO API reference
-- Next.js accessibility: https://nextjs.org/docs/architecture/accessibility — a11y patterns and eslint-plugin-jsx-a11y
-- Sentry for Next.js: https://docs.sentry.io/platforms/javascript/guides/nextjs/ — SDK setup and configuration
-- Sentry manual setup: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/ — three-config pattern, source map upload
-- Vitest projects config: https://vitest.dev/guide/projects — monorepo workspace configuration
-- aws-actions/configure-aws-credentials: https://github.com/aws-actions/configure-aws-credentials — OIDC authentication for GitHub Actions
-- Codebase package.json files (`/packages/frontend/package.json`, `/packages/functions/package.json`, root) — all v1.0 versions verified from installed packages
+
+- Live codebase source code analysis — `packages/functions/src/resolvers/qa.ts`, `packages/frontend/src/hooks/use-fingerprint.ts`, `packages/frontend/src/hooks/use-session-updates.ts`, `infra/schema.graphql`
+- DynamoDB UpdateExpression ADD atomicity — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
+- DynamoDB item size constraints (400 KB limit) — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+- AppSync real-time subscriptions — https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-data.html
+- AppSync subscription message size limit (240 KB) — https://aws.amazon.com/about-aws/whats-new/2024/04/aws-appsync-increases-service-quota-adds-subscription/
+- TanStack Query optimistic updates — https://tanstack.com/query/v5/docs/react/guides/optimistic-updates
+- WCAG 2.2 Target Size Minimum (2.5.8) — https://a11ypros.com/blog/mobile-accessibility-testing-checklist-2025-edition
+- Emoji accessibility best practices — https://www.boia.org/blog/emojis-and-web-accessibility-best-practices
 
 ### Secondary (MEDIUM confidence)
-- Netlify + Next.js 16 build failures: https://answers.netlify.com/t/next-js-16-project-build-fails-on-netlify/157791 — edge function bundling failures
-- SST + GitHub Actions OIDC: https://towardsthecloud.com/blog/sst-nextjs-preview-environments-github-actions — OIDC role pattern for SST deploys
-- lint-staged monorepo configuration: https://www.horacioh.com/writing/setup-lint-staged-on-a-monorepo/ — per-package ESLint config routing with `--config`
-- SEO i18n hreflang with next-intl: https://dev.to/oikon/seo-and-i18n-implementation-guide-for-nextjs-app-router-dynamic-metadata-and-internationalization-3eol
-- GitHub Actions monorepo CI patterns: https://dev.to/pockit_tools/github-actions-in-2026-the-complete-guide-to-monorepo-cicd-and-self-hosted-runners-1jop
-- Playwright vs Cypress 2025 comparison: https://www.frugaltesting.com/blog/playwright-vs-cypress-the-ultimate-2025-e2e-testing-showdown
-- Husky + lint-staged setup guide: https://betterstack.com/community/guides/scaling-nodejs/husky-and-lint-staged/
 
-### Tertiary (LOW confidence)
-- None — all findings have at least MEDIUM confidence support.
+- Slido emoji reactions (January 2026 launch) — https://community.slido.com/product-news-announcements-108/what-s-new-in-slido-january-2026-7498
+- Mentimeter reactions help center — https://help.mentimeter.com/en/articles/8069507-reactions-from-the-audience
+- Pigeonhole Live reactions feature page — https://pigeonholelive.com/features/reactions/
+- Zoom webinar reactions — https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0059191
+- DynamoDB one-to-many modeling — https://www.alexdebrie.com/posts/dynamodb-one-to-many/
+- TanStack Query concurrent optimistic updates — https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
+- DynamoDB race conditions and conditional writes — https://awsfundamentals.com/blog/understanding-and-handling-race-conditions-at-dynamodb
+- Ably: Emoji reactions for in-game chat with React — https://ably.com/blog/emojis-for-in-game-chat-with-react
 
 ---
-*Research completed: 2026-03-15*
-*Ready for roadmap: yes*
+
+_Research completed: 2026-03-15_
+_Ready for roadmap: yes_

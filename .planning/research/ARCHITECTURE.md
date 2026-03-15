@@ -1,687 +1,726 @@
-# Architecture Patterns
+# Architecture Research: Emoji Reactions (v1.2)
 
-**Domain:** Enterprise hardening — testing, CI/CD, error tracking, and quality gates for an existing Next.js + SST monorepo
+**Domain:** Emoji reactions on Q&A items in an existing real-time Next.js + AppSync + DynamoDB app
 **Researched:** 2026-03-15
-**Confidence:** HIGH (Next.js 16 official docs verified; Sentry official docs verified; GitHub Actions + SST OIDC from multiple confirmed sources; Husky/lint-staged from official docs)
+**Confidence:** HIGH — all integration points derived directly from source code analysis of the existing codebase
 
 ---
 
-## Context: Existing Architecture
+## Context: What Already Exists
 
-This is an addendum to the base architecture research (2026-03-13). The foundation is already in place:
+This document is integration-focused research for v1.2 reactions. It does not re-document the base architecture (see `.planning/codebase/ARCHITECTURE.md`). It answers: "What exactly changes, what exactly is new, and in what order do we build it?"
+
+The existing system's reaction-adjacent pattern to mirror:
 
 ```
-packages/
-  frontend/       Next.js 16 App Router, Netlify deploy
-  functions/      Lambda resolvers, AppSync/DynamoDB
-  core/           Shared Zod schemas and TypeScript types
-sst.config.ts     SST Ion v4 IaC — AppSync + DynamoDB + Lambda
+DynamoDB (Question item)
+  voters       SS (String Set) — upvote dedup
+  downvoters   SS (String Set) — downvote dedup
+  upvoteCount  N
+  downvoteCount N
+
+Lambda resolver (upvoteQuestion)
+  ADD upvoteCount :delta, voters :fpSet
+  ConditionExpression: NOT contains(voters, :fp)
+
+Frontend (useFingerprint hook)
+  localStorage key: votes:{sessionSlug}     → JSON array of questionIds
+  localStorage key: downvotes:{sessionSlug} → JSON array of questionIds
+
+Frontend (useSessionState reducer)
+  QUESTION_UPDATED action carries upvoteCount / downvoteCount
+
+AppSync schema
+  upvoteQuestion / downvoteQuestion mutations → QUESTION_UPDATED event
 ```
 
-The milestone adds hardening layers that wrap this existing structure without restructuring it. Every new component integrates into the existing monorepo at a specific insertion point.
+Reactions must slot into every layer of this exact pattern, with extensions for:
+
+- Both Questions and Replies (votes are Questions-only today)
+- 6 emoji slots instead of 1 binary vote
+- Per-emoji counts surfaced to the UI (votes only surface a count total)
 
 ---
 
-## System Overview: Hardened Architecture
+## System Overview: Reactions Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                   DEVELOPER WORKSTATION                          │
-│  ┌─────────────────┐   ┌─────────────────┐                      │
-│  │  Pre-commit      │   │  Type Check     │                      │
-│  │  (Husky +        │   │  (tsc --noEmit) │                      │
-│  │   lint-staged)   │   │                 │                      │
-│  └────────┬────────┘   └────────┬────────┘                      │
-│           │ git push            │                                │
-└───────────┼─────────────────────┼────────────────────────────────┘
-            ↓                     ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                  GITHUB ACTIONS CI PIPELINE                      │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐   │
-│  │  lint    │  │typecheck │  │   test   │  │    deploy     │   │
-│  │ (eslint) │  │   (tsc)  │  │ (vitest) │  │ (sst deploy)  │   │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬────────┘   │
-│       │             │             │                │             │
-│  quality gate: all jobs must pass before deploy job runs        │
-└───────┼─────────────┼─────────────┼────────────────┼────────────┘
-        │                                            │
-        ↓                                            ↓
-┌───────────────────┐                   ┌────────────────────────┐
-│   CODE QUALITY    │                   │   RUNTIME MONITORING   │
-│  ┌─────────────┐  │                   │  ┌──────────────────┐  │
-│  │ ESLint +    │  │                   │  │ Sentry           │  │
-│  │ jsx-a11y   │  │                   │  │ (client+server+  │  │
-│  └─────────────┘  │                   │  │  edge runtimes)  │  │
-│  ┌─────────────┐  │                   │  └──────────────────┘  │
-│  │ Vitest unit │  │                   │  ┌──────────────────┐  │
-│  │ + RTL       │  │                   │  │ CloudWatch Logs  │  │
-│  └─────────────┘  │                   │  │ (Lambda pino)    │  │
-└───────────────────┘                   └────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        FRONTEND                                   │
+│                                                                   │
+│  ReactionBar component (NEW)                                      │
+│    ↓ onClick(emoji)                                               │
+│  useReactions hook (NEW)                                          │
+│    ↓ checks localStorage reacted:{sessionSlug}:{targetId}         │
+│    ↓ dispatches ADD_REACTION_OPTIMISTIC to reducer                │
+│    ↓ calls reactAction (Server Action, NEW)                       │
+│                                                                   │
+│  useSessionState reducer (MODIFIED)                               │
+│    ADD_REACTION_OPTIMISTIC — immediate local update               │
+│    REACTION_UPDATED        — authoritative update from sub        │
+│                                                                   │
+│  useSessionUpdates hook (MODIFIED)                                │
+│    case "REACTION_UPDATED": dispatch REACTION_UPDATED             │
+└──────────────────┬───────────────────────────────────────────────┘
+                   │ Server Action HTTP POST
+┌──────────────────▼───────────────────────────────────────────────┐
+│                   NEXT.JS SERVER ACTION                           │
+│  reactAction({ sessionSlug, targetId, targetType, emoji, fp })   │
+│    → appsyncMutation(REACT, args)                                 │
+└──────────────────┬───────────────────────────────────────────────┘
+                   │ GraphQL mutation
+┌──────────────────▼───────────────────────────────────────────────┐
+│                   APPSYNC + LAMBDA                                │
+│                                                                   │
+│  react mutation → reactResolver Lambda                            │
+│    checkNotBanned(sessionSlug, fingerprint)                       │
+│    checkRateLimit(fingerprint, 10, 60)   ← 10 reactions/min      │
+│    DynamoDB UpdateCommand:                                        │
+│      ADD reactions.👍Count :delta                                  │
+│      ADD/DELETE reactions.👍reactors :fpSet                        │
+│    returns SessionUpdate {                                        │
+│      eventType: REACTION_UPDATED,                                 │
+│      payload: { targetId, targetType, emoji, counts, reacted }    │
+│    }                                                              │
+└──────────────────┬───────────────────────────────────────────────┘
+                   │ AppSync subscription broadcast
+┌──────────────────▼───────────────────────────────────────────────┐
+│               ALL CONNECTED CLIENTS                               │
+│  onSessionUpdate → REACTION_UPDATED event                         │
+│    dispatch REACTION_UPDATED to reducer                           │
+│    UI re-renders ReactionBar with new counts                      │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## DynamoDB Storage Pattern
+
+### Recommended: Flat Attribute Per Emoji (not a Map)
+
+Two options exist. The flat attribute approach is recommended.
+
+**Option A (recommended): Flat attributes per emoji on the item**
+
+```
+Question / Reply DynamoDB item gains these new attributes:
+
+reactions_👍_count    N   (atomic counter, default 0)
+reactions_❤️_count    N
+reactions_🎉_count    N
+reactions_😂_count    N
+reactions_🤔_count    N
+reactions_👀_count    N
+reactions_👍_reactors SS  (String Set of fingerprints)
+reactions_❤️_reactors SS
+reactions_🎉_reactors SS
+reactions_😂_reactors SS
+reactions_🤔_reactors SS
+reactions_👀_reactors SS
+```
+
+**Option B (not recommended): DynamoDB Map attribute**
+
+```
+reactions: {
+  M: {
+    "👍": { M: { count: { N: "3" }, reactors: { SS: ["fp1", "fp2"] } } }
+  }
+}
+```
+
+**Why Option A over Option B:**
+
+DynamoDB's `ADD` operation (used for atomic counter increments) works on top-level number attributes or elements of a Set. It does NOT work on nested Map values. Using a Map would require a `SET reactions.#emoji.#count = reactions.#emoji.#count + :delta` expression — which is NOT atomic; it's a read-modify-write that requires a ConditionExpression to be safe at scale.
+
+Flat attributes allow the same `ADD reactions_👍_count :delta` + `ADD/DELETE reactions_👍_reactors :fpSet` pattern already proven in the existing `upvoteQuestion` resolver. This is a direct reuse of a battle-tested pattern.
+
+**Attribute naming:** Use `reactions_[emoji]_count` and `reactions_[emoji]_reactors`. DynamoDB attribute names support Unicode, so `reactions_👍_count` is valid. However, because emoji in attribute names requires ExpressionAttributeNames escaping on every query, a safer convention is to use the emoji name: `reactions_thumbsup_count`, `reactions_heart_count`, etc. This avoids any edge cases with Unicode in DynamoDB expression tokenization.
+
+**Recommended safe names:**
+
+| Emoji | Count Attr           | Reactors Attr           |
+| ----- | -------------------- | ----------------------- |
+| 👍    | `rxn_thumbsup_count` | `rxn_thumbsup_reactors` |
+| ❤️    | `rxn_heart_count`    | `rxn_heart_reactors`    |
+| 🎉    | `rxn_party_count`    | `rxn_party_reactors`    |
+| 😂    | `rxn_laugh_count`    | `rxn_laugh_reactors`    |
+| 🤔    | `rxn_think_count`    | `rxn_think_reactors`    |
+| 👀    | `rxn_eyes_count`     | `rxn_eyes_reactors`     |
+
+**TTL:** Reactions live on Question and Reply items. They inherit the item's existing TTL — no new TTL management needed.
+
+**Impact on initial load (`getSessionData` query):** The resolver currently projects all attributes. It must be updated to include the 12 new reaction attributes in the returned shape. Since DynamoDB returns all attributes by default (no ProjectionExpression is used in the current implementation), no query change is needed — the new attributes appear automatically. Only the TypeScript type definitions and GraphQL schema need updating.
+
+### DynamoDB UpdateExpression Pattern (per emoji)
+
+```typescript
+// Adding a reaction (remove=false)
+UpdateExpression: "ADD rxn_thumbsup_count :delta, rxn_thumbsup_reactors :fpSet"
+ConditionExpression: "NOT contains(rxn_thumbsup_reactors, :fp) OR attribute_not_exists(rxn_thumbsup_reactors)"
+
+// Removing a reaction (remove=true)
+UpdateExpression: "ADD rxn_thumbsup_count :delta DELETE rxn_thumbsup_reactors :fpSet"
+ConditionExpression: "contains(rxn_thumbsup_reactors, :fp)"
+
+// Values
+":delta": remove ? -1 : 1
+":fp": fingerprint
+":fpSet": new Set([fingerprint])
+```
+
+This is identical to `upvoteQuestion`. The only variable is the attribute name prefix (`rxn_thumbsup` vs `rxn_heart` etc.).
+
+---
+
+## GraphQL Schema Changes
+
+### New Enum Values
+
+```graphql
+enum SessionEventType {
+  # ... existing values unchanged ...
+  SNIPPET_ADDED
+  SNIPPET_DELETED
+  CLIPBOARD_CLEARED
+  QUESTION_ADDED
+  QUESTION_UPDATED
+  REPLY_ADDED
+  PARTICIPANT_BANNED
+  REACTION_UPDATED # NEW
+}
+```
+
+### Reaction Counts Type
+
+```graphql
+type ReactionCounts {
+  thumbsup: Int!
+  heart: Int!
+  party: Int!
+  laugh: Int!
+  think: Int!
+  eyes: Int!
+}
+```
+
+### Question and Reply Type Extensions
+
+```graphql
+type Question {
+  # ... existing fields unchanged ...
+  reactions: ReactionCounts! # NEW — defaults to all zeros
+}
+
+type Reply {
+  # ... existing fields unchanged ...
+  reactions: ReactionCounts! # NEW — defaults to all zeros
+}
+```
+
+### New Mutation
+
+```graphql
+type Mutation {
+  # ... existing mutations unchanged ...
+  react(
+    sessionSlug: String!
+    targetId: String!
+    targetType: String! # "question" | "reply"
+    emoji: String! # "thumbsup" | "heart" | "party" | "laugh" | "think" | "eyes"
+    fingerprint: String!
+    remove: Boolean
+  ): SessionUpdate!
+}
+```
+
+### Subscription Extension
+
+```graphql
+type Subscription {
+  onSessionUpdate(sessionSlug: String!): SessionUpdate
+    @aws_subscribe(
+      mutations: [
+        # ... existing mutations ...
+        "react" # NEW — add to the list
+      ]
+    )
+}
+```
+
+No new subscription channel is needed. `REACTION_UPDATED` is a new event type on the existing channel.
 
 ---
 
 ## Component Boundaries
 
-### New Components and Where They Live
+### New vs. Modified — Explicit List
 
-| Component | Location | Type | Integrates With |
-|-----------|----------|------|-----------------|
-| `vitest.config.mts` | `packages/frontend/` | New file | Next.js App Router, existing `tsconfig.json` |
-| `__tests__/` directory | `packages/frontend/src/` | New directory | Vitest, React Testing Library |
-| `sentry.client.config.ts` | `packages/frontend/` | New file | Next.js client runtime, `next.config.ts` |
-| `sentry.server.config.ts` | `packages/frontend/` | New file | Next.js server runtime (Lambda via Netlify), `next.config.ts` |
-| `sentry.edge.config.ts` | `packages/frontend/` | New file | Next.js edge middleware, `next.config.ts` |
-| `app/global-error.tsx` | `packages/frontend/src/app/` | New file | Sentry, root layout error boundary |
-| `app/[locale]/error.tsx` | `packages/frontend/src/app/[locale]/` | New file | React error boundary — locale-scoped routes |
-| `.github/workflows/ci.yml` | repo root `.github/` | New directory + file | GitHub Actions, AWS OIDC, Netlify |
-| `.husky/` | repo root | New directory | git hooks, lint-staged |
-| `instrumentation.ts` | `packages/frontend/src/` | New file | Sentry server instrumentation (Next.js 16 standard) |
+**NEW files:**
 
-### Modified Components
+| File                                                        | Package   | Purpose                                              |
+| ----------------------------------------------------------- | --------- | ---------------------------------------------------- |
+| `packages/functions/src/resolvers/reactions.ts`             | functions | Lambda resolver for `react` mutation                 |
+| `packages/frontend/src/actions/reactions.ts`                | frontend  | Server Action wrapping `react` mutation              |
+| `packages/frontend/src/components/session/reaction-bar.tsx` | frontend  | ReactionBar UI component for Questions and Replies   |
+| `packages/frontend/src/hooks/use-reactions.ts`              | frontend  | localStorage reaction tracking + optimistic dispatch |
+| `packages/frontend/src/lib/graphql/mutations.ts` additions  | frontend  | `REACT` mutation string (added to existing file)     |
 
-| Component | Location | What Changes |
-|-----------|----------|-------------|
-| `next.config.ts` | `packages/frontend/` | Wrap with `withSentryConfig()` |
-| `package.json` (root) | repo root | Add `test`, `prepare` (Husky), `lint-staged` scripts |
-| `package.json` (frontend) | `packages/frontend/` | Add `test`, `typecheck` scripts |
-| `packages/functions/` | Lambda resolvers | Add `pino` structured logging |
+**MODIFIED files:**
+
+| File                                                 | Package   | What Changes                                                                                                                                                                                      |
+| ---------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `infra/schema.graphql`                               | infra     | Add `ReactionCounts` type, `reactions` field to `Question`/`Reply`, `react` mutation, `REACTION_UPDATED` enum value, `react` to subscription list                                                 |
+| `packages/core/src/types.ts`                         | core      | Add `ReactionCounts` interface, `reactions` field to `Question`/`Reply`/`QuestionItem`/`ReplyItem` interfaces, `ReactArgs` mutation args interface, `REACTION_UPDATED` to `SessionEventType` enum |
+| `packages/functions/src/resolvers/index.ts`          | functions | Export `reactHandler` from new `reactions.ts`                                                                                                                                                     |
+| `packages/frontend/src/hooks/use-session-state.ts`   | frontend  | Add `REACTION_UPDATED` action type; add reaction update handler to reducer; extend `SessionAction` union                                                                                          |
+| `packages/frontend/src/hooks/use-session-updates.ts` | frontend  | Add `case "REACTION_UPDATED"` to the subscription event switch                                                                                                                                    |
+| `packages/frontend/src/hooks/use-fingerprint.ts`     | frontend  | Add reaction tracking: `reactedIds` map, `addReaction`, `removeReaction` functions with localStorage persistence                                                                                  |
+| `packages/frontend/src/lib/graphql/mutations.ts`     | frontend  | Add `REACT` mutation constant                                                                                                                                                                     |
+| `sst.config.ts`                                      | infra     | Wire `reactHandler` Lambda to `react` AppSync resolver                                                                                                                                            |
+
+**NOT modified:**
+
+| File                                                                    | Why untouched                                                                                    |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `packages/functions/src/resolvers/rate-limit.ts`                        | `checkRateLimit` and `checkNotBanned` are already reusable — called directly from `reactions.ts` |
+| `packages/frontend/src/hooks/use-session-updates.ts` subscription setup | Only the switch block changes, not the subscription wiring                                       |
+| `packages/frontend/src/lib/appsync-server.ts`                           | Generic `appsyncMutation` helper is already parameterized                                        |
+| All other existing resolvers                                            | No interaction with reaction data                                                                |
 
 ---
 
-## Integration Points with Existing Architecture
+## Data Flow Details
 
-### 1. Vitest — Test Layer
+### Add Reaction — Happy Path
 
-**Insertion point:** `packages/frontend/` only. Lambda resolver tests live in `packages/functions/` if added later, but the current milestone focuses on frontend component tests.
+```
+1. User clicks 👍 on QuestionCard
+2. ReactionBar calls useReactions.addReaction("thumbsup", questionId)
+3. useReactions checks localStorage: reacted:{sessionSlug}:{questionId}
+   → { thumbsup: false, heart: false, ... }
+   → thumbsup is false, proceed
+4. useReactions dispatches ADD_REACTION_OPTIMISTIC to reducer
+   → Question.reactions.thumbsup += 1 immediately in local state
+5. useReactions persists to localStorage: thumbsup: true for this questionId
+6. useReactions calls reactAction({ sessionSlug, targetId: questionId,
+     targetType: "question", emoji: "thumbsup", fingerprint, remove: false })
+7. reactAction calls appsyncMutation(REACT, args)
+8. Lambda reactResolver:
+   a. checkNotBanned(sessionSlug, fingerprint)
+   b. checkRateLimit(fingerprint, 10, 60)
+   c. DynamoDB UpdateCommand (conditional: NOT contains reactors)
+   d. Returns REACTION_UPDATED with authoritative counts
+9. AppSync broadcasts REACTION_UPDATED to all subscribers
+10. useSessionUpdates receives REACTION_UPDATED
+    → dispatches REACTION_UPDATED to reducer
+    → reducer replaces optimistic count with authoritative count
+    → ReactionBar re-renders with authoritative count
+```
 
-**What Vitest can test in this stack:**
-- All synchronous Client Components (`'use client'`) — tested with React Testing Library
-- Synchronous Server Components (no `async` keyword) — tested with React Testing Library
-- Pure utility functions in `packages/core/` — tested with standard Vitest (no jsdom needed)
-- Lambda resolver pure functions (Zod validation, business logic) — if extracted from handler
+### Reaction Conflict — Double-Click
 
-**What Vitest cannot test directly:**
-- Async Server Components (those with `await` at top level) — official Next.js guidance: use E2E tests for these
-- AppSync subscription WebSocket behavior — requires integration or E2E tests
-- DynamoDB operations — require mocking (Vitest `vi.mock`) or E2E
+```
+1. User clicks 👍 twice rapidly
+2. First click: optimistic update + Server Action call in flight
+3. Second click: localStorage already shows thumbsup: true → block UI
+   (same pattern as votedIds check in useFingerprint today)
+4. If Server Action returns VOTE_CONFLICT (ConditionalCheckFailedException):
+   → reactAction returns { ok: false, error: "REACTION_CONFLICT" }
+   → useReactions rolls back optimistic update
+   → localStorage reverts thumbsup: false
+```
 
-**Critical config for this monorepo:**
+### Remove Reaction (Toggle)
 
-The `vite-tsconfig-paths` plugin is required because Next.js uses TypeScript path aliases (`@/` prefix). Without it, Vitest resolves imports differently from Next.js and tests fail with module-not-found errors.
+```
+1. User clicks 👍 again on a question they already reacted to
+2. ReactionBar detects: reactedEmojis.has("thumbsup") === true → this is a remove
+3. Same flow as add, but remove: true passed to reactAction
+4. Optimistic: reactions.thumbsup -= 1, localStorage thumbsup: false
+5. DynamoDB: ADD rxn_thumbsup_count -1 DELETE rxn_thumbsup_reactors :fpSet
+```
+
+---
+
+## Frontend State Changes
+
+### SessionAction Union Extension
 
 ```typescript
-// packages/frontend/vitest.config.mts
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import tsconfigPaths from 'vite-tsconfig-paths'
+// packages/frontend/src/hooks/use-session-state.ts
 
-export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: './src/__tests__/setup.ts',
-  },
-})
+// NEW action types to add to SessionAction union:
+| {
+    type: "REACTION_UPDATED";
+    payload: {
+      targetId: string;
+      targetType: "question" | "reply";
+      emoji: string;
+      counts: ReactionCounts;  // authoritative counts from server
+    };
+  }
+| {
+    type: "ADD_REACTION_OPTIMISTIC";
+    payload: {
+      targetId: string;
+      targetType: "question" | "reply";
+      emoji: keyof ReactionCounts;
+      delta: 1 | -1;
+    };
+  }
 ```
 
-**What to test first (highest ROI for this codebase):**
-
-1. `QuestionCard` — pure rendering with props, vote state, hidden state, speaker badge
-2. `SnippetCard` / `ShikiBlock` — ensure pre-rendered HTML is rendered as `dangerouslySetInnerHTML`, not re-highlighted
-3. Moderation logic in `packages/core/` — the `50% threshold` and `3-strike auto-ban` are pure functions and easy to unit test
-4. Zod schemas in `packages/core/` — validate edge cases (empty string, 500+ char question, invalid slug format)
-5. `VoteButton` — click handler fires mutation, localStorage dedup gate prevents double-vote
-
-### 2. Sentry — Error Tracking Layer
-
-**Insertion point:** Three separate config files (one per runtime) + `next.config.ts` wrapper + `global-error.tsx`.
-
-**Why three config files:** Next.js 16 runs in three distinct environments — browser (React hydration + client interactions), Node.js (Server Components, Server Actions, API routes), and Edge (next-intl middleware). Each environment has different APIs; Sentry instruments them separately.
-
-```
-packages/frontend/
-  sentry.client.config.ts     ← browser: captures React errors, user interactions
-  sentry.server.config.ts     ← Node.js: captures Lambda/Netlify function errors
-  sentry.edge.config.ts       ← Edge: captures middleware errors (next-intl locale redirect)
-  src/app/
-    global-error.tsx          ← catches root layout errors (must include <html><body>)
-    [locale]/
-      error.tsx               ← catches locale-subtree rendering errors
-  src/instrumentation.ts      ← Next.js 16 standard server instrumentation hook
-```
-
-**`next.config.ts` modification pattern:**
+### Reducer Cases
 
 ```typescript
-// packages/frontend/next.config.ts
-import { withSentryConfig } from '@sentry/nextjs'
-import createNextIntlPlugin from 'next-intl/plugin'
-
-const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
-
-const nextConfig = {
-  transpilePackages: ['@nasqa/core'],
+case "ADD_REACTION_OPTIMISTIC": {
+  const { targetId, targetType, emoji, delta } = action.payload;
+  if (targetType === "question") {
+    return {
+      ...state,
+      questions: state.questions.map((q) =>
+        q.id !== targetId ? q : {
+          ...q,
+          reactions: { ...q.reactions, [emoji]: q.reactions[emoji] + delta },
+        }
+      ),
+    };
+  }
+  // targetType === "reply"
+  return {
+    ...state,
+    replies: state.replies.map((r) =>
+      r.id !== targetId ? r : {
+        ...r,
+        reactions: { ...r.reactions, [emoji]: r.reactions[emoji] + delta },
+      }
+    ),
+  };
 }
 
-export default withSentryConfig(withNextIntl(nextConfig), {
-  silent: true,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-})
+case "REACTION_UPDATED": {
+  const { targetId, targetType, counts } = action.payload;
+  if (targetType === "question") {
+    return {
+      ...state,
+      questions: state.questions.map((q) =>
+        q.id !== targetId ? q : { ...q, reactions: counts }
+      ),
+    };
+  }
+  return {
+    ...state,
+    replies: state.replies.map((r) =>
+      r.id !== targetId ? r : { ...r, reactions: counts }
+    ),
+  };
+}
 ```
 
-**`global-error.tsx` — root error boundary:**
-
-The `global-error.tsx` file is the last-resort error boundary. It wraps errors thrown inside the root `layout.tsx` itself (which standard `error.tsx` cannot catch because `error.tsx` is nested inside the layout it wraps). It must include `<html>` and `<body>` tags because it replaces the entire root layout.
-
-**`[locale]/error.tsx` — segment error boundary:**
-
-Placed at the locale segment level so that a render error in `/en/live/[slug]` shows a scoped error UI (retry button, "session unavailable" message) rather than crashing the entire app. The error UI must be a `'use client'` component.
-
-**Sentry data concerns for Nasqa Live:**
-
-Sentry's default SDK captures request URLs, which include `?hostSecret=` for host pages. Configure `beforeSend` to scrub this parameter:
+### SessionState Shape Change
 
 ```typescript
-// sentry.client.config.ts
-Sentry.init({
-  beforeSend(event) {
-    if (event.request?.url) {
-      event.request.url = event.request.url.replace(/[?&]hostSecret=[^&]*/i, '')
-    }
-    return event
-  },
-})
+// No change to the SessionState interface shape itself.
+// The reactions field is added to Question and Reply types in @nasqa/core.
+// The reducer handles it via those extended types automatically.
 ```
 
-This is not optional — shipping host secrets to a third-party error tracking service is a security risk.
-
-### 3. Structured Logging — Lambda Layer
-
-**Insertion point:** `packages/functions/src/resolvers/` — each Lambda resolver handler.
-
-**Recommended library:** `pino` with `pino-lambda`. CloudWatch receives plain `console.log` output as JSON; `pino` ensures every log line is structured JSON rather than unformatted strings. `pino-lambda` adds Lambda-specific context (request ID, function name) automatically.
-
-**Log level strategy:**
+### useFingerprint Extension
 
 ```typescript
-// packages/functions/src/lib/logger.ts
-import pino from 'pino'
+// packages/frontend/src/hooks/use-fingerprint.ts
+// New localStorage key pattern:
+function reactionsKey(sessionSlug: string, targetId: string): string {
+  return `reactions:${sessionSlug}:${targetId}`;
+}
+// Value: JSON object { thumbsup: boolean, heart: boolean, ... }
 
-export const logger = pino({
-  level: process.env.LOG_LEVEL ?? 'info',
-  base: { service: 'nasqa-functions' },
-})
+// New return values added to FingerprintResult:
+reactedMap: Map<string, Set<string>>;  // targetId → Set of emoji names reacted
+addReaction: (targetId: string, emoji: string) => void;
+removeReaction: (targetId: string, emoji: string) => void;
+hasReacted: (targetId: string, emoji: string) => boolean;
 ```
 
-Log at `warn`/`error` for anomalies (failed host auth, ban threshold reached), `info` for mutations, `debug` disabled in production (CloudWatch cost: $0.50/GB ingested).
+The `reactedMap` initializes from localStorage on mount for the current session. Each `addReaction` / `removeReaction` persists to the corresponding key.
 
-### 4. Pre-commit Hooks — Husky + lint-staged
+---
 
-**Insertion point:** Repo root (not inside any package). Husky hooks must live at the git repo root because git itself lives at the root — hooks placed inside `packages/` are never triggered.
+## localStorage Tracking Design
 
-**Structure:**
+**Key:** `reactions:{sessionSlug}:{targetId}`
+**Value:** JSON object: `{ "thumbsup": true, "heart": false, "party": true, ... }`
 
-```
-(repo root)
-  .husky/
-    pre-commit        ← runs lint-staged
-  package.json        ← has "prepare": "husky" and "lint-staged" config
-```
+This matches the existing `votes:{sessionSlug}` pattern but scoped to each individual target (Question or Reply). This is more specific than a session-wide set because a user can react to multiple items.
 
-**lint-staged scoping for this monorepo:**
+**Why per-item keys over a session-wide map:**
 
-Because ESLint configs live inside `packages/frontend/` and `packages/functions/`, lint-staged must use file-glob patterns that route files to their package-specific linters:
+The existing vote tracking uses a flat array of IDs (`votes:{sessionSlug}` = `["q1", "q2"]`). For reactions, each item has 6 independent booleans. Storing as `reactions:{sessionSlug}:{id}` keeps each item's state isolated and avoids deserializing the entire session's reaction history on every reaction check.
+
+**Initialization:** On mount, `useFingerprint` does not pre-load all reaction keys (there could be hundreds of items). Instead, `hasReacted(targetId, emoji)` reads and caches lazily on first access per targetId.
+
+---
+
+## Subscription Event Payload Design
+
+The `REACTION_UPDATED` event payload is:
 
 ```json
-// root package.json
 {
-  "lint-staged": {
-    "packages/frontend/**/*.{ts,tsx}": [
-      "eslint --fix --max-warnings 0",
-      "bash -c 'npm run typecheck --workspace=packages/frontend'"
-    ],
-    "packages/functions/**/*.ts": [
-      "bash -c 'npm run typecheck --workspace=packages/functions'"
-    ],
-    "packages/core/**/*.ts": [
-      "bash -c 'npm run typecheck --workspace=packages/core'"
-    ]
+  "targetId": "01HXYZ...",
+  "targetType": "question",
+  "emoji": "thumbsup",
+  "counts": {
+    "thumbsup": 5,
+    "heart": 2,
+    "party": 0,
+    "laugh": 1,
+    "think": 0,
+    "eyes": 3
   }
 }
 ```
 
-**Husky v9+ initialization (current version):**
+**Why send all counts, not just the changed emoji's count:**
 
-```bash
-# At repo root
-npx husky init
-# Creates .husky/pre-commit and adds "prepare": "husky" to root package.json
-```
+The reducer replaces the entire `reactions` object (`{ ...q, reactions: counts }`). Sending the full counts snapshot eliminates the need for per-emoji delta logic in the reducer and ensures all clients converge on the same state even if events arrive out of order or are missed.
 
-Note: Husky v9+ dropped the `.huskyrc` file format and the `prepare` script auto-install pattern changed. The `husky init` command is the canonical setup path. Do not use the old `husky add` or `husky install` commands — they no longer exist in v9.
+This is the same philosophy as `QUESTION_UPDATED` sending `upvoteCount` (the absolute value) rather than a delta.
 
-### 5. GitHub Actions — CI/CD Layer
+---
 
-**Insertion point:** `.github/workflows/` at repo root. This directory does not exist yet.
+## Rate Limiting for Reactions
 
-**Recommended workflow structure:**
+Reactions reuse `checkRateLimit` from `packages/functions/src/resolvers/rate-limit.ts` without modification.
 
-Two workflows:
+**Recommended limit:** 10 reactions/minute per fingerprint. Rationale:
 
-1. **`ci.yml`** — runs on every push and pull request; lint + typecheck + test (no deploy)
-2. **`deploy.yml`** — runs only on push to `main`; requires `ci.yml` to pass (via `workflow_run` or merge gates); runs `sst deploy --stage production`
+- 3 questions/minute is the current public write limit
+- Reactions are lighter-weight (no text content), so a higher limit is appropriate
+- 10/minute prevents reaction spam (rapid-fire clicking across many items) while supporting genuine engagement
 
-Separating them prevents accidental deploys from pull requests and keeps CI fast by parallelizing quality gates.
+The `react` mutation does NOT check rate limits for host users — same as the existing host mutations (snippet push, focus, ban) skip public rate limits.
 
-**AWS authentication — OIDC (recommended over IAM key secrets):**
+Ban enforcement: `checkNotBanned` is called before any reaction write. A banned participant cannot react.
 
-OIDC authentication lets GitHub Actions assume an AWS IAM role without storing long-lived AWS keys as repository secrets. The IAM role trusts GitHub's OIDC provider and is scoped to the specific repo and branch.
+---
 
-```yaml
-# .github/workflows/deploy.yml (excerpt)
-permissions:
-  id-token: write   # Required for OIDC
-  contents: read
+## ReactionBar Component
 
-jobs:
-  deploy:
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-nasqa
-          aws-region: us-east-1
-```
-
-**Netlify deploy integration:**
-
-The frontend (Next.js) is deployed via Netlify's GitHub integration, not via GitHub Actions. Netlify auto-deploys on push to `main` (production) and on pull requests (deploy previews). GitHub Actions handles the SST Ion backend (Lambda + AppSync + DynamoDB) only.
-
-This split means the CI pipeline must coordinate: backend deploys via Actions, frontend deploys via Netlify. For pull request previews, the SST backend should deploy to a `preview-{PR_NUMBER}` stage, and the Netlify preview URL should point to the matching backend.
-
-**Full CI workflow layout:**
-
-```
-.github/
-  workflows/
-    ci.yml          ← lint + typecheck + test (parallel jobs)
-    deploy.yml      ← sst deploy production (sequential after ci passes)
-```
-
-### 6. Dynamic SEO — generateMetadata
-
-**Insertion point:** `packages/frontend/src/app/[locale]/live/[slug]/page.tsx` — the session page Server Component.
-
-**Integration pattern:**
+### Props
 
 ```typescript
-// app/[locale]/live/[slug]/page.tsx
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const session = await getSessionMetadata(params.slug)
-  return {
-    title: `${session.title} — Nasqa Live`,
-    description: `Join ${session.title} — live Q&A and shared clipboard`,
-    openGraph: {
-      title: session.title,
-      description: `Ask questions and view shared code for "${session.title}"`,
-      type: 'website',
-      url: `https://nasqa.live/en/live/${params.slug}`,
-    },
-  }
+interface ReactionBarProps {
+  targetId: string;
+  targetType: "question" | "reply";
+  reactions: ReactionCounts; // from Question or Reply
+  sessionSlug: string;
+  fingerprint: string;
+  disabled?: boolean; // true when participant is banned
 }
 ```
 
-`generateMetadata` runs on the server at request time. The DynamoDB fetch inside it is automatically deduplicated (memoized) by Next.js if the same call appears in the page component, so there is no double-read penalty.
+### Emoji Palette (fixed 6, no picker)
 
-### 7. Accessibility — No New Files Required
+```typescript
+const EMOJI_PALETTE = [
+  { key: "thumbsup", glyph: "👍" },
+  { key: "heart", glyph: "❤️" },
+  { key: "party", glyph: "🎉" },
+  { key: "laugh", glyph: "😂" },
+  { key: "think", glyph: "🤔" },
+  { key: "eyes", glyph: "👀" },
+] as const;
+```
 
-Accessibility improvements integrate into existing components:
+The glyph is display-only. The `key` is what's stored in DynamoDB and localStorage.
 
-- ESLint's `eslint-plugin-jsx-a11y` is already included via `eslint-config-next`. Enabling `--max-warnings 0` in lint-staged makes existing a11y warnings blocking.
-- ARIA label and `role` additions go directly into existing component files (`QuestionCard`, `VoteButton`, `HostInput`, etc.)
-- The `axe-core` library can be added as a test utility for automated ARIA auditing inside Vitest tests (via `@axe-core/react`)
+### Bundle Considerations
+
+The 6 emoji glyphs are Unicode characters rendered by the OS emoji font — zero bundle cost. No emoji library needed. This was explicitly called out in PROJECT.md ("no emoji picker — bundle budget").
 
 ---
 
-## Data Flow for New Hardening Features
+## Build Order
 
-### Error Tracking Data Flow
-
-```
-Browser
-  → React render error
-  → [locale]/error.tsx catches it
-  → error.tsx calls Sentry.captureException(error)
-  → Sentry SDK batches + sends to sentry.io
-  → Sentry dashboard shows error with:
-      - component stack trace
-      - session slug (from URL, after scrubbing hostSecret param)
-      - user fingerprint (device ID, if configured as Sentry user)
-      - locale (from URL prefix)
-
-Lambda Resolver
-  → unhandled exception in resolver handler
-  → pino logger.error({ err, slug, operation })
-  → CloudWatch Logs receives structured JSON
-  → (Optional) CloudWatch Alarm triggers on error count
-  → (Optional) Sentry server SDK captures Lambda exceptions
-```
-
-### CI/CD Data Flow
+Dependencies flow from data layer up to UI. Each step unblocks the next.
 
 ```
-Developer pushes to branch
-  → GitHub Actions triggers ci.yml
-  → Parallel jobs:
-      job: lint   → eslint packages/frontend
-      job: check  → tsc --noEmit (all packages)
-      job: test   → vitest run (packages/frontend)
-  → All must pass (required status check on main branch)
+STEP 1: Core types (@nasqa/core)
+  Add ReactionCounts interface, reactions field to Question/Reply/
+  QuestionItem/ReplyItem, ReactArgs interface, REACTION_UPDATED to
+  SessionEventType enum.
+  Why first: All other layers import from @nasqa/core. TypeScript
+  compile errors in subsequent steps require this to exist.
+  Files: packages/core/src/types.ts
 
-Push to main (after PR merge)
-  → GitHub Actions triggers deploy.yml
-  → Assumes AWS IAM role via OIDC
-  → Runs: sst deploy --stage production
-  → SST updates: Lambda resolvers, AppSync schema, DynamoDB config
-  → Netlify auto-deploys: Next.js frontend (separate trigger)
-```
+STEP 2: GraphQL schema (infra)
+  Add ReactionCounts type, reactions to Question/Reply, react mutation,
+  REACTION_UPDATED enum value, react to subscription list.
+  Why second: Lambda resolver and frontend mutations depend on the schema.
+  AppSync will reject mutations that aren't in the schema.
+  Files: infra/schema.graphql
 
-### Pre-commit Data Flow
+STEP 3: Lambda resolver (functions)
+  Implement reactResolver in packages/functions/src/resolvers/reactions.ts.
+  Wire to sst.config.ts.
+  Why third: Testable independently. Subscription events don't flow until
+  this exists.
+  Files: packages/functions/src/resolvers/reactions.ts
+         packages/functions/src/resolvers/index.ts (add export)
+         sst.config.ts (wire resolver)
 
-```
-Developer runs: git commit
-  → Husky pre-commit hook triggers
-  → lint-staged identifies staged files
-  → For staged .ts/.tsx in packages/frontend/:
-      eslint --fix (auto-fixes fixable issues)
-      tsc --noEmit (type check)
-  → If any check fails: commit is aborted
-  → Developer fixes issues, re-stages, re-commits
-```
+STEP 4: Server Action (frontend)
+  Add reactAction in packages/frontend/src/actions/reactions.ts.
+  Add REACT mutation string to packages/frontend/src/lib/graphql/mutations.ts.
+  Why fourth: Depends on schema (step 2) and resolver (step 3).
+  Files: packages/frontend/src/actions/reactions.ts
+         packages/frontend/src/lib/graphql/mutations.ts
 
----
+STEP 5: State reducer (frontend)
+  Add REACTION_UPDATED and ADD_REACTION_OPTIMISTIC cases to
+  useSessionState reducer. Extend SessionAction union type.
+  Why fifth: useReactions hook (step 6) and subscription handler (step 7)
+  dispatch to this reducer.
+  Files: packages/frontend/src/hooks/use-session-state.ts
 
-## Recommended File Structure Changes
+STEP 6: useFingerprint extension + useReactions hook (frontend)
+  Extend useFingerprint with reaction localStorage tracking.
+  Create useReactions hook that orchestrates optimistic dispatch,
+  localStorage gate, and Server Action call.
+  Why sixth: Depends on reducer (step 5) and Server Action (step 4).
+  Files: packages/frontend/src/hooks/use-fingerprint.ts
+         packages/frontend/src/hooks/use-reactions.ts
 
-```
-(repo root additions)
-├── .github/
-│   └── workflows/
-│       ├── ci.yml              # lint + typecheck + test
-│       └── deploy.yml          # sst deploy production
-├── .husky/
-│   └── pre-commit              # runs lint-staged
+STEP 7: Subscription handler (frontend)
+  Add REACTION_UPDATED case to useSessionUpdates switch.
+  Why seventh: By now the reducer handles the action correctly.
+  Files: packages/frontend/src/hooks/use-session-updates.ts
 
-packages/frontend/
-├── vitest.config.mts           # Vitest config with jsdom + tsconfigPaths
-├── sentry.client.config.ts     # Browser Sentry init
-├── sentry.server.config.ts     # Node.js Sentry init
-├── sentry.edge.config.ts       # Edge Sentry init
-├── next.config.ts              # MODIFIED: wrap with withSentryConfig
-└── src/
-    ├── app/
-    │   ├── global-error.tsx    # Root error boundary (NEW)
-    │   └── [locale]/
-    │       └── error.tsx       # Locale-scoped error boundary (NEW)
-    ├── instrumentation.ts      # Next.js server instrumentation (NEW)
-    └── __tests__/
-        ├── setup.ts            # RTL + jsdom global setup
-        ├── components/
-        │   ├── question-card.test.tsx
-        │   ├── snippet-card.test.tsx
-        │   └── vote-button.test.tsx
-        └── lib/
-            └── moderation.test.ts  # Pure function tests
-
-packages/core/
-└── src/
-    └── __tests__/
-        └── schemas.test.ts     # Zod schema edge cases
-
-packages/functions/
-└── src/
-    └── lib/
-        └── logger.ts           # pino structured logger (NEW)
-```
-
----
-
-## Build Order for Enterprise Hardening
-
-Dependencies flow top-to-bottom. Each step unlocks the next.
-
-```
-1. PRE-COMMIT HOOKS (Husky + lint-staged)
-   Why first: Prevents any future code from entering the repo with lint/type errors.
-   Once in place, all subsequent work is automatically checked.
-   Depends on: nothing (no external services needed)
-
-2. CI PIPELINE SKELETON (GitHub Actions — lint + typecheck jobs only)
-   Why second: Establishes the quality gate infra before tests exist.
-   Starting with lint and typecheck only means the pipeline is green immediately.
-   Tests job can be added once test files exist.
-   Depends on: GitHub repo, AWS OIDC role (for deploy job), Netlify (separate auto-trigger)
-
-3. TESTING INFRASTRUCTURE (Vitest + RTL setup)
-   Why third: Needs CI pipeline to run against; needs existing components to test.
-   Install packages, configure vitest.config.mts, write first smoke test.
-   Add `test` job to ci.yml once the first test passes locally.
-   Depends on: step 2 (CI pipeline to run tests in)
-
-4. ERROR BOUNDARIES (error.tsx + global-error.tsx)
-   Why fourth: Pure Next.js file conventions — no external service needed.
-   Delivers user-visible graceful degradation immediately.
-   Does not require Sentry to be useful (shows fallback UI regardless).
-   Depends on: nothing (pure Next.js App Router file convention)
-
-5. SENTRY INTEGRATION
-   Why fifth: Requires error boundaries to already exist (Sentry hooks into them).
-   Needs a Sentry project to be created (external setup step).
-   The `beforeSend` hostSecret scrubber must be added before enabling.
-   Depends on: step 4 (error boundaries), external Sentry account/project
-
-6. STRUCTURED LOGGING (pino in Lambda)
-   Why sixth: Independent of frontend work. Can be done any time after step 2.
-   Does not need Sentry or test infrastructure.
-   Depends on: nothing (just adding a package to packages/functions)
-
-7. DYNAMIC SEO + OPEN GRAPH
-   Why seventh: Requires session page to exist (already does).
-   `generateMetadata` added to existing page.tsx — no new infrastructure.
-   Depends on: existing session page route
-
-8. ACCESSIBILITY IMPROVEMENTS
-   Why last: Applies to all components. Better done once other hardening
-   is in place so a11y failures are caught by lint (lint-staged blocks them).
-   Depends on: step 1 (pre-commit hooks with --max-warnings 0)
+STEP 8: ReactionBar UI component (frontend)
+  Build ReactionBar component using useReactions hook.
+  Integrate into QuestionCard and ReplyCard.
+  Why last: Depends on all layers being in place. UI work proceeds
+  once data flows correctly end-to-end.
+  Files: packages/frontend/src/components/session/reaction-bar.tsx
+         (modify QuestionCard and ReplyCard to accept + render ReactionBar)
 ```
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Error Boundary Layering
+### Pattern 1: Atomic Set-Based Dedup (reuse from votes)
 
-**What:** Next.js App Router supports nested `error.tsx` files, each catching errors within its subtree. `global-error.tsx` at the root catches errors in the root layout. `[locale]/error.tsx` catches errors within locale-scoped routes.
+**What:** Use DynamoDB String Sets with conditional `ADD`/`DELETE` expressions to enforce per-user dedup atomically at the database layer. The frontend localStorage provides a client-side gate that prevents redundant API calls, but the database is authoritative.
 
-**When to use:** Place `error.tsx` at the coarsest grain that still allows recovery. For Nasqa Live, one at the `[locale]` level is sufficient — it shows "Session unavailable, try refreshing" for any session page failure.
+**When to use:** Any boolean per-user state on an item (voted, reacted, flagged). The Set stores which fingerprints have taken the action; the counter is the Set's cardinality derived by the atomic ADD.
 
-**Trade-offs:** More granular `error.tsx` files (e.g., per-feature) provide better recovery UX but add complexity. Start with one at the `[locale]` level.
+**Trade-offs:** 12 new attributes per Question/Reply item. At 500 participants reacting to 50 questions, each reactions\_\*\_reactors Set could hold up to 500 fingerprints (36-char UUIDs). That is ~18KB per question item for reactors alone. DynamoDB item limit is 400KB — this is not a concern at the target scale (50-500 participants).
 
-**Pattern:**
-```typescript
-// src/app/[locale]/error.tsx
-'use client'
-export default function ErrorBoundary({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
-  useEffect(() => {
-    Sentry.captureException(error)
-  }, [error])
+### Pattern 2: Authoritative Snapshot in Subscription Payload
 
-  return (
-    <div role="alert">
-      <p>Something went wrong loading this session.</p>
-      <button onClick={reset}>Try again</button>
-    </div>
-  )
-}
-```
+**What:** The subscription event payload includes the full `counts` object (all 6 emoji counts), not just the emoji that changed. The reducer performs a full replacement: `reactions: counts`.
 
-### Pattern 2: Test Isolation for AppSync-Dependent Components
+**When to use:** When multiple fast events (e.g., rapid reactions during a talk) could cause count drift if only deltas are sent. Full snapshot ensures convergence.
 
-**What:** Components that fire AppSync mutations (`VoteButton`, `HostInput`, `QaInput`) must have their AppSync calls mocked in tests. Do not test against a real AppSync API in unit tests.
+**Trade-offs:** Slightly larger payload (~100 bytes per event vs ~30 bytes for delta). Acceptable given AppSync WebSocket overhead and the 50-500 participant target.
 
-**When to use:** Any component that imports `@aws-amplify/api-graphql` or calls a Server Action.
+### Pattern 3: Emoji Key Normalization (glyph in UI, key in storage)
 
-**Trade-offs:** Mock-heavy tests can drift from the real API. Mitigate by keeping mutation functions in `src/actions/` (already the pattern) and testing those pure TypeScript functions separately.
+**What:** The UI displays the emoji glyph (Unicode character). The database, API, and localStorage use a normalized ASCII key (`thumbsup`, `heart`, etc.). Mapping is defined once in a constant (`EMOJI_PALETTE`) and used throughout.
 
-**Pattern:**
-```typescript
-// vote-button.test.tsx
-vi.mock('@/actions/qa', () => ({
-  upvoteQuestion: vi.fn().mockResolvedValue({ upvoteCount: 1 }),
-}))
+**When to use:** Any time emoji need to appear in DynamoDB attribute names, JSON keys, or URL parameters.
 
-test('VoteButton fires upvote on click', async () => {
-  render(<VoteButton questionId="q1" slug="test-session" />)
-  await userEvent.click(screen.getByRole('button', { name: /upvote/i }))
-  expect(upvoteQuestion).toHaveBeenCalledWith({ questionId: 'q1', slug: 'test-session' })
-})
-```
-
-### Pattern 3: GitHub Actions Job Dependencies
-
-**What:** CI jobs (lint, typecheck, test) run in parallel. The deploy job runs sequentially after all CI jobs pass. This is expressed via `needs:` in the deploy workflow.
-
-**When to use:** Always. Never make deploy a job in the same workflow as quality checks — it prevents parallelism and makes the pipeline slower.
-
-**Trade-offs:** Two separate workflow files (`ci.yml` and `deploy.yml`) are harder to reason about than one combined file but prevent accidental deploys from PRs.
-
-**Pattern:**
-```yaml
-# deploy.yml — only triggers after ci.yml passes on main
-on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
-
-jobs:
-  deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.IAM_ROLE_ARN }}
-          aws-region: us-east-1
-      - run: npm ci
-      - run: npx sst deploy --stage production
-```
+**Trade-offs:** Requires one mapping layer. The EMOJI_PALETTE constant in `reaction-bar.tsx` (or a shared `packages/core/src/reactions.ts` module) is the single source of truth.
 
 ---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Running Vitest Against Async Server Components
+### Anti-Pattern 1: DynamoDB Map for Reaction Counts
 
-**What people do:** Write `render(<SessionPage />)` tests for the `page.tsx` Server Component that has `async` and `await` at the top level.
+**What people do:** Store reactions as `{ M: { "👍": { count: 3, reactors: [...] } } }` thinking it's more "structured."
 
-**Why it's wrong:** Vitest (and React Testing Library) do not support async React Server Components as of March 2026. The official Next.js docs explicitly state this. The test will fail with a confusing error about async components.
+**Why it's wrong:** DynamoDB `ADD` does not work on nested Map values. Incrementing a nested counter requires `SET reactions.thumbsup.count = reactions.thumbsup.count + :delta` — which is NOT atomic. Under concurrent writes (many users reacting simultaneously), this pattern produces incorrect counts.
 
-**Do this instead:** Test the synchronous child components (`SessionShell`, `ClipboardFeed`, etc.) with Vitest. Test the full async server-rendered page with Playwright E2E tests.
+**Do this instead:** Flat top-level attributes (`rxn_thumbsup_count`, `rxn_thumbsup_reactors`). The `ADD` operation on top-level attributes IS atomic.
 
-### Anti-Pattern 2: Sentry Without hostSecret Scrubbing
+### Anti-Pattern 2: Separate Subscription Channel for Reactions
 
-**What people do:** Enable Sentry with default config on a Next.js app that has sensitive data in URLs.
+**What people do:** Add a new `onReactionUpdate` subscription to avoid "polluting" the existing `onSessionUpdate` channel.
 
-**Why it's wrong:** Sentry captures the full request URL by default. For Nasqa Live, the host page URL is `/live/[slug]?hostSecret=[uuid]`. This UUID would be sent to Sentry and visible in the Sentry dashboard, effectively leaking the host credential to the error tracking service.
+**Why it's wrong:** Each AppSync subscription is a separate WebSocket connection. Adding a second subscription doubles connection overhead per client. The existing union-type pattern (one channel, typed payloads) was chosen specifically to avoid this. `REACTION_UPDATED` is a new event type on the existing channel.
 
-**Do this instead:** Add `beforeSend` to all three Sentry configs (client, server, edge) to strip `hostSecret` from URLs before sending. This is non-optional for this codebase.
+**Do this instead:** Add `REACTION_UPDATED` to `SessionEventType` and `react` to the `@aws_subscribe` list. Zero new subscription infrastructure.
 
-### Anti-Pattern 3: Husky Hooks Inside Package Directories
+### Anti-Pattern 3: Storing Emoji Glyphs as DynamoDB Attribute Names
 
-**What people do:** Install Husky inside `packages/frontend/` as a dev dependency and run `npx husky init` from that directory.
+**What people do:** Name attributes `reactions_👍_count` because it matches the UI directly.
 
-**Why it's wrong:** Git hooks must live at the `.git/` directory level, which is at the repository root. Husky hooks installed inside a workspace package are never triggered by `git commit`.
+**Why it's wrong:** While DynamoDB supports Unicode attribute names, they require `ExpressionAttributeNames` escaping in every UpdateExpression, GetItem, and Query that references them. This makes every query more verbose and error-prone.
 
-**Do this instead:** Install Husky at the repo root only. Run `npx husky init` from the repo root. The `.husky/` directory must be a sibling of `.git/`.
+**Do this instead:** Use ASCII normalized keys (`rxn_thumbsup_count`). Map to glyphs in the UI layer only.
 
-### Anti-Pattern 4: Full typecheck on Every Pre-commit
+### Anti-Pattern 4: Loading All Reaction States on Mount
 
-**What people do:** Run `tsc --noEmit` across the entire project in `lint-staged` for every commit.
+**What people do:** In `useFingerprint`, iterate all `reactions:{sessionSlug}:*` localStorage keys on mount to pre-populate the full reaction state map.
 
-**Why it's wrong:** TypeScript project-wide type checking takes 10-30 seconds for even small projects. Running it on every commit makes the pre-commit hook so slow that developers start using `--no-verify` to bypass it.
+**Why it's wrong:** There is no efficient way to enumerate keys by prefix in localStorage. `localStorage.length` + iterating all keys is O(n) on total localStorage size, and a session with 100 questions × 6 emojis = 600 potential keys would be slow.
 
-**Do this instead:** Run ESLint with `--max-warnings 0` in pre-commit (fast, per-file). Run the full `tsc --noEmit` in the GitHub Actions CI pipeline (slow is acceptable there). Only run scoped `tsc` on staged files in pre-commit — `lint-staged` with file-glob patterns limits the scope.
-
-### Anti-Pattern 5: Storing AWS Credentials as Long-Lived Secrets
-
-**What people do:** Create an IAM user, generate access keys, store `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as GitHub repository secrets.
-
-**Why it's wrong:** Long-lived keys are a security risk. If the repository is compromised, the attacker has persistent AWS access. Keys also need rotation.
-
-**Do this instead:** Use GitHub Actions OIDC to assume a short-lived IAM role. The role credentials expire after the workflow run. No static keys to rotate or leak. The `aws-actions/configure-aws-credentials@v4` action handles the OIDC token exchange.
+**Do this instead:** Load lazily. `hasReacted(targetId, emoji)` reads and caches the per-item key on first access. Only items visible in the viewport will be accessed.
 
 ---
 
 ## Integration Points
 
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Sentry | `@sentry/nextjs` SDK wraps `next.config.ts`; three separate init files per runtime | Add `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` to Netlify env vars; `SENTRY_AUTH_TOKEN` to GitHub Actions secrets for source map upload |
-| GitHub Actions | `.github/workflows/` YAML; OIDC role assumption for AWS | Add `IAM_ROLE_ARN` and `AWS_ACCOUNT_ID` as GitHub Actions variables (not secrets) |
-| Netlify | `netlify.toml` already exists; Netlify auto-deploys from main; no changes needed for basic CI | Sentry DSN and other env vars must also be set in Netlify dashboard for server-side error tracking |
-| CloudWatch Logs | Lambda `console.log` / `pino` output automatically captured; no additional configuration | Logs visible in CloudWatch under `/aws/lambda/ResolverFn` log group |
-
 ### Internal Boundaries
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| Vitest tests ↔ `packages/core/` | Direct import — same monorepo, `@nasqa/core` path alias | No mocking needed; pure TypeScript |
-| Vitest tests ↔ AppSync mutations | Mock via `vi.mock('@/actions/*')` | Server Actions already isolated in `src/actions/` — clean mock boundary |
-| Sentry ↔ error boundaries | `useEffect(() => Sentry.captureException(error), [error])` in `error.tsx` | Manual capture because error boundaries run before Sentry's automatic instrumentation |
-| lint-staged ↔ packages | File-glob patterns route staged files to package-specific linters | Each package has its own `eslint.config.mjs`; lint-staged must use the correct working directory |
+| Boundary                                        | Communication                                 | Notes                                                      |
+| ----------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| `reaction-bar.tsx` ↔ `use-reactions.ts`         | Direct hook call                              | `useReactions` returns `{ counts, reactedEmojis, toggle }` |
+| `use-reactions.ts` ↔ `use-session-state.ts`     | `dispatch(ADD_REACTION_OPTIMISTIC)`           | Same reducer dispatch pattern as vote system               |
+| `use-reactions.ts` ↔ `use-fingerprint.ts`       | `hasReacted`, `addReaction`, `removeReaction` | Extended from existing fingerprint hook                    |
+| `use-reactions.ts` ↔ `actions/reactions.ts`     | Server Action call                            | Same `{ ok, error }` return pattern                        |
+| `actions/reactions.ts` ↔ AppSync                | `appsyncMutation(REACT, args)`                | Reuses existing `appsync-server.ts` helper                 |
+| `reactions.ts` resolver ↔ `rate-limit.ts`       | `checkNotBanned`, `checkRateLimit`            | No modification to rate-limit.ts needed                    |
+| `reactions.ts` resolver ↔ DynamoDB              | Flat attribute `ADD` + conditional            | Same pattern as `upvoteQuestion`                           |
+| `use-session-updates.ts` ↔ AppSync subscription | New case in existing switch                   | No new subscription wiring                                 |
+
+### External Services
+
+| Service  | Impact                           | Notes                                                                           |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------- |
+| AppSync  | Schema change required           | Add type, mutation, enum value, subscription list entry                         |
+| DynamoDB | New attributes on existing items | No table redesign; new attributes are sparse (added on first reaction)          |
+| Lambda   | New function (reactResolver)     | Wire in sst.config.ts; reuses existing DynamoDB client and rate-limit utilities |
 
 ---
 
-## Scalability Considerations
+## Scaling Considerations
 
-For the hardening milestone, scalability of the hardening layer itself is relevant:
-
-| Concern | Approach |
-|---------|----------|
-| Sentry event volume at 500 concurrent users | Set `tracesSampleRate: 0.1` (10% sampling) in Sentry init. Errors are always captured; performance traces are sampled. |
-| CloudWatch log costs | Set Lambda `LOG_LEVEL=info` in production; `LOG_LEVEL=debug` only in `sst dev`. At $0.50/GB ingested, structured JSON is cheaper than verbose unstructured logs. |
-| CI pipeline speed | Parallelize lint + typecheck + test jobs. With parallelism, total CI time should be under 3 minutes for this codebase size. |
-| Vitest test suite growth | Co-locate tests with components (`__tests__` next to `src`) rather than a monolithic test directory — easier to find and maintain as the component count grows. |
+| Concern                       | At current target (50-500 participants)                             | Notes                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| DynamoDB item size            | ~18KB worst case per item                                           | Well under 400KB limit                                                                                                               |
+| Reaction write throughput     | 500 users × 10 reactions/min = 5,000 writes/min per session         | DynamoDB on-demand handles this without configuration                                                                                |
+| Subscription broadcast volume | 1 REACTION_UPDATED event per reaction, broadcast to all subscribers | At 500 subscribers × 5,000 events/min = 2.5M messages/min. AppSync charges per million messages ($1.00). Monitor cost at this scale. |
+| localStorage key count        | 100 questions × 1 key per item = 100 new keys per session           | Negligible                                                                                                                           |
 
 ---
 
 ## Sources
 
-- Next.js Testing with Vitest — https://nextjs.org/docs/app/guides/testing/vitest (HIGH confidence — official docs, version 16.1.6, updated 2026-02-27)
-- Next.js Error Handling — https://nextjs.org/docs/app/getting-started/error-handling (HIGH confidence — official docs)
-- Sentry for Next.js — https://docs.sentry.io/platforms/javascript/guides/nextjs/ (HIGH confidence — official Sentry docs)
-- Sentry Next.js Manual Setup — https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/ (HIGH confidence — official Sentry docs)
-- GitHub Actions OIDC AWS — https://github.com/aws-actions/configure-aws-credentials (HIGH confidence — official AWS GitHub Action)
-- SST + GitHub Actions OIDC — https://towardsthecloud.com/blog/sst-nextjs-preview-environments-github-actions (MEDIUM confidence — community source, multiple corroborating sources agree on OIDC pattern)
-- Husky v9 setup — official Husky docs (HIGH confidence — training data consistent with search results showing `husky init` as canonical path)
-- AWS Lambda structured logging — https://docs.aws.amazon.com/lambda/latest/dg/nodejs-logging.html (HIGH confidence — official AWS docs)
-- pino-lambda — https://github.com/FormidableLabs/pino-lambda (MEDIUM confidence — Formidable-maintained, widely used)
-- Next.js generateMetadata — https://nextjs.org/docs/app/api-reference/functions/generate-metadata (HIGH confidence — official docs)
+All findings are HIGH confidence — derived from direct source code analysis of the existing codebase, DynamoDB official documentation on atomic operations, and AppSync subscription patterns already in production in this project.
+
+- DynamoDB `ADD` operation atomicity — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD (confirmed: ADD is atomic for numbers and sets at the top-level attribute scope only)
+- DynamoDB String Set operations — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html (confirmed: Unicode attribute names valid but require ExpressionAttributeNames escaping)
+- Existing `upvoteQuestion` resolver — `packages/functions/src/resolvers/qa.ts` (direct code analysis — the atomic Set pattern to mirror)
+- Existing `useFingerprint` hook — `packages/frontend/src/hooks/use-fingerprint.ts` (direct code analysis — the localStorage pattern to extend)
+- Existing subscription handler — `packages/frontend/src/hooks/use-session-updates.ts` (direct code analysis — the event switch to extend)
+- AppSync subscription `@aws_subscribe` — `infra/schema.graphql` (existing pattern to extend by adding `react` to the list)
 
 ---
 
-*Architecture research for: enterprise hardening — Nasqa Live v1.1*
-*Researched: 2026-03-15*
+_Architecture research for: emoji reactions — Nasqa Live v1.2_
+_Researched: 2026-03-15_
