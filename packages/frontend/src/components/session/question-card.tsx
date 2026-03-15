@@ -27,6 +27,35 @@ interface QuestionCardProps {
   onRestore?: (questionId: string) => void;
 }
 
+// Deterministic color from name string — 8 muted palette colors
+const AVATAR_COLORS = [
+  'bg-blue-500/15 text-blue-700 dark:text-blue-400',
+  'bg-violet-500/15 text-violet-700 dark:text-violet-400',
+  'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  'bg-rose-500/15 text-rose-700 dark:text-rose-400',
+  'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400',
+  'bg-pink-500/15 text-pink-700 dark:text-pink-400',
+  'bg-orange-500/15 text-orange-700 dark:text-orange-400',
+  'bg-teal-500/15 text-teal-700 dark:text-teal-400',
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!;
+}
+
+/** "Santiago Torres" → "Santiago T." */
+function formatDisplayName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length <= 1) return name.trim();
+  const first = parts[0];
+  const lastInitial = parts[parts.length - 1]![0]!.toUpperCase();
+  return `${first} ${lastInitial}.`;
+}
+
 function formatRelativeTime(createdAt: number, tSession: (key: string, values?: Record<string, number>) => string): string {
   const now = Math.floor(Date.now() / 1000);
   const diffSeconds = now - createdAt;
@@ -216,15 +245,55 @@ export function QuestionCard({
 
         {/* Content column */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <p className="break-words text-base leading-relaxed text-foreground">
-              {linkifyText(question.text)}
-            </p>
+          {/* Author row — avatar + name + time + host actions */}
+          <div className="mb-2 flex items-center gap-2.5">
+            {/* Avatar circle */}
+            {(() => {
+              const displayName = isOwn
+                ? tSession('you')
+                : question.authorName
+                  ? formatDisplayName(question.authorName)
+                  : tIdentity('anonymous');
+              const initial = (question.authorName ?? '?')[0]!.toUpperCase();
+              const colorClass = question.authorName
+                ? getAvatarColor(question.authorName)
+                : 'bg-muted text-muted-foreground';
+              return (
+                <>
+                  <span
+                    className={cn(
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                      isOwn ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : colorClass
+                    )}
+                  >
+                    {isOwn ? tSession('you')[0]!.toUpperCase() : initial}
+                  </span>
+                  <span className={cn(
+                    'text-[13px] font-semibold truncate max-w-[10rem]',
+                    isOwn ? 'text-emerald-600 dark:text-emerald-400' : question.authorName ? 'text-foreground/80' : 'text-muted-foreground/60'
+                  )}>
+                    {displayName}
+                  </span>
+                </>
+              );
+            })()}
+            <span className="text-[12px] text-muted-foreground/50">
+              {formatRelativeTime(question.createdAt, tSession)}
+            </span>
+
+            {/* Host: hidden badge */}
+            {isHost && question.isHidden && showHiddenContent && (
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
+                {t('hidden')}
+              </span>
+            )}
+
+            {/* Spacer */}
+            <div className="flex-1" />
 
             {/* Host inline moderation icons */}
             {isHost && (
-              <div className="flex flex-shrink-0 items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                {/* Focus toggle button */}
+              <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={handleFocusToggle}
                   aria-label={question.isFocused ? 'Unfocus question' : 'Focus question'}
@@ -233,52 +302,33 @@ export function QuestionCard({
                 >
                   <span className="text-xs font-bold">{question.isFocused ? '●' : '○'}</span>
                 </button>
-
-                {/* Ban question */}
                 <button
                   onClick={handleBanQuestionClick}
                   aria-label={t('banQuestion')}
                   title={t('banQuestion')}
                   className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <ShieldX className="h-4 w-4" />
+                  <ShieldX className="h-3.5 w-3.5" />
                 </button>
-
-                {/* Ban participant — opens confirmation dialog */}
                 <button
                   onClick={() => setBanConfirmOpen(true)}
                   aria-label={t('banParticipant')}
                   title={t('banParticipant')}
                   className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <Ban className="h-4 w-4" />
+                  <Ban className="h-3.5 w-3.5" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Metadata row */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
-            {isOwn && (
-              <span className="rounded-full bg-muted px-2.5 py-0.5 font-semibold text-foreground/70">
-                {tSession('you')}
-              </span>
-            )}
-            {!isOwn && question.authorName && (
-              <span className="font-medium text-foreground/70">
-                {question.authorName}
-              </span>
-            )}
-            {!isOwn && !question.authorName && (
-              <span className="text-muted-foreground/60">
-                {tIdentity('anonymous')}
-              </span>
-            )}
-            <span>
-              {formatRelativeTime(question.createdAt, tSession)}
-            </span>
+          {/* Question body */}
+          <p className="break-words text-base leading-relaxed text-foreground">
+            {linkifyText(question.text)}
+          </p>
 
-            {/* Reply count toggle */}
+          {/* Action row — reply count + reply button */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
             {replies.length > 0 && (
               <button
                 onClick={() => setShowReplies((v) => !v)}
@@ -288,21 +338,12 @@ export function QuestionCard({
                 {tSession('replyCount', { count: replies.length })}
               </button>
             )}
-
-            {/* Reply button */}
             <button
               onClick={() => setShowReplyInput((v) => !v)}
               className="font-semibold transition-colors hover:text-foreground"
             >
               {tSession('reply')}
             </button>
-
-            {/* Host: show hidden indicator for expanded hidden questions + focus toggle (text) */}
-            {isHost && question.isHidden && showHiddenContent && (
-              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500">
-                {t('hidden')}
-              </span>
-            )}
           </div>
 
           {/* Inline reply input */}
