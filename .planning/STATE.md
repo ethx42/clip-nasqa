@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-15)
+See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 6: Testing and CI)
+**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 6 complete, Phase 7 next)
 
 ## Current Position
 
-Phase: 6 of 8 (Testing and CI)
+Phase: 6 of 13 (Testing and CI — complete)
 Plan: 3 of 3 complete
-Status: Phase complete
-Last activity: 2026-03-16 — 06-03 complete: GitHub Actions CI pipeline with 4 parallel jobs (lint, typecheck, test, bundle-size) and npm/.next caching
+Status: Phase complete — ready to plan Phase 7
+Last activity: 2026-03-16 — v1.3 roadmap created (Phases 11-13); v1.1 Phase 6 previously complete
 
-Progress: [████████████░░░░░░░░] 60% (v1.0 complete, v1.1 Phase 6 complete, Phases 7-8 remaining)
+Progress: [████████░░░░░░░░░░░░] 40% (v1.0+v1.1 Phases 5-6 complete; Phases 7-13 remaining)
 
 ## Performance Metrics
 
@@ -48,26 +48,12 @@ _Updated after each plan completion_
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v1.3 Roadmap]: Phase 11 must land before Phase 12 — hook extraction enables unit-testable mutation handlers that verify stale closure fix before component surgery
+- [v1.3 Roadmap]: Phase 12 QAPanel cleanup (Step 7) before QuestionCard decomposition (Step 8) — panel must be in final state (accepting pre-sorted + Map props) when variants are introduced
+- [v1.3 Roadmap]: Phase 13 accessibility last — `hidden` attribute tab panel change (A11Y-05) must precede ARIA tablist roles (A11Y-04); sequencing last avoids merge conflicts during component surgery
 - [v1.1 Roadmap]: Compress 7 research phases to 4 (quick depth) — QUAL merged into Phase 5; TEST+CICD merged into Phase 6; ERR+OBS merged into Phase 7; SEO+A11Y merged into Phase 8
-- [v1.1 Research]: Pre-commit hooks must use `--config packages/frontend/eslint.config.mjs` explicitly — ESLint 9 flat config resolves relative to cwd, not package root
-- [v1.1 Research]: Vitest cannot test async Server Components — test strategy document needed before authoring begins (Playwright handles async RSCs)
-- [v1.1 Research]: Sentry `hostSecret` URL scrubbing is non-optional security requirement — must be in all three Sentry configs before any production traffic
-- [v1.1 Research]: `aria-live` regions must be unconditionally mounted before content appears — architectural constraint, not cosmetic addition
-- [05-01]: eslint-disable-next-line for react-hooks/set-state-in-effect must be on the line before the first setState call inside the effect, not before the useEffect() declaration
-- [05-01]: lint-staged.config.mjs (ESM extension) avoids needing "type: module" in root package.json
-- [05-01]: Defensive "prepare": "husky || true" prevents CI failures when devDependencies are skipped
-- [05-02]: Root tsconfig.json must exclude packages/frontend — root has no include restriction so tsc at root picks up all TSX files without JSX support producing hundreds of false errors
-- [05-02]: useRef -> useState when ref values are read during render — react-hooks/refs rule prohibits .current access in render; tracked state is safe to read in render
-- [06-01]: aws-sdk-client-mock-vitest v7 requires `import "aws-sdk-client-mock-vitest/extend"` in setupFiles — bare import no longer registers matchers (breaking change from v6)
-- [06-01]: vitest functions project needs setupFiles to register aws-sdk-client-mock-vitest matchers globally across all resolver test files
-- [06-01]: test.projects API used (not deprecated vitest.workspace.ts) — vitest run not vitest for CI-safe non-watch execution
-- [06-02]: Real next-intl messages used in component tests (no useTranslations mocks) — wrapping in NextIntlClientProvider with en.json catches translation key mismatches
-- [06-02]: Bundle size script uses rootManifestFiles + polyfillFiles from build-manifest.json — paths are relative to .next/ not /\_next/
 - [06-02]: 156.7kB initial JS baseline documented — aws-amplify ~68kB alone exceeds 80kB budget; CI must use continue-on-error until aws-amplify replaced
 - [06-03]: bundle-size job uses continue-on-error: true — aws-amplify adds ~68kB gzipped (known Phase 3 constraint); remove when replaced
-- [06-03]: Job names (lint, typecheck, test, bundle-size) must match exactly when configuring branch protection required status checks
-- [06-03]: Branch protection must be configured manually after first CI run on main — GitHub only shows check names that have run within 7 days
-- [06-03]: Frontend typecheck runs as separate step (npx tsc --noEmit -p packages/frontend/tsconfig.json) — root tsconfig excludes frontend (Phase 5 decision)
 
 ### Pending Todos
 
@@ -78,9 +64,11 @@ None yet.
 - [Phase 6]: SST Ion + GitHub Actions OIDC IAM permissions — exact IAM policy for `sst deploy --stage production` not documented in official SST Ion docs; needs empirical derivation during planning
 - [Phase 7]: AppSync `beforeSend` filter signatures — exact error strings from Amplify WebSocket reconnect cannot be pre-specified; plan for one tuning iteration after first live session
 - [Phase 8]: `aria-live` debounce for rapid upvote updates — 500ms quiet-period pattern correct in principle but needs VoiceOver/NVDA empirical validation during implementation
+- [Phase 11]: `useEffectEvent` vs `stateRef` vs reducer rollback for stale closure fix — three valid solutions; `useEffectEvent` is recommended (React 19.2.3 installed) but confirm during implementation
+- [Phase 12]: AnimatePresence `mode` under high load — validate `mode="sync"` vs default during Phase 12 testing; changing mode after the fact is a one-line fix if needed
 
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Milestone v1.3 definition started — requirements and roadmap pending
+Stopped at: v1.3 roadmap (Phases 11-13) created; next action is to plan Phase 7
 Resume file: None

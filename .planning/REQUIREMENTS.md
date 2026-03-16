@@ -172,34 +172,33 @@
 | RXN-11      | Phase 10 | Pending  |
 | RXN-12      | Phase 10 | Pending  |
 | RXN-13      | Phase 10 | Pending  |
-
-| STRUC-01 | TBD | Pending |
-| STRUC-02 | TBD | Pending |
-| STRUC-03 | TBD | Pending |
-| STRUC-04 | TBD | Pending |
-| STRUC-05 | TBD | Pending |
-| STRUC-06 | TBD | Pending |
-| UXINT-01 | TBD | Pending |
-| UXINT-02 | TBD | Pending |
-| UXINT-03 | TBD | Pending |
-| UXINT-04 | TBD | Pending |
-| UXINT-05 | TBD | Pending |
-| UXINT-06 | TBD | Pending |
-| UXINT-07 | TBD | Pending |
-| A11Y-04 | TBD | Pending |
-| A11Y-05 | TBD | Pending |
-| A11Y-06 | TBD | Pending |
-| A11Y-07 | TBD | Pending |
+| STRUC-01    | Phase 11 | Pending  |
+| STRUC-02    | Phase 11 | Pending  |
+| STRUC-06    | Phase 11 | Pending  |
+| STRUC-03    | Phase 12 | Pending  |
+| STRUC-04    | Phase 12 | Pending  |
+| STRUC-05    | Phase 12 | Pending  |
+| UXINT-01    | Phase 13 | Pending  |
+| UXINT-02    | Phase 13 | Pending  |
+| UXINT-03    | Phase 13 | Pending  |
+| UXINT-04    | Phase 13 | Pending  |
+| UXINT-05    | Phase 13 | Pending  |
+| UXINT-06    | Phase 13 | Pending  |
+| UXINT-07    | Phase 13 | Pending  |
+| A11Y-04     | Phase 13 | Pending  |
+| A11Y-05     | Phase 13 | Pending  |
+| A11Y-06     | Phase 13 | Pending  |
+| A11Y-07     | Phase 13 | Pending  |
 
 **Coverage:**
 
 - v1.1 requirements: 23 total (10 complete, 13 pending)
 - v1.2 requirements: 14 total (0 complete, 14 pending)
 - v1.3 requirements: 17 total (0 complete, 17 pending)
-- Mapped to phases: 23 (v1.1) + 14 (v1.2) = 37 total
-- Unmapped: 17 (v1.3 — awaiting roadmap)
+- Mapped to phases: 23 (v1.1) + 14 (v1.2) + 17 (v1.3) = 54 total
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-03-15_
-_Last updated: 2026-03-16 after v1.3 requirements definition_
+_Last updated: 2026-03-16 after v1.3 roadmap (Phases 11-13) created_
