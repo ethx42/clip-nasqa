@@ -154,7 +154,13 @@ Plans:
 2. Opening a pull request triggers a GitHub Actions run that runs lint, typecheck, and tests in parallel — a PR cannot be merged if any job fails
 3. The Actions run completes in under 3 minutes for a typical PR thanks to node_modules and .next caching
 4. A CI job fails if the gzipped initial JS bundle exceeds the 80kB budget
-   **Plans**: TBD
+   **Plans**: 3 plans
+
+Plans:
+
+- [ ] 06-01-PLAN.md — Vitest monorepo setup, core schema tests, Lambda resolver tests
+- [ ] 06-02-PLAN.md — React component tests with RTL + next-intl, bundle size regression guard
+- [ ] 06-03-PLAN.md — GitHub Actions CI workflow with parallel jobs and caching
 
 ### Phase 7: Error Handling and Observability
 
