@@ -10,6 +10,7 @@
     "build": "npm run build --workspace=packages/frontend",
     "lint": "npm run lint --workspace=packages/frontend",
     "typecheck": "npm run typecheck --workspace=packages/core && npm run typecheck --workspace=packages/functions",
+    "test": "vitest run",
     "deploy": "npm run lint && npm run typecheck && AWS_REGION=us-east-1 sst deploy",
     "prepare": "husky || true"
   },
@@ -23,9 +24,19 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^6.0.1",
+    "aws-sdk-client-mock": "^4.1.0",
+    "aws-sdk-client-mock-vitest": "^7.0.1",
     "eslint-config-prettier": "10.1.8",
     "husky": "9.1.7",
+    "jsdom": "^29.0.0",
     "lint-staged": "16.4.0",
-    "prettier": "3.8.1"
+    "prettier": "3.8.1",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.0"
   }
 }
