@@ -203,7 +203,12 @@ Plans:
 3. Every icon-only button (upvote, downvote, copy snippet, delete, theme toggle, language switcher) has an ARIA label readable by VoiceOver
 4. The session page structure uses semantic landmark elements (`main`, `section`, `article`, `header`) — no layout-div soup for primary regions
 5. Tabbing through the session page reaches every interactive element in logical order with a visible focus ring; the Q&A feed announces new questions to screen readers via an `aria-live` region
-   **Plans**: TBD
+   **Plans**: 2 plans
+
+Plans:
+
+- [ ] 08-01-PLAN.md — SEO: robots.txt, sitemap.xml, OG image, generateMetadata, metadataBase, JSON-LD
+- [ ] 08-02-PLAN.md — Accessibility: semantic HTML landmarks, ARIA labels, aria-live region, skip-to-content link, focus rings
 
 ### Phase 9: Reactions Data Model and Backend
 
@@ -288,7 +293,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 
 | 5. Code Quality Gates                           | v1.1      | 2/2            | Complete    | 2026-03-15 |
 | 6. Testing and CI                               | v1.1      | 3/3            | Complete    | 2026-03-16 |
 | 7. Error Handling and Observability             | 3/3       | Complete       | 2026-03-16  | -          |
-| 8. SEO and Accessibility                        | v1.1      | 0/TBD          | Not started | -          |
+| 8. SEO and Accessibility                        | v1.1      | 0/2            | Not started | -          |
 | 9. Reactions Data Model and Backend             | v1.2      | 0/TBD          | Not started | -          |
 | 10. Reactions Frontend State and UI             | v1.2      | 0/TBD          | Not started | -          |
 | 11. Shared Utilities and Hook Extraction        | v1.3      | 0/TBD          | Not started | -          |
