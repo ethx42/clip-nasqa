@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 7 of 13 (Error Handling and Observability — complete)
-Plan: 2 of 2 complete
-Status: Phase 7 complete; Phase 8 next
-Last activity: 2026-03-16 — Phase 7 Plan 02 complete (ActionResult type + toast error handling)
+Plan: 3 of 3 complete
+Status: Phase 7 complete (including gap closure 07-03); Phase 8 next
+Last activity: 2026-03-16 — Phase 7 Plan 03 complete (gap closure: safeAction wrapper + noValidate form)
 
 Progress: [██████████░░░░░░░░░░] 46% (v1.0+v1.1 Phases 5-7 complete; Phase 8 next)
 
@@ -33,11 +33,11 @@ Progress: [██████████░░░░░░░░░░] 46% (v1
 | 03-real-time-core                   | 6     | 30 min | 5 min    |
 | 04-moderation-identity-and-polish   | 4     | 20 min | 5 min    |
 | 05-code-quality-gates               | 2     | 18 min | 9 min    |
-| 07-error-handling-and-observability | 2     | 13 min | 6.5 min  |
+| 07-error-handling-and-observability | 3     | 17 min | 5.7 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: 04-03 (12 min), 04-04 (paused), 07-01 (5 min), 07-02 (8 min)
+- Last 5 plans: 04-03 (12 min), 04-04 (paused), 07-01 (5 min), 07-02 (8 min), 07-03 (4 min)
 - Trend: stable
 
 _Updated after each plan completion_
@@ -61,6 +61,9 @@ Recent decisions affecting current work:
 - [07-01]: error.tsx classifies connection vs server errors by digest presence + message keywords — connection lost vs server error hint per user decision
 - [07-02]: landing page converted to client component using useActionState (React 19) to handle createSession returning ActionResult
 - [07-02]: VOTE_CONFLICT kept as string control code in upvoteQuestionAction — not localized, consumed by client as dedup signal
+- [07-03]: safeAction uses R extends {success: boolean} type parameter — accommodates upvoteQuestionAction VOTE_CONFLICT union type without ActionResult<unknown> mismatch
+- [07-03]: networkErrorMessage passed as parameter to safeAction — keeps utility free of useTranslations (non-React function, no hook rules)
+- [07-03]: noValidate + remove required on landing form — routes all validation through server action for unified toast UX
 
 ### Pending Todos
 
@@ -77,5 +80,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Completed 07-02-PLAN.md (ActionResult type + toast error handling); Phase 7 complete
+Stopped at: Completed 07-03-PLAN.md (gap closure: safeAction wrapper + noValidate form); Phase 7 fully complete
 Resume file: None
