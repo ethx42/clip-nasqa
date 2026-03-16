@@ -63,6 +63,7 @@ export default function Home() {
 
           <form
             action={formAction}
+            noValidate
             className="mx-auto mt-10 flex w-full max-w-lg flex-col gap-3 sm:flex-row"
           >
             <input
@@ -70,7 +71,6 @@ export default function Home() {
               type="text"
               maxLength={50}
               placeholder={t("landing.placeholder")}
-              required
               className="flex-1 rounded-xl border border-input bg-background px-5 py-3.5 text-base text-foreground placeholder:text-muted-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             />
             <button
