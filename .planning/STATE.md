@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 5: Code Quality Gates)
+**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 6: Testing and CI)
 
 ## Current Position
 
-Phase: 5 of 8 (Code Quality Gates)
-Plan: 2 of 2 complete
-Status: Phase complete
-Last activity: 2026-03-15 — 05-02 complete: Prettier formatting baseline applied, TypeScript strict verified on all four compile surfaces
+Phase: 6 of 8 (Testing and CI)
+Plan: 1 of 3 complete
+Status: In progress
+Last activity: 2026-03-15 — 06-01 complete: Vitest 4 configured, 58 unit tests passing for Zod schemas and Lambda resolvers
 
-Progress: [█████████░░░░░░░░░░░] 47% (v1.0 complete, v1.1 Phase 5 complete)
+Progress: [██████████░░░░░░░░░░] 52% (v1.0 complete, v1.1 Phases 5-6 in progress)
 
 ## Performance Metrics
 
@@ -58,6 +58,9 @@ Recent decisions affecting current work:
 - [05-01]: Defensive "prepare": "husky || true" prevents CI failures when devDependencies are skipped
 - [05-02]: Root tsconfig.json must exclude packages/frontend — root has no include restriction so tsc at root picks up all TSX files without JSX support producing hundreds of false errors
 - [05-02]: useRef -> useState when ref values are read during render — react-hooks/refs rule prohibits .current access in render; tracked state is safe to read in render
+- [06-01]: aws-sdk-client-mock-vitest v7 requires `import "aws-sdk-client-mock-vitest/extend"` in setupFiles — bare import no longer registers matchers (breaking change from v6)
+- [06-01]: vitest functions project needs setupFiles to register aws-sdk-client-mock-vitest matchers globally across all resolver test files
+- [06-01]: test.projects API used (not deprecated vitest.workspace.ts) — vitest run not vitest for CI-safe non-watch execution
 
 ### Pending Todos
 
@@ -72,5 +75,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-15
-Stopped at: Completed 05-02-PLAN.md (Prettier formatting baseline + TypeScript strict verification)
+Stopped at: Completed 06-01-PLAN.md (Vitest 4 monorepo configured, 58 unit tests for schemas and Lambda resolvers)
 Resume file: None

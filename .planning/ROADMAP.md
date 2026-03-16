@@ -229,7 +229,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8 → 9 → 10
 | 3. Real-Time Core                   | v1.0      | 6/6            | Complete    | 2026-03-14 |
 | 4. Moderation, Identity, and Polish | v1.0      | 4/4            | Complete    | 2026-03-14 |
 | 5. Code Quality Gates               | v1.1      | 2/2            | Complete    | 2026-03-15 |
-| 6. Testing and CI                   | v1.1      | 0/TBD          | Not started | -          |
+| 6. Testing and CI                   | 1/3       | In Progress    |             | -          |
 | 7. Error Handling and Observability | v1.1      | 0/TBD          | Not started | -          |
 | 8. SEO and Accessibility            | v1.1      | 0/TBD          | Not started | -          |
 | 9. Reactions Data Model and Backend | v1.2      | 0/TBD          | Not started | -          |
