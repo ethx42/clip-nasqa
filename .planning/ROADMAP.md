@@ -183,12 +183,13 @@ Plans:
 3. Navigating to a slug that does not exist (or has expired) renders a branded `not-found.tsx` page with a "session has ended" message
 4. Calling `createSession` or a Q&A server action with invalid input returns a typed error object — no unhandled exception reaches the client
 5. Lambda resolver logs appear in CloudWatch as structured JSON objects with level, sessionSlug, operation, and durationMs fields
-   **Plans**: 2 plans
+   **Plans**: 3 plans
 
 Plans:
 
-- [ ] 07-01-PLAN.md — Error boundary files (global-error, session error, not-found), reportError stub, pino structured logging in Lambda
-- [ ] 07-02-PLAN.md — Server action structured error contract (ActionResult type), i18n error messages, client-side toast handling
+- [x] 07-01-PLAN.md — Error boundary files (global-error, session error, not-found), reportError stub, pino structured logging in Lambda
+- [x] 07-02-PLAN.md — Server action structured error contract (ActionResult type), i18n error messages, client-side toast handling
+- [ ] 07-03-PLAN.md — UAT gap closure: fix landing page validation path + safeAction wrapper for network error resilience
 
 ### Phase 8: SEO and Accessibility
 
@@ -286,7 +287,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 
 | 4. Moderation, Identity, and Polish             | v1.0      | 4/4            | Complete    | 2026-03-14 |
 | 5. Code Quality Gates                           | v1.1      | 2/2            | Complete    | 2026-03-15 |
 | 6. Testing and CI                               | v1.1      | 3/3            | Complete    | 2026-03-16 |
-| 7. Error Handling and Observability             | 2/2       | Complete       | 2026-03-16  | -          |
+| 7. Error Handling and Observability             | v1.1      | 2/3            | Gap closure | -          |
 | 8. SEO and Accessibility                        | v1.1      | 0/TBD          | Not started | -          |
 | 9. Reactions Data Model and Backend             | v1.2      | 0/TBD          | Not started | -          |
 | 10. Reactions Frontend State and UI             | v1.2      | 0/TBD          | Not started | -          |
