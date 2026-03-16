@@ -82,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Completed 06-02-PLAN.md (16 frontend component tests for QuestionCard + QAInput, bundle size guard script)
+Stopped at: Milestone v1.3 definition started — requirements and roadmap pending
 Resume file: None

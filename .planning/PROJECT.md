@@ -80,6 +80,25 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - Rate limiting and ban enforcement for reactions
 - Optimistic UI with same patterns as vote system
 
+## Future Milestone: v1.3 Participant & Host UX Refactor
+
+**Goal:** Decompose monolithic session components, eliminate code duplication, and implement interaction improvements across both participant and host views — making the interface honest, accessible, and structurally sound.
+
+**Target features:**
+
+- Extract `useSessionMutations` hook from SessionLivePage (270-line God Orchestrator → 40-line composition root)
+- Shared `formatRelativeTime` utility (deduplicate from 3 files)
+- Extract `SnippetCard` to own file, memoize `repliesByQuestion` grouping
+- Remove duplicate sorting from QAPanel (accept pre-sorted, own only debounced visual stability)
+- Split `QuestionCard` into state-specific variants (normal, banned, hidden)
+- Identity chip in QAInput (avatar + name, click to edit)
+- ARIA tablist semantics for SessionShell mobile tabs
+- Auto-expand replies for focused questions, merge reply action into reply section
+- Vote button animation + mutual-exclusion visual feedback
+- Enhanced empty states with contextual copy
+- Visual "own question" indicator (left border)
+- `aria-live` on NewContentBanner, `active:scale-95` on vote buttons
+
 ## Context
 
 - **Stack**: Next.js 16 + SST Ion (AWS) + DynamoDB + AppSync
@@ -110,4 +129,4 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ---
 
-_Last updated: 2026-03-15 after milestone v1.2 definition_
+_Last updated: 2026-03-16 after milestone v1.3 definition_
