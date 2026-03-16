@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Project:** Nasqa Live — real-time presentation session tool (live clipboard + Q&A)
-**Researched:** 2026-03-13 (production stack) | 2026-03-15 (v1.1 enterprise hardening additions) | 2026-03-15 (v1.2 reactions additions)
+**Researched:** 2026-03-13 (production stack) | 2026-03-15 (v1.1 enterprise hardening additions) | 2026-03-15 (v1.2 reactions additions) | 2026-03-16 (v1.3 participant & host UX refactor)
 **Confidence:** HIGH (all versions verified from actual installed package.json files in the codebase)
 
 ---
@@ -980,3 +980,676 @@ npx husky init
 
 _Stack research for: Nasqa Live — emoji reactions (v1.2)_
 _Researched: 2026-03-15_
+
+---
+
+## Part 4: Participant & Host UX Refactor (v1.3 — Patterns, Not New Libraries)
+
+**Scope:** Decompose monolithic session components, add ARIA semantics, implement CSS
+micro-interactions, and improve real-time accessibility. This milestone adds **zero new npm
+packages**. Every capability is already installed. The work is pattern application.
+
+**Confidence:** HIGH — all ARIA specs verified against W3C APG and MDN (current 2026). CSS
+patterns verified against Tailwind CSS v4 docs. React 19.2 patterns verified against official
+React docs.
+
+---
+
+### Key Finding: Zero New Packages Required
+
+| Needed Capability                       | Provided By                             | Already Installed     |
+| --------------------------------------- | --------------------------------------- | --------------------- |
+| ARIA tablist/tab/tabpanel semantics     | Native HTML attributes                  | n/a — pure markup     |
+| `aria-live` for real-time announcements | Native HTML attribute                   | n/a — pure markup     |
+| CSS micro-interactions (scale, color)   | Tailwind CSS v4 `active:` variant       | Yes — tailwindcss 4.x |
+| Framer Motion `layout` transitions      | framer-motion 12.36.0                   | Yes                   |
+| Custom hook extraction                  | React 19.2 `useReducer` / `useCallback` | Yes — react 19.2.3    |
+| Identity chip component                 | `useIdentity` hook + Tailwind           | Yes — hook exists     |
+| `useEffectEvent` for stable event refs  | React 19.2                              | Yes — react 19.2.3    |
+
+**What NOT to add:** `@react-aria/live-announcer` — despite being a legitimate solution to React
+`aria-live` lifecycle problems, it adds ~3 kB gzipped and its pattern (persistent DOM + message
+service) can be replicated with 15 lines of vanilla React at zero cost to the bundle. See
+**Pattern 3: aria-live** below for the exact implementation.
+
+---
+
+### Pattern 1: ARIA Tablist Semantics for SessionShell Mobile Tabs
+
+**Problem:** The current `SessionShell` mobile tab bar uses plain `<button>` elements with
+`onClick`. Screen readers announce them as buttons, not as a tab navigation control. Keyboard
+navigation (Left/Right arrow keys) does not work. The active panel is not associated with its tab.
+
+**W3C APG requirement (HIGH confidence — verified against https://www.w3.org/WAI/ARIA/apg/patterns/tabs/):**
+
+| Element         | Required attributes                                     | Active tab                             | Inactive tabs                            |
+| --------------- | ------------------------------------------------------- | -------------------------------------- | ---------------------------------------- |
+| Container div   | `role="tablist"` + `aria-label`                         | —                                      | —                                        |
+| Each tab button | `role="tab"` + `aria-controls` + `aria-selected` + `id` | `aria-selected="true"`, `tabindex="0"` | `aria-selected="false"`, `tabindex="-1"` |
+| Each panel div  | `role="tabpanel"` + `aria-labelledby` + `id`            | rendered                               | hidden (or `hidden` attr)                |
+
+**Keyboard model:** Left/Right Arrow keys move between tabs. Enter/Space activates.
+Focus management: active tab has `tabindex="0"`; inactive tabs have `tabindex="-1"`.
+Tab key moves focus INTO the active panel (not to the next tab).
+
+**Implementation for SessionShell:**
+
+```tsx
+// session-shell.tsx — replace the plain <button> tab bar with:
+
+const clipboardTabId = "tab-clipboard";
+const qaTabId = "tab-qa";
+const clipboardPanelId = "panel-clipboard";
+const qaPanelId = "panel-qa";
+
+function handleKeyDown(e: React.KeyboardEvent, current: Tab) {
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    e.preventDefault();
+    const next = current === "clipboard" ? "qa" : "clipboard";
+    handleTabChange(next);
+    // Move focus to the newly activated tab
+    document.getElementById(next === "clipboard" ? clipboardTabId : qaTabId)?.focus();
+  }
+}
+
+// Tab bar markup:
+<div role="tablist" aria-label={t("sessionTabs")} className="flex border-b border-border lg:hidden">
+  <button
+    id={clipboardTabId}
+    role="tab"
+    aria-selected={activeTab === "clipboard"}
+    aria-controls={clipboardPanelId}
+    tabIndex={activeTab === "clipboard" ? 0 : -1}
+    onClick={() => handleTabChange("clipboard")}
+    onKeyDown={(e) => handleKeyDown(e, "clipboard")}
+    className={...}
+  >
+    <ClipboardList className="h-4 w-4" aria-hidden />
+    {t("clipboard")}
+    {clipboardBadge && (
+      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
+    )}
+  </button>
+  <button
+    id={qaTabId}
+    role="tab"
+    aria-selected={activeTab === "qa"}
+    aria-controls={qaPanelId}
+    tabIndex={activeTab === "qa" ? 0 : -1}
+    onClick={() => handleTabChange("qa")}
+    onKeyDown={(e) => handleKeyDown(e, "qa")}
+    className={...}
+  >
+    <MessageCircleQuestion className="h-4 w-4" aria-hidden />
+    {t("qa")}
+    {qaBadge && (
+      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
+    )}
+  </button>
+</div>
+
+// Panel markup — mobile single panel:
+<div className="flex h-full w-full lg:hidden">
+  <div
+    id={clipboardPanelId}
+    role="tabpanel"
+    aria-labelledby={clipboardTabId}
+    tabIndex={0}
+    hidden={activeTab !== "clipboard"}
+    className="h-full w-full"
+  >
+    {clipboardSlot}
+  </div>
+  <div
+    id={qaPanelId}
+    role="tabpanel"
+    aria-labelledby={qaTabId}
+    tabIndex={0}
+    hidden={activeTab !== "qa"}
+    className="h-full w-full"
+  >
+    {qaSlot}
+  </div>
+</div>
+```
+
+**Why `hidden` attribute instead of conditional render:** The `hidden` attribute preserves the
+panel's DOM node, which means AppSync subscription-driven state updates continue to land in the
+reducer even when a panel is not visible. Conditional render would unmount the panel component and
+lose its scroll position. `hidden` is also the pattern recommended by W3C APG for tabs that do not
+load lazily.
+
+**i18n:** Add `sessionTabs` key to all three locale files (`en.json`, `es.json`, `pt.json`).
+
+---
+
+### Pattern 2: CSS Micro-Interactions for Vote Buttons
+
+**Problem:** The current upvote/downvote buttons in `QuestionCard` have `transition-colors` but no
+scale feedback on press. Participants clicking a vote button get no immediate tactile confirmation
+that their tap registered — critical on mobile where network latency hides the response.
+
+**Tailwind v4 active-state scale pattern (HIGH confidence — verified against Tailwind CSS docs):**
+
+```tsx
+// QuestionCard.tsx — upvote button
+<button
+  onClick={handleUpvoteClick}
+  aria-label={isVoted ? tSession("removeUpvote") : tSession("upvoteQuestion")}
+  aria-pressed={isVoted}  // ← add: communicates toggle state to screen readers
+  className={cn(
+    "rounded-lg p-1.5 transition-all duration-150",
+    // Scale feedback: press squishes to 90%, releases to 100%
+    "active:scale-90",
+    // Color: instant when activated (optimistic), smooth on deactivate
+    isVoted
+      ? "text-emerald-500 hover:text-emerald-400"
+      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+  )}
+>
+  <ChevronUp className="h-5 w-5" />
+</button>
+
+// Downvote button — same pattern with rose accent
+<button
+  onClick={handleDownvoteClick}
+  aria-label={isDownvoted ? tSession("removeDownvote") : tSession("downvoteQuestion")}
+  aria-pressed={isDownvoted}  // ← add
+  className={cn(
+    "mt-1 rounded-lg p-1.5 transition-all duration-150",
+    "active:scale-90",
+    isDownvoted
+      ? "text-rose-500 hover:text-rose-400"
+      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+  )}
+>
+  <ThumbsDown className="h-4 w-4" />
+</button>
+```
+
+**Why `active:scale-90` over `active:scale-95`:** The vote column is compact (icon-only buttons).
+A 5% scale reduction (`scale-95`) is barely perceptible on a 20px icon. `scale-90` provides
+clear visual feedback. The DESIGN_SYSTEM.md specifies `active:scale-[0.98]` for primary CTAs —
+that conservative value applies to large pill buttons. Compact icon buttons benefit from a
+slightly stronger scale signal.
+
+**Why `transition-all duration-150` instead of `transition-colors`:** The vote count text next to
+the button also changes color (emerald/rose vs. muted). A single `transition-all` covers both the
+button's color change and the sibling span's color change via CSS cascade. `duration-150` is fast
+enough to feel instant (optimistic UI) while still smoothing the transition.
+
+**Mutual exclusion visual feedback:** When a user clicks upvote while downvoted (or vice versa),
+the state machine in `handleUpvoteClick` already removes the opposing vote first. The visual
+feedback is handled entirely by the `isVoted` / `isDownvoted` conditional classes above — no
+additional animation state needed.
+
+**`aria-pressed`:** Toggle buttons must communicate their pressed state to screen readers.
+`aria-pressed={isVoted}` announces "upvote, toggle button, pressed" or "upvote, toggle button,
+not pressed" to VoiceOver/NVDA. Without this, screen reader users have no way to know if their
+upvote was applied.
+
+---
+
+### Pattern 3: `aria-live` for NewContentBanner
+
+**Problem:** The current `NewContentBanner` appears/disappears from the DOM based on the `visible`
+prop (`if (!visible) return null`). This conditional render pattern silently fails for screen
+readers — assistive technologies never observe a text change event because the element is created
+from scratch each time, not updated in place.
+
+**Root cause (HIGH confidence — verified k9n.dev/blog/2025-11-aria-live, November 2025):**
+Screen readers track `aria-live` regions by element identity in the DOM tree. When React
+unmounts and remounts the element, the AT loses its reference and the announcement never fires.
+
+**Correct pattern — persistent live region with content swap:**
+
+```tsx
+// new-content-banner.tsx — replace conditional render with persistent element
+
+export function NewContentBanner({ message, visible, onTap }: NewContentBannerProps) {
+  const t = useTranslations("session");
+
+  // The aria-live region MUST remain mounted — screen readers track it by DOM identity.
+  // We hide it visually and empty its content when not visible.
+  // The live region announces when `message` changes while `visible` is true.
+  return (
+    <>
+      {/* Always-mounted announcer: polite so it doesn't interrupt ongoing narration */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {visible ? message : ""}
+      </div>
+
+      {/* Visual banner — only rendered when visible (no AT implications) */}
+      {visible && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onTap}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") onTap();
+          }}
+          className="sticky top-0 z-10 cursor-pointer select-none bg-emerald-500 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-md"
+        >
+          {message} · {t("tapToScroll")}
+        </div>
+      )}
+    </>
+  );
+}
+```
+
+**Why `aria-live="polite"` not `"assertive"`:** A new question arriving is informational, not
+urgent. `assertive` would interrupt any narration in progress (e.g. the user listening to an
+existing question being read). `polite` waits for a pause, which is the right behavior. Use
+`assertive` only for error states or time-critical alerts.
+
+**Why `aria-atomic="true"`:** Without it, some screen readers announce only the changed portion of
+the text (e.g., just the count changing from "1 new question" to "2 new questions" — announcing
+"2"). `aria-atomic="true"` forces the whole announcement to be re-read.
+
+**Why two elements instead of one:** The visual banner uses `position: sticky` and needs to be
+inside the scroll container. The `aria-live` announcer does not need to be visible or interact with
+layout — keeping them separate avoids CSS interference. The `sr-only` class (`position: absolute;
+width: 1px; height: 1px; overflow: hidden; ...`) hides the announcer from sighted users while
+keeping it in the accessibility tree.
+
+**Important initialization rule:** The `aria-live` div is always mounted (not conditionally
+rendered). This registers it with the AT before any content appears. Populating content after
+mount guarantees the AT observes a text change event.
+
+---
+
+### Pattern 4: Custom Hook Extraction — `useSessionMutations`
+
+**Problem:** `SessionLiveHostPage` is a 270-line God Orchestrator containing 9 async mutation
+handlers. Each handler follows the same pattern: optimistic dispatch → server action → rollback on
+failure. This logic belongs in a domain hook, not a render component.
+
+**React 19.2 guidance (HIGH confidence — verified react.dev/learn/reusing-logic-with-custom-hooks):**
+Extract non-reusable hooks to make the parent component easier to understand, even when the hook is
+not shared across components.
+
+**Extraction target — `useSessionMutations` hook:**
+
+```typescript
+// packages/frontend/src/hooks/use-session-mutations.ts
+"use client";
+
+import { useTranslations } from "next-intl";
+import { useCallback } from "react";
+import { toast } from "sonner";
+
+import type { SessionAction } from "./use-session-state";
+
+interface UseSessionMutationsArgs {
+  sessionSlug: string;
+  hostSecretHash: string;
+  fingerprint: string;
+  authorName: string | undefined;
+  dispatch: React.Dispatch<SessionAction>;
+  state: { questions: Question[] };
+  votedIds: Set<string>;
+  downvotedIds: Set<string>;
+  addVote: (id: string) => void;
+  removeVote: (id: string) => void;
+  addDownvote: (id: string) => void;
+  removeDownvote: (id: string) => void;
+}
+
+export function useSessionMutations(args: UseSessionMutationsArgs) {
+  const tCommon = useTranslations("common");
+
+  const handleUpvote = useCallback(
+    async (questionId: string, remove: boolean) => {
+      // ... optimistic dispatch + action call + rollback
+    },
+    [args.dispatch, args.sessionSlug, args.fingerprint, args.votedIds, tCommon],
+  );
+
+  // ... other handlers
+
+  return {
+    handleUpvote,
+    handleDownvote,
+    handleAddQuestion,
+    handleReply,
+    handleFocusQuestion,
+    handleDeleteSnippet,
+    handleClearClipboard,
+    handleBanQuestion,
+    handleBanParticipant,
+    handleRestoreQuestion,
+  };
+}
+```
+
+**Resulting SessionLiveHostPage (composition root, ~40 lines):**
+
+```tsx
+export function SessionLiveHostPage({ session, sessionSlug, rawSecret, ... }) {
+  const { name: authorName } = useIdentity();
+  const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
+    useFingerprint(sessionSlug);
+  const { state, dispatch, sortedQuestions, bannedFingerprints } = useSessionState({ ... });
+  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionSlug, dispatch);
+  const [hostSecretHash, setHostSecretHash] = useState("");
+
+  useEffect(() => { /* secret hashing */ }, [sessionSlug, rawSecret]);
+
+  const mutations = useSessionMutations({
+    sessionSlug, hostSecretHash, fingerprint, authorName,
+    dispatch, state, votedIds, downvotedIds,
+    addVote, removeVote, addDownvote, removeDownvote,
+  });
+
+  return (
+    <SessionShell
+      title={session.title}
+      sessionSlug={sessionSlug}
+      isHost
+      hostToolbar={hostToolbar}
+      snippetCount={state.snippets.length}
+      questionCount={state.questions.length}
+      liveIndicator={<LiveIndicator ... />}
+      clipboardSlot={<ClipboardPanel isHost ... onDeleteSnippet={mutations.handleDeleteSnippet} ... />}
+      qaSlot={<QAPanel isHost ... onUpvote={mutations.handleUpvote} ... />}
+    />
+  );
+}
+```
+
+**Why `useCallback` on each handler:** The handlers are passed as props to `ClipboardPanel` and
+`QAPanel`. Without memoization, every re-render of the host page (e.g., on real-time question
+arrival) creates new function references, forcing both panels to re-render even if their data
+hasn't changed. `useCallback` stabilizes references so React's prop comparison works correctly.
+
+**React Compiler note:** The React Compiler (available as opt-in Babel plugin in React 19) would
+eliminate the need for manual `useCallback`. This project does not currently use the compiler.
+If it is adopted in a future milestone, `useCallback` wrappers can be removed then — they are
+not harmful to leave in place.
+
+---
+
+### Pattern 5: `useMemo` for `repliesByQuestion` in QAPanel
+
+**Problem:** `QAPanel` currently rebuilds the `repliesByQuestion` Map on every render in the
+component body (not memoized). With 50-500 questions and replies, this is O(n) work on every
+keystroke in the QA input, every vote arriving via WebSocket, and every sort debounce tick.
+
+**Fix:**
+
+```typescript
+// qa-panel.tsx — replace the imperative Map construction with useMemo
+const repliesByQuestion = useMemo(() => {
+  const map = new Map<string, Reply[]>();
+  for (const reply of replies) {
+    const existing = map.get(reply.questionId) ?? [];
+    existing.push(reply);
+    map.set(reply.questionId, existing);
+  }
+  return map;
+}, [replies]); // Only rebuild when replies array reference changes (after reducer dispatch)
+```
+
+**Why this works:** `useSessionState` returns `state.replies` which only gets a new array
+reference when the reducer processes a `REPLY_ADDED` action. Between reply events, `replies` is
+the same array reference — `useMemo` returns the cached Map.
+
+**Do not move this to `useSessionState`:** The hook returns raw arrays. Returning a Map from the
+hook would couple state management to a specific rendering concern (grouping). The consumer
+(QAPanel) owns the grouping concern.
+
+---
+
+### Pattern 6: Identity Chip in QAInput
+
+**Problem:** The QA input area has no visible indication of who is posting. Participants need to
+see their current identity before submitting a question, and tap to edit it in place rather than
+hunting for the User icon in the header.
+
+**Component pattern — inline identity chip with click-to-edit:**
+
+```tsx
+// qa-input.tsx — add above or below the textarea
+
+import { useFingerprint } from "@/hooks/use-fingerprint";
+import { useIdentity } from "@/hooks/use-identity";
+
+import { PixelAvatar } from "./pixel-avatar";
+
+// Inside QAInput component:
+const { name } = useIdentity();
+const { fingerprint } = useFingerprint(sessionSlug);
+
+// Identity chip — clicking opens the IdentityEditor popover
+<button
+  type="button"
+  onClick={openIdentityEditor} // triggers IdentityEditor popover (existing component)
+  aria-label={t("editIdentity")}
+  className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-muted-foreground hover:bg-accent transition-colors"
+>
+  <PixelAvatar seed={fingerprint} size={20} className="rounded-full shrink-0" />
+  <span className="truncate max-w-[8rem]">{name ? formatDisplayName(name) : t("anonymous")}</span>
+  <PencilLine className="h-3 w-3 shrink-0 opacity-50" />
+</button>;
+```
+
+**Wiring the chip to IdentityEditor:** `IdentityEditor` is currently a self-contained
+`Popover.Root` triggered by an internal button. To allow external trigger, extract the `open` state
+up to the parent (`QAInput` or a shared state) and pass it as a prop, or use a `ref` on the
+`Popover.Trigger`. The simplest approach: lift `open` / `setOpen` to a new `useIdentityPopover`
+hook that both the header icon and the inline chip share via context or prop drilling.
+
+**Alternatively (simpler):** Duplicate the popover — one in the header, one inline. The identity
+state persists in localStorage regardless of which popover saves it. Two independent popover
+instances are simpler than shared state coordination for this use case.
+
+---
+
+### Pattern 7: `formatRelativeTime` Shared Utility
+
+**Problem:** The `formatRelativeTime` function is currently defined inline in `question-card.tsx`
+and duplicated in at least two other files. This is the kind of utility that drifts: one copy gets
+the "just now" threshold changed, another doesn't.
+
+**Fix — extract to `packages/frontend/src/lib/format-time.ts`:**
+
+```typescript
+// packages/frontend/src/lib/format-time.ts
+
+type TFunction = (key: string, values?: Record<string, number>) => string;
+
+/** Formats a Unix timestamp (seconds) as a relative time string using i18n keys. */
+export function formatRelativeTime(createdAt: number, t: TFunction): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - createdAt;
+  if (diff < 60) return t("timeJustNow");
+  if (diff < 3600) return t("timeMinutesAgo", { count: Math.floor(diff / 60) });
+  if (diff < 86400) return t("timeHoursAgo", { count: Math.floor(diff / 3600) });
+  return t("timeDaysAgo", { count: Math.floor(diff / 86400) });
+}
+```
+
+The `TFunction` type matches `useTranslations()` return type — pass `tSession` directly, no
+adaptation needed. All three callers already have `tSession` in scope.
+
+---
+
+### Pattern 8: QuestionCard State Variants
+
+**Problem:** `QuestionCard` uses three early-return branches (banned, hidden, normal) in a single
+file. The "banned" tombstone is 4 lines; the "hidden" collapsed view is 15 lines; the normal view
+is 200+ lines. The early returns make the render logic hard to follow and make it impossible to
+test each variant in isolation.
+
+**Decomposition target:**
+
+```
+question-card.tsx                 — router: selects variant based on question state
+question-card-banned.tsx          — tombstone view
+question-card-hidden.tsx          — collapsed community-hidden view + expand button
+question-card-normal.tsx          — full question card (the existing main render)
+```
+
+**Router pattern:**
+
+```tsx
+// question-card.tsx (becomes a thin dispatcher)
+export function QuestionCard(props: QuestionCardProps) {
+  if (props.question.isBanned) return <QuestionCardBanned />;
+  if (props.question.isHidden && !props.showHiddenContent) {
+    return <QuestionCardHidden {...props} />;
+  }
+  return <QuestionCardNormal {...props} />;
+}
+```
+
+**Why this matters for testing:** Each variant can now be imported and tested independently with
+RTL. Testing `QuestionCardBanned` is a one-liner assertion. Testing the full `QuestionCard` and
+ensuring the right variant renders is the integration test.
+
+**`showHiddenContent` state:** Currently this state lives inside `QuestionCard`. After decomposing,
+it can remain in `QuestionCardNormal` (which handles the expand logic) since the hidden→normal
+transition is driven by the "show" button inside `QuestionCardHidden`. Pass a callback
+`onShowHidden` from the router if the normal variant needs to know.
+
+---
+
+### Pattern 9: `useEffectEvent` for Stable Subscription Callbacks (React 19.2)
+
+**Problem:** `useSessionUpdates` attaches an AppSync subscription with a `dispatch` callback.
+If `dispatch` were to change identity (it does not with `useReducer`, but pattern is worth noting),
+the subscription would tear down and re-establish on every render.
+
+**React 19.2 introduces `useEffectEvent`** (released 2025-10-01 per React blog) — a hook for
+extracting "event-like" logic from Effects that should always see fresh values without causing
+re-runs:
+
+```typescript
+// use-session-updates.ts — if dispatch callback stability ever becomes a concern
+import { useEffectEvent } from "react"; // React 19.2+
+
+export function useSessionUpdates(sessionSlug: string, dispatch: React.Dispatch<SessionAction>) {
+  const onEvent = useEffectEvent((update: SessionUpdate) => {
+    // dispatch always sees the latest version of itself,
+    // but this function is NOT a dependency of the useEffect below
+    handleSessionUpdate(update, dispatch);
+  });
+
+  useEffect(() => {
+    const subscription = subscribeToSession(sessionSlug, onEvent);
+    return () => subscription.unsubscribe();
+  }, [sessionSlug]); // onEvent is intentionally excluded — useEffectEvent handles this
+}
+```
+
+**Current status:** `useEffectEvent` requires `eslint-plugin-react-hooks@latest` (v6+ per React
+19.2 release notes) to properly lint the dependency array exclusion. Do not add `onEvent` to the
+dependency array — the hook is specifically designed to be excluded. The existing
+`eslint-disable-next-line react-hooks/exhaustive-deps` comment approach is the pre-19.2 workaround
+for the same pattern.
+
+**Applicability to this milestone:** `useReducer`'s `dispatch` is already stable (same reference
+across renders). `useEffectEvent` is not urgently needed for the subscription hook as currently
+written. Apply it when a genuinely unstable callback needs to be used in an Effect.
+
+---
+
+### Framer Motion Integration Notes
+
+The existing `AnimatePresence` + `motion.div` usage in `QAPanel` for question card enter/exit
+animations is correct and should be preserved. Two clarifications for the v1.3 work:
+
+**1. Do not add `layout` to the `motion.div` wrapping individual `QuestionCard` variants.**
+The `layout` prop triggers layout animations on every re-render of the list, including vote count
+updates. With 50-500 cards, this creates noisy micro-animations on every upvote. Reserve `layout`
+for the container-level `AnimatePresence` where it's already correctly used.
+
+**2. The focused-question pulsing glow is a CSS animation, not Framer Motion.**
+The current `shadow-[0_0_12px_rgba(16,185,129,0.15)]` on focused cards is static. If a pulsing
+animation is desired, use `animate-pulse` from Tailwind (already available via `tw-animate-css`)
+on the ring element — do not add a Framer Motion `animate` prop to the card for this, as it
+creates JavaScript-driven layout work on every pulse tick.
+
+**3. `AnimatePresence initial={false}` is already correct.**
+The `initial={false}` prop prevents enter animations when the component first mounts with
+pre-loaded questions. Removing it would cause all initial questions to animate in simultaneously —
+visually noisy and potentially triggering scroll position issues.
+
+---
+
+### What NOT to Add
+
+| Avoid                                       | Why                                                                                                                                                                                      | Use Instead                                                         |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `@react-aria/live-announcer`                | ~3 kB gzipped for functionality achievable with 15 lines of vanilla React. Bundle budget is tight at < 80 kB.                                                                            | Persistent `aria-live` div pattern (Pattern 3)                      |
+| `react-aria-live`                           | Unmaintained (last commit 2019). Ships a React class component wrapper.                                                                                                                  | Persistent `aria-live` div pattern (Pattern 3)                      |
+| `@radix-ui/react-tabs`                      | Already have `@base-ui/react` which provides equivalent accessible primitives. Adding Radix creates a duplicate headless UI dependency.                                                  | Native ARIA attributes on `<button>` + `<div>` elements (Pattern 1) |
+| React Compiler (Babel plugin)               | Not yet adopted in this project. Removing `useCallback` / `useMemo` manually before the compiler is enabled would regress performance. Wait for a dedicated compiler-adoption milestone. | Keep manual `useCallback` / `useMemo` for now                       |
+| `framer-motion` `layout` on QuestionCard    | Per-card layout animation fires on every vote update. With 50-500 cards this becomes expensive.                                                                                          | Limit `layout` to the `AnimatePresence` container only              |
+| `aria-live="assertive"` on NewContentBanner | Assertive mode interrupts any ongoing screen reader narration. New questions arriving are informational, not urgent.                                                                     | `aria-live="polite"` (Pattern 3)                                    |
+
+---
+
+## Installation (v1.3 UX Refactor)
+
+```bash
+# No new packages to install.
+# All work is:
+#   1. session-shell.tsx         — ARIA tablist semantics (Pattern 1)
+#   2. question-card.tsx         — active:scale-90, aria-pressed (Pattern 2)
+#   3. new-content-banner.tsx    — persistent aria-live region (Pattern 3)
+#   4. use-session-mutations.ts  — new hook, extraction from SessionLiveHostPage (Pattern 4)
+#   5. qa-panel.tsx              — useMemo for repliesByQuestion (Pattern 5)
+#   6. qa-input.tsx              — identity chip (Pattern 6)
+#   7. lib/format-time.ts        — shared formatRelativeTime utility (Pattern 7)
+#   8. question-card-*.tsx       — variant decomposition files (Pattern 8)
+#   9. messages/*.json           — add sessionTabs i18n key
+```
+
+---
+
+## Alternatives Considered (v1.3)
+
+| Category                    | Recommended                         | Alternative                          | Why Not                                                                                                                                                                                                                                                                |
+| --------------------------- | ----------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ARIA live announcer         | Persistent `aria-live` div (inline) | `@react-aria/live-announcer`         | Adds ~3 kB gzipped for 15 lines of code. Unnecessary for this bundle budget.                                                                                                                                                                                           |
+| Tab semantics               | Native ARIA attributes              | `@radix-ui/react-tabs`               | Radix is already replaced by `@base-ui/react` in this project. Two headless UI libraries creates version drift and larger bundle.                                                                                                                                      |
+| Tab semantics               | Native ARIA attributes              | `@base-ui/react/tabs` (if it exists) | `@base-ui/react` 1.3.0 may include a Tabs component, but the custom state management (badge counts, scroll tracking) makes the uncontrolled primitive harder to integrate than plain ARIA attributes. Verify if adopted.                                               |
+| Vote animation              | `active:scale-90` (CSS)             | Framer Motion `whileTap`             | Framer Motion's `whileTap` creates a motion value subscription per button. With 50-500 `QuestionCard` instances each having 2 buttons, this is 100-1000 motion value listeners. Tailwind CSS `active:scale` uses native CSS `:active` pseudo-class — zero JS overhead. |
+| God component decomposition | `useSessionMutations` hook          | Moving to a context/provider         | Context adds indirection and re-renders all consumers when any mutation state changes. The hook's return value (stable callbacks) does not need to be in context — it is only consumed by `SessionLiveHostPage`.                                                       |
+
+---
+
+## Version Compatibility (v1.3 Additions)
+
+| Feature                                 | React Version      | Notes                                                                                   |
+| --------------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
+| `useEffectEvent`                        | 19.2+              | Available in react@19.2.3 (already installed). Requires `eslint-plugin-react-hooks@6+`. |
+| `aria-live` persistent div pattern      | All React versions | No React-specific API. Pure DOM.                                                        |
+| `active:scale-90`                       | Tailwind 4.x       | Already installed. The `active:` variant and `scale-*` utilities are built-in.          |
+| `aria-selected` + `tabindex` management | All React versions | Standard HTML attributes. No library needed.                                            |
+| `useMemo` for Map construction          | All React versions | Standard hook.                                                                          |
+
+---
+
+## Sources (v1.3 Additions)
+
+- W3C APG Tabs Pattern: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/ — ARIA roles, keyboard model, required attributes (HIGH confidence)
+- MDN aria-live: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-live — `polite` vs `assertive` guidance (HIGH confidence)
+- k9n.dev aria-live in React (Nov 2025): https://k9n.dev/blog/2025-11-aria-live/ — React conditional render pitfall for aria-live, persistent DOM pattern (HIGH confidence — recently published, matches MDN spec)
+- React docs: https://react.dev/learn/reusing-logic-with-custom-hooks — hook extraction rationale (HIGH confidence)
+- React 19.2 blog: https://react.dev/blog/2025/10/01/react-19-2 — `useEffectEvent` API, `eslint-plugin-react-hooks` v6 requirement (HIGH confidence)
+- reacttraining.com 2025: https://reacttraining.com/blog/hooks-you-probably-dont-need-2025 — useCallback/useMemo guidance without React Compiler (HIGH confidence)
+- Tailwind CSS docs: https://tailwindcss.com/docs/scale — `scale-*` utilities and `active:` variant (HIGH confidence)
+- Tailwind CSS docs: https://tailwindcss.com/docs/transition-property — `transition-all`, `duration-*` utilities (HIGH confidence)
+- Codebase: `packages/frontend/src/components/session/session-shell.tsx` — current tab implementation, confirmed patterns (HIGH confidence)
+- Codebase: `packages/frontend/src/components/session/question-card.tsx` — current vote button implementation (HIGH confidence)
+- Codebase: `packages/frontend/src/components/session/new-content-banner.tsx` — current conditional render (HIGH confidence)
+- Codebase: `packages/frontend/src/components/session/session-live-host-page.tsx` — 270-line God Orchestrator confirmed (HIGH confidence)
+- Codebase: `packages/frontend/DESIGN_SYSTEM.md` — `active:scale-[0.98]` for primary CTAs, motion philosophy (HIGH confidence)
+
+---
+
+_Stack research for: Nasqa Live — participant & host UX refactor (v1.3)_
+_Researched: 2026-03-16_

@@ -1,190 +1,217 @@
 # Project Research Summary
 
-**Project:** Nasqa Live v1.2 — Emoji Reactions on Q&A Items
-**Domain:** Real-time audience engagement — per-item emoji reactions in a live presentation Q&A tool
-**Researched:** 2026-03-15
-**Confidence:** HIGH (stack and architecture derived from live codebase; features MEDIUM from competitive analysis + HIGH for implementation specifics)
+**Project:** Nasqa Live — v1.3 Participant & Host UX Refactor
+**Domain:** Real-time session UI — component decomposition and interaction quality
+**Researched:** 2026-03-16
+**Confidence:** HIGH (all findings grounded in direct codebase analysis or official docs)
 
 ## Executive Summary
 
-Nasqa Live v1.2 adds emoji reactions as a sentiment layer on top of an already-shipped real-time Q&A system (Next.js 16 / AppSync / DynamoDB / Lambda). The core challenge is not inventing new infrastructure — it is extending a battle-tested data model and real-time subscription pipeline without breaking any existing behavior. Every reaction pattern (dedup, optimistic UI, rate limiting, ban enforcement, subscription broadcast) has a direct analogue in the existing upvote system. The work is an extension, not a greenfield build. The recommended approach is to model reactions with flat per-emoji DynamoDB attributes on the Question/Reply item, extend the existing `SessionUpdate` subscription channel with a new `REACTION_UPDATED` event type, and reuse the established `checkNotBanned` + `checkRateLimit` + `useFingerprint` patterns from the upvote system without modification.
+Nasqa Live is a real-time presentation tool (live clipboard + Q&A) built on a production stack of Next.js 16, React 19, AWS AppSync, and DynamoDB single-table design. The v1.3 milestone is a structural refactor of already-shipped session pages — not new feature development. The work has two goals: close the interaction quality gap against competitors (Slido, Vevox, Pigeonhole) and eliminate structural debt that prevents unit testing and maintenance. All required changes are scoped to frontend components and hooks; no backend, schema, or API changes are needed.
 
-No surveyed competitor (Slido, Mentimeter, Pigeonhole, Zoom) attaches per-item reactions at individual Q&A question and reply granularity. Slido attaches reactions to poll answer options; Mentimeter and Pigeonhole use session-level ambient signals; Zoom reactions float at the meeting level. Nasqa Live's design — reactions pinned to specific questions and replies in a threaded Q&A — occupies a different and more actionable design space. This differentiator is already specified in the v1.2 design; no additional product work is needed to capture it. The six-emoji fixed palette (👍 ❤️ 🎉 😂 🤔 👀) is industry-standard, carries zero bundle cost as native OS emoji characters, and has no risk to the 80 kB JS budget constraint.
+The recommended execution order follows the dependency chain from the inside out: extract shared utilities first, then move logic from components into dedicated hooks, then slim the composition roots, then decompose large components into variants, and finally apply accessibility and UX polish. Seven of the twelve targeted changes are low-complexity and can be landed in under an hour each. The two highest-value structural changes — `useSessionMutations` hook extraction and `QuestionCard` variant decomposition — require care around stale closures and Framer Motion key stability respectively, but both have well-documented prevention patterns.
 
-The primary risks are a DynamoDB data model decision and a rate limit namespace mistake that must be resolved before writing any resolver code. Storing per-emoji reactor fingerprint Sets on the Question/Reply item multiplies item size by 6x and risks hitting DynamoDB's hard 400 KB item limit at scale with active sessions. Using the same `RATELIMIT#${fingerprint}` key for reactions consumes the question-submission rate budget, causing reactions to block participants from asking questions. Both risks are straightforwardly avoided by the patterns prescribed in ARCHITECTURE.md. A secondary risk is subscription channel flooding under high reaction velocity, mitigated by frontend event debouncing and surgical TanStack Query cache updates.
+The main risk in this milestone is partial application of optimizations. Adding `React.memo` without stabilizing callback props via `useCallback` produces silent regressions. Moving `AnimatePresence`-keyed wrappers into extracted child components silently breaks exit animations. The pitfalls research provides a specific "looks done but isn't" checklist for each structural change. Every structural step must be treated as atomic: the memo optimization only works when all three parts (memo, memoized data, stable callbacks) are applied together.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-The production stack is fully established and must not change for v1.2. All additions are pure extensions on already-installed dependencies. See `.planning/research/STACK.md` for the complete version inventory.
+The production stack is fully installed and pinned. No new dependencies are required for v1.3.
 
-**Core technologies for reactions work:**
+**Core technologies already in place:**
 
-- **Next.js 16 + React 19**: Server Actions handle `reactAction`; `useOptimistic` enables <100 ms optimistic toggle with zero new libraries
-- **AWS AppSync (via SST Ion 4.2.7)**: Extend the existing `onSessionUpdate` subscription by adding `react` to the `@aws_subscribe` mutations list — no new WebSocket channel; union-type event pattern already in production
-- **AWS DynamoDB (via SST)**: Flat `rxn_<emoji>_count` + `rxn_<emoji>_reactors` attributes on Question/Reply items; atomic `ADD` operations on top-level attributes ensure race-free counter increments
-- **TanStack Query 5.x**: Surgical `setQueryData` on `REACTION_UPDATED` events — never `invalidateQueries` for reactions
-- **Zod 4.x**: Input validation on `emoji` argument against the fixed allowlist before any DynamoDB write
-- **next-intl 4.x**: Required for i18n `aria-label` strings on reaction buttons (en/es/pt)
-
-**No new dependencies are needed.** Reactions are implemented entirely within the existing installed stack.
+- **Next.js 16 + React 19:** App Router with Server Components for initial render; Client Components for real-time feed. React 19's `useOptimistic` and `useEffectEvent` (stable in 19.2) enable the stale closure fix for extracted mutation handlers.
+- **AWS AppSync + DynamoDB:** Single `onSessionUpdate` WebSocket channel per session, union-typed events. DynamoDB single-table with ULID keys; 24-hour TTL on all records. No changes needed.
+- **Framer Motion 12:** Used for list animations (`AnimatePresence`, `layout`). Critical constraint: `motion.div` with `key={question.id}` must remain on the direct child of `AnimatePresence` in `QAPanel` — never absorbed into extracted variant components.
+- **@base-ui/react + shadcn:** WAI-ARIA baked into Dialog, Popover primitives. Use Dialog components for confirmations, never `window.confirm`.
+- **Vitest 4 + Playwright:** Vitest for unit/component tests (cannot test async RSCs); Playwright + axe-core for E2E and accessibility audits. Extracting `useSessionMutations` unblocks mutation-level unit tests that are currently impossible (handlers are anonymous closures).
+- **next-intl 4:** All user-facing strings must go through `t()` / `getTranslations()`. The shared `formatRelativeTime` utility must accept a `t` function parameter — hooks cannot be called inside plain utility functions.
 
 ### Expected Features
 
-See `.planning/research/FEATURES.md` for full competitive analysis and prioritization matrix.
+The feature landscape for v1.3 is well-defined. All target features either already exist partially or are clearly scoped. This is an interaction quality and structural completeness milestone, not a ground-up build.
 
-**Must have (P1 — table stakes, not shippable without these):**
+**Must ship (P1 — blocking quality and accessibility bar):**
 
-- Fixed 6-emoji palette (👍 ❤️ 🎉 😂 🤔 👀) on every Question card and Reply card
-- Toggle own reaction on/off (one reaction per emoji per device fingerprint)
-- Real-time count propagation via existing AppSync subscription (new `REACTION_UPDATED` event)
-- Inline count display ("👍 3") hidden when count is 0
-- Rate limiting for reactions at 10/minute per device, separate namespace from question limit
-- Ban enforcement: banned participants cannot react
-- Optimistic UI: local toggle flips instantly, reconciled on subscription broadcast
+- Vote button `active:scale-95` press animation + filled background on voted state — baseline interaction honesty; every competitor does this; Nasqa currently only changes icon color with no fill or scale feedback
+- Identity chip inside `QAInput` (pixel avatar + name, click to edit) — participants must see their posting identity before submitting; currently the `IdentityEditor` is two taps away
+- Auto-expand replies when `isFocused` prop changes while card is already mounted — this is a bug fix, not a feature; `useState(question.isFocused)` only reads the prop at mount time
+- ARIA `role="tablist"` semantics on `SessionShell` mobile tab bar — WCAG 4.1.2 baseline; current buttons have no tablist/tab/aria-selected semantics
+- `aria-live="polite"` on `NewContentBanner` — screen reader baseline; current banner has no live region
 
-**Should have (P2 — accessibility polish, add after P1 is confirmed working):**
+**Should ship (P2 — high value, low risk):**
 
-- `aria-label="React with [emoji name]: [count] reactions"` + `aria-pressed` on all reaction buttons
-- i18n aria-label strings in en/es/pt via next-intl translation keys
+- Thread `connectionStatus` to `QAPanel` for contextual empty state copy (participant vs host variant) — currently only `ClipboardPanel` receives this prop
+- Own question left-border structural indicator — color text alone ("You" in emerald) fails spatial recognition; need a border accent strip
+- Extract `useSessionMutations` hook from both page orchestrators — eliminates ~130 lines of duplication; enables unit testing of rollback logic
+- Decompose `QuestionCard` into `Normal`, `Banned`, `Hidden` variants — 430-line monolith with four rendering paths
+- Extract shared `formatRelativeTime` utility — currently duplicated in 5 files with two divergent implementations (ms-based vs seconds-based; hardcoded English vs i18n)
+- Remove duplicate sort from `QAPanel` — sort runs twice per render; own only the debounce
 
-**Defer (v2+):**
+**Explicitly deferred:**
 
-- "Most reacted" secondary sort toggle — risks conflating sentiment with ranking; build only on explicit user demand
-- Custom emoji palette per session — host UX complexity not warranted at v1.2 scale
-- Floating emoji animations — violates 80 kB bundle budget; CSS `scale` pulse on click is the correct substitute
-- Full emoji picker — ~100 kB bundle cost; fixed palette covers 95% of live Q&A sentiment expression
+- Emoji reactions — v1.2 scope; requires DynamoDB schema changes; do not conflate with v1.3 structural work
+- Multi-level reply threading — permanently out of scope for this product
+- Animated per-vote card reordering — anti-feature; the existing 1-second debounce is correct
+- "My Questions" dedicated tab — anti-feature at current scale; structural own-question indicator is sufficient
 
-**Anti-features (explicitly excluded by design):**
+**Protected differentiators (must not regress):**
 
-- Reactions on Snippets — host-curated content should not be publicly rated
-- Multiple same-emoji reactions from one user — undermines signal value for hosts
-- Reactions influence sort order — upvote delta exclusively drives sort; 🤔 and ❤️ have opposite valences and cannot be averaged
+- Separate upvote + downvote counts displayed independently (Slido hides this by default)
+- Speaker reply emerald border + "Speaker" badge distinction
+- Debounced question re-sorting with Framer Motion `layout` transitions
 
 ### Architecture Approach
 
-The implementation follows an 8-step build order flowing data-model-up to UI, mirroring the existing upvote system at every layer. See `.planning/research/ARCHITECTURE.md` for exact file-level change list, TypeScript interfaces, and code patterns.
+The v1.3 architecture decomposes three monolithic problem areas. The God Orchestrator pages (`session-live-page.tsx` ~260 lines, `session-live-host-page.tsx` ~335 lines) have 50% mutation handler duplication between them. `QAPanel` re-implements sort and debounce logic that belongs in the hook. `QuestionCard` is a 430-line component with four entirely different rendering paths. The target is composition roots of ~40–50 lines that wire hooks to panels, with logic pushed into dedicated hooks and display paths pushed into variant components.
 
 **Major components:**
 
-1. **`reactions.ts` Lambda resolver** — handles `react` mutation: ban check → rate limit → DynamoDB conditional ADD/DELETE on flat attributes → returns `REACTION_UPDATED` subscription event with authoritative count snapshot
-2. **`reaction-bar.tsx` frontend component** — renders fixed 6-emoji palette with toggle state, count display (hidden at 0), ARIA attributes, and 44 px touch targets
-3. **`use-reactions.ts` frontend hook** — orchestrates optimistic dispatch, localStorage gate, and Server Action call; uses `localDelta` strategy to avoid stale-count conflicts under concurrent reactions
-4. **DynamoDB flat attributes** (`rxn_thumbsup_count`, `rxn_thumbsup_reactors`, etc. × 6) on existing Question/Reply items — chosen over a Map attribute because DynamoDB `ADD` is only atomic on top-level attributes, not nested Map values
+1. `use-session-mutations.ts` (NEW hook) — all async mutation handlers, shared between participant and host pages; uses `useEffectEvent` for stale-closure-safe rollback
+2. `question-card.tsx` (discriminator) + `question-card-normal.tsx`, `question-card-banned.tsx`, `question-card-hidden.tsx` (NEW variants) — each rendering path independently testable
+3. `lib/format-relative-time.ts` (NEW utility) — canonical seconds-based + i18n implementation replacing 5 duplicated copies
+4. `snippet-card-live.tsx` (NEW component) — client SnippetCard extracted from the embedded function inside `clipboard-panel.tsx`
 
-**Key patterns to follow:**
+**Key architecture rules:**
 
-- **Atomic Set-Based Dedup**: `ADD rxn_thumbsup_count :delta` + conditional `ADD/DELETE rxn_thumbsup_reactors :fpSet` — identical to existing `upvoteQuestion` resolver; battle-tested at production scale
-- **Authoritative Snapshot in Subscription Payload**: send all 6 emoji counts per event (never a delta); reducer does full replacement ensuring convergence under out-of-order or missed events
-- **Emoji Key Normalization**: UI displays glyph (👍), DynamoDB attributes and API arguments use ASCII key (`thumbsup`); mapping lives once in `EMOJI_PALETTE` constant — prevents ExpressionAttributeNames escaping issues with Unicode in DynamoDB expressions
+- `QAPanel` owns `AnimatePresence` and the keyed `motion.div` wrappers — variant components are pure presentation
+- Discriminator lives in `question-card.tsx`, not in `QAPanel` — the list renderer does not know about variant taxonomy
+- Sort and debounce logic stays in `QAPanel` (not moved to hook) — `useSessionState` returns unsorted questions; `focusedQuestion` is a separate selector
+- `useSessionUpdates` must remain in the root orchestrator — never descend into panel components
+
+**Build order (10 steps, dependencies must be respected):**
+
+1. `lib/format-relative-time.ts` — no deps, everything imports from here
+2. Migrate all 5 `formatRelativeTime` consumers — prepares for clean extraction
+3. `useSessionState` — change `repliesByQuestion` to `useMemo` Map (do NOT move sort here)
+4. Extract `SnippetCard` from `ClipboardPanel` — co-location cleanup before logic changes
+5. Extract `useSessionMutations` hook — all async handlers; implement `useEffectEvent` rollback
+6. Slim page orchestrators — call hook, pass handlers; both pages become ~40–50 lines
+7. Slim `QAPanel` — remove local sort duplicate and local repliesByQuestion; accept sorted + Map props
+8. Decompose `QuestionCard` — discriminator + three variant files; compound key on `motion.div`
+9. `SessionShell` ARIA tablist — both panels stay in DOM via `hidden` attribute; arrow key navigation
+10. `NewContentBanner` `aria-live` + `QAInput` identity chip — self-contained UX additions
 
 ### Critical Pitfalls
 
-See `.planning/research/PITFALLS.md` for all 10 pitfalls with recovery strategies, warning signs, and phase assignments.
+1. **AnimatePresence key stability on component extraction** — if `motion.div key={question.id}` is moved inside a variant component or wrapped in a Fragment, exit animations silently stop working (items pop instead of fade; no console error). Keep the keyed `motion.div` permanently in `QAPanel`'s `.map()` callback. Use compound key `${question.id}-${variant}` to force clean remount on state transitions (banned/hidden/normal). Phase: QuestionCard extraction (Step 8).
 
-1. **Reactor fingerprint Sets on the Question/Reply item hit the 400 KB DynamoDB limit** — At 500 participants × 6 emojis, a single item accumulates 3,000 fingerprints (~18 KB for reactors alone). DynamoDB rejects writes silently with `ValidationException` when the item exceeds 400 KB. Solution: store only aggregate counts as flat number attributes on the Question/Reply item; use conditional `ConditionExpression: NOT contains(rxn_thumbsup_reactors, :fp)` — the reactors Set is bounded per-emoji (one fingerprint per user) not unbounded.
+2. **Stale closure in `useSessionMutations` rollback** — `handleDownvote` reads `state.questions.find(...)` for rollback. When extracted to a hook with `useCallback`, omitting `state` from deps (correct — avoids rebuilding all handlers on every vote) means rollback uses counts from the render when the callback was first created. Under concurrent real-time vote events this produces wrong rollback values. Use React 19's `useEffectEvent` for the rollback calculation (stable in React 19.2.3, the installed version). Do NOT add `state` to `useCallback` deps. Phase: hook extraction (Step 5).
 
-2. **Rate limit namespace collision with question submissions** — Using the same `RATELIMIT#${fingerprint}` key for reactions causes 10 rapid reactions to exhaust the 3-question/minute budget. Solution: use `RATELIMIT#REACTION#${fingerprint}` as the key; set the ceiling to 10/minute; do NOT apply rate limiting to toggle-off operations (removing a reaction should be free).
+3. **`aria-live` announcement storm + DOM remount** — placing `aria-live` on the `NewContentBanner` element that conditionally returns `null` causes two problems: screen readers lose the live region when the DOM node unmounts, and high-frequency question arrivals (2–5/second during active sessions) queue continuous announcements NVDA/JAWS cannot interrupt. Solution: permanently-mounted, visually-hidden `<div aria-live="polite" className="sr-only">` in `QAPanel` or `SessionShell`, with text updated on a 2-second debounce. Phase: accessibility pass (Step 10).
 
-3. **Subscription channel flooding under high reaction velocity** — 500 users reacting generates 5,000 writes/minute, each broadcasting to all subscribers; UI thrashing and frame drops follow. Solution: frontend buffers `REACTION_UPDATED` events for 300 ms and applies only the latest count snapshot; `setQueryData` for surgical cache update rather than `invalidateQueries`.
+4. **`React.memo` without stable callback props has zero effect** — memoizing `QuestionCard` only works when all three are applied atomically: `React.memo` on the component, `useMemo` for `repliesByQuestion`, and `useCallback` for every handler prop passed to the card. Partial application produces no profiler benefit; `memo` shallow-compares props and a new function reference on every render always fails the comparison. Phase: QuestionCard extraction (Step 8) — do not split these across separate tasks.
 
-4. **Optimistic UI stale counts during concurrent reactions** — Two users reacting simultaneously produce a visible count jump as the optimistic increment conflicts with the authoritative subscription broadcast. Solution: maintain `localDelta` per `(itemId, emoji)` pair; display `serverCount + localDelta` optimistically; subscription broadcast replaces base count while preserving any in-flight delta.
+5. **Mobile tab switch unmounts panels, losing scroll position and violating ARIA** — the current `activeTab === "clipboard" ? clipboardSlot : qaSlot` conditional rendering destroys `QAPanel` scroll position and local state (`showNewBanner`, `newQuestionCount`, `debouncedQuestions`) on every tab switch. Adding `aria-controls` to tab buttons also requires both panel elements to exist in the DOM simultaneously per WAI-ARIA APG spec. Replace conditional rendering with `hidden` attribute on both panels. Phase: ARIA tablist / SessionShell (Step 9).
 
-5. **Fingerprints in subscription payload** — Broadcasting the reactor `SS` Set exposes device fingerprints to all participants, enabling ban circumvention analysis and approaching AppSync's 240 KB message limit. Solution: payload contains only `{ targetId, targetType, emoji, counts: ReactionCounts }` — never include fingerprint arrays.
+6. **`isFocused` desync on already-mounted cards** — `useState(question.isFocused)` only reads the prop at mount. Subscription events that change `isFocused` after mount never update `showReplies`, so the planned auto-expand feature silently fails for any card that was already mounted when the host focused a question. Fix: `useEffect(() => { if (question.isFocused) setShowReplies(true); }, [question.isFocused])`. Phase: QuestionCard variant extraction (Step 8).
+
+---
 
 ## Implications for Roadmap
 
-The architecture research provides an explicit 8-step build order with clear dependencies. The natural phase boundary falls between backend (data model + resolver + schema) and frontend (state management + UI). Both phases have well-understood implementation patterns derived directly from the existing codebase.
+### Phase 1: Shared Infrastructure and Hook Extraction
 
-### Phase 1: Data Model and Backend
+**Rationale:** The `formatRelativeTime` utility and `useSessionMutations` hook are the foundation every other structural change depends on. Landing these first means all subsequent component work starts from a clean base. The hook extraction produces the unit-testable mutation surface that enables verification of the stale closure fix before the more complex component surgery begins.
 
-**Rationale:** All frontend work depends on the GraphQL schema and Lambda resolver being in place. TypeScript strict mode propagates compile errors from `@nasqa/core` types through every downstream layer — these must exist first. The flat-attribute DynamoDB pattern must be locked before any resolver code is written because reversing it post-deployment requires a full table scan migration.
+**Delivers:** `lib/format-relative-time.ts` with all 5 consumer files migrated; `use-session-mutations.ts` with all handlers (shared + host-only) using `useEffectEvent` rollback; both page orchestrators slimmed to ~40–50 lines of composition-only code; `repliesByQuestion` memoized as Map in `useSessionState`.
 
-**Delivers:** Working `react` GraphQL mutation with DynamoDB persistence, real-time subscription broadcast, rate limiting, and ban enforcement. Testable via AppSync console or integration test before any UI exists.
+**Implements:** Architecture Steps 1–6 plus Step 3 (`useSessionState` memoization)
 
-**Addresses:** Rate limiting at 10/minute with separate namespace, ban enforcement, real-time count propagation, one-reaction-per-emoji-per-user dedup
+**Addresses:** `formatRelativeTime` 5-file duplication with divergent implementations; mutation handler 50% duplication across page orchestrators; untestable anonymous closure handlers
 
-**Avoids:** Pitfall 1 (400 KB item limit — flat attributes, not Sets-on-item), Pitfall 2 (rate limit namespace collision), Pitfall 5 (fingerprints in payload), Anti-Pattern 2 (separate subscription channel)
+**Avoids:** Pitfall 2 (stale closure in extracted hook) — implement `useEffectEvent` pattern here, write rollback unit tests immediately; Anti-Pattern 4 (god hook replacing god component) — only `useSessionMutations` is extracted; existing hook separation is preserved
 
-**Build sequence within this phase:**
+### Phase 2: Component Decomposition and QAPanel Cleanup
 
-1. Core types (`@nasqa/core/src/types.ts`) — `ReactionCounts` interface, `reactions` field on `Question`/`Reply`, `REACTION_UPDATED` in `SessionEventType` enum
-2. GraphQL schema (`infra/schema.graphql`) — `ReactionCounts` type, `react` mutation, `REACTION_UPDATED` enum value, add `react` to `@aws_subscribe` list
-3. Lambda resolver (`packages/functions/src/resolvers/reactions.ts`) — ban check, rate limit with separate namespace, DynamoDB flat-attribute ADD/DELETE, REACTION_UPDATED payload (counts only, no fingerprints)
-4. Server Action (`packages/frontend/src/actions/reactions.ts`) — thin wrapper calling `appsyncMutation(REACT, args)`; REACT mutation string in `mutations.ts`
+**Rationale:** With the hook layer clean, restructure the component layer. `QAPanel` sort cleanup (Step 7) should be done before `QuestionCard` decomposition (Step 8) to ensure `QAPanel` is in its final state when variant components are introduced into it. `SnippetCard` extraction (Step 4) is independent and can be done in Phase 1 or Phase 2 — sequencing it in Phase 2 keeps the diff focused on component co-location surgery.
 
-### Phase 2: Frontend State and UI
+**Delivers:** `QuestionCardNormal`, `QuestionCardBanned`, `QuestionCardHidden` as independent testable components; `SnippetCardLive` extracted to its own file; `QAPanel` accepts pre-sorted questions and memoized `repliesByQuestion` Map; duplicate sort logic eliminated.
 
-**Rationale:** Depends on Phase 1 schema and resolver being deployed. The optimistic update strategy (`localDelta`) must be designed into the reducer before any hook or component code is written — retrofitting it after the fact requires rewriting the entire frontend state layer.
+**Implements:** Architecture Steps 4, 7–8
 
-**Delivers:** `ReactionBar` component integrated into `QuestionCard` and `ReplyCard` with optimistic toggle, real-time count updates, 300 ms subscription event debounce, ARIA labels with i18n, and 44 px mobile touch targets.
+**Addresses:** `QAPanel` duplicate sort (runs twice per render, two canonical locations); `QuestionCard` 430-line four-path monolith; `repliesByQuestion` O(n) rebuild on every render; `SnippetCard` embedded in `clipboard-panel.tsx` and not independently testable
 
-**Addresses:** Full P1 feature set — optimistic UI, per-item reactions on questions and replies, inline count display (hidden at 0), toggle on/off, mobile accessibility. P2 accessibility labels.
+**Avoids:** Pitfall 1 (AnimatePresence key stability) — keep `motion.div` in `QAPanel`, use compound key on state transitions; Pitfall 4 (memo without stable callbacks) — apply `React.memo` + `useCallback` + `useMemo` atomically; Pitfall 6 (`isFocused` desync) — add `useEffect` sync in `QuestionCardNormal`; Pitfall 7 (duplicate sort causing divergent ordering) — single canonical sort in `QAPanel`
 
-**Avoids:** Pitfall 3 (subscription flooding — 300 ms event debounce), Pitfall 4 (optimistic stale counts — `localDelta` strategy), Pitfall 7 (emoji library bundle violation — native emoji only), Pitfall 8 (missing ARIA — `aria-label` + `aria-pressed` from day one), Pitfall 9 (44 px touch targets — mobile-first sizing), Pitfall 10 (full-list re-render — `setQueryData` surgical update)
+### Phase 3: Accessibility and UX Polish
 
-**Build sequence within this phase:** 5. State reducer (`use-session-state.ts`) — `ADD_REACTION_OPTIMISTIC` and `REACTION_UPDATED` action cases; `localDelta` pattern 6. `useFingerprint` extension + `useReactions` hook — localStorage gate with lazy per-item loading, optimistic dispatch, Server Action call 7. Subscription handler (`use-session-updates.ts`) — `REACTION_UPDATED` case with 300 ms debounce and `setQueryData` surgical update 8. `ReactionBar` component (`reaction-bar.tsx`) — fixed palette, toggle state display, ARIA labels with `aria-pressed`, `role="group"`, 44 px touch targets; integrate into `QuestionCard` and `ReplyCard`
+**Rationale:** `SessionShell` ARIA tablist and `NewContentBanner` `aria-live` are independent of the structural changes in Phases 1–2. Sequencing them last avoids merge conflicts during component surgery. The identity chip, own-question indicator, vote button animations, and contextual empty state are self-contained UX additions that sit on top of the cleaned structure.
+
+**Delivers:** WCAG 4.1.2-compliant tab bar with keyboard arrow navigation and both panels permanently mounted; screen-reader-safe live region with 2-second debounced announcements; identity chip in `QAInput` (pixel avatar + name, click to open `IdentityEditor`); own-question left-border accent indicator; vote button `active:scale-95` press animation + filled voted state; contextual `QAPanel` empty state with connection awareness.
+
+**Implements:** Architecture Steps 9–10; all P1 and P2 UX items from FEATURES.md
+
+**Addresses:** All ARIA accessibility gaps; identity awareness before submission; own-question spatial recognition; vote interaction honesty
+
+**Avoids:** Pitfall 3 (`aria-live` announcement storm) — permanently-mounted debounced live region; Pitfall 5 (tab switch panel remount) — `hidden` attribute replaces conditional rendering; UX pitfall of no tactile vote feedback
 
 ### Phase Ordering Rationale
 
-- **Phase 1 before Phase 2**: TypeScript strict mode means the frontend will not compile without the `@nasqa/core` type additions. The AppSync schema must be deployed for the Server Action to call a valid mutation.
-- **Data model decision first within Phase 1**: The flat-attribute pattern is the single most consequential architectural choice in v1.2. Changing it post-deployment requires a DynamoDB migration scan. No code is written until this is settled.
-- **Optimistic strategy before UI in Phase 2**: `useReactions` orchestrates `useFingerprint`, `useSessionState`, and the Server Action — it must be designed before the component that calls it. The `localDelta` pattern is an architectural decision that flows through the entire layer.
-- **Accessibility from initial component (not bolted on)**: `aria-label` + `aria-pressed` + `role="group"` + 44 px touch targets must be in the `ReactionBar` from the first commit; retrofitting accessible semantics onto interactive emoji buttons creates rework and is error-prone.
+- Hook extraction before component decomposition: mutation handlers are currently anonymous closures, making them untestable. Extracting them first means the stale closure fix can be verified with unit tests before the more complex component surgery in Phase 2.
+- `QAPanel` cleanup before `QuestionCard` decomposition: ensures `QAPanel` is in its final state (accepting pre-sorted + Map props) when variant components are introduced. A `QAPanel` that still owns sorting would mask whether variant extraction introduced bugs.
+- Accessibility pass last: the `hidden` attribute tab panel change (Pitfall 5 fix) is a mounting behavior change that the cleaned components in Phases 1–2 benefit from immediately — no rework needed.
+- The three phases produce independently shippable slices: Phase 1 has no visible UI change; Phase 2 has no visible UI change; Phase 3 is the visible UX improvement layer.
 
 ### Research Flags
 
-**Phases with well-documented patterns — skip additional research:**
+All three phases have well-documented implementation patterns from direct codebase analysis. No phase requires deeper `/gsd:research-phase`.
 
-- **Phase 1 (backend)**: Every pattern is a direct extension of the existing `upvoteQuestion` resolver. Resolver structure, DynamoDB expressions, AppSync schema conventions, and subscription wiring are established in the live codebase. No novel territory.
-- **Phase 2 (frontend)**: TanStack Query surgical update patterns, React optimistic UI, and `useFingerprint` localStorage extension are thoroughly documented. Component structure mirrors existing `QuestionCard` patterns.
+- **Phase 1 (Hook Extraction):** `useEffectEvent` is documented in React 19 official docs; three alternative solutions documented in PITFALLS.md. Mutation handler extraction follows established patterns.
+- **Phase 2 (Component Decomposition):** AnimatePresence key rules are documented in Motion official docs; `React.memo` pairing requirements are documented in PITFALLS.md with specific warning signs. No unknowns.
+- **Phase 3 (Accessibility + Polish):** WAI-ARIA APG Tabs pattern is the authoritative spec; debounced `aria-live` singleton pattern is documented. Vote button animation is a one-line CSS addition.
 
-**No phases require `/gsd:research-phase` during planning.** ARCHITECTURE.md already provides exact file-level change lists, TypeScript interfaces, reducer cases, DynamoDB expressions, and build order. This is the most implementation-ready research output in the project's history.
+---
 
 ## Confidence Assessment
 
-| Area         | Confidence                                                                                                                                                                      | Notes                                                                                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack        | HIGH                                                                                                                                                                            | All versions verified from live `package.json` files. No version guessing. No new dependencies required.                                                                                                                                                      |
-| Features     | MEDIUM (competitive UX) / HIGH (implementation specifics)                                                                                                                       | Competitive analysis via platform docs for Slido, Mentimeter, Pigeonhole, Zoom. No Context7 coverage for live Q&A reaction UX patterns. Implementation specifics (DynamoDB/AppSync patterns) are HIGH — mirrors existing upvote system already in production. |
-| Architecture | HIGH                                                                                                                                                                            | All integration points derived from direct source code analysis of the existing codebase. Exact file paths, TypeScript interfaces, reducer cases, DynamoDB expressions, and build order provided.                                                             |
-| Pitfalls     | HIGH for DynamoDB/AppSync limits (official docs verified); MEDIUM for rate-limiting edge cases and subscription debounce thresholds (community sources, multiple corroborating) |                                                                                                                                                                                                                                                               |
+| Area         | Confidence  | Notes                                                                                                                                                       |
+| ------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack        | HIGH        | All versions verified from installed `package.json` files in the live codebase; no version guessing                                                         |
+| Features     | MEDIUM-HIGH | Competitor interaction patterns derived from help docs, community forums, and UX literature; existing codebase state is HIGH from direct component analysis |
+| Architecture | HIGH        | All findings from direct source code analysis; exact line numbers and duplication confirmed                                                                 |
+| Pitfalls     | HIGH        | Grounded in official React docs, Motion docs, WAI-ARIA APG spec, and direct codebase inspection                                                             |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Subscription debounce threshold**: 300 ms is the recommended frontend event buffer, but the right value depends on observed reaction velocity in real sessions. Treat as the starting point; tune after the first production session with >100 participants.
-- **AppSync subscription cost at scale**: At 500 subscribers × 5,000 reactions/minute, AppSync charges ~$2.50/minute per session ($1.00/million messages). Acceptable for current target audience; monitor in CloudWatch if session sizes grow materially. Server-side coalescing (batch broadcasts per 500 ms window) is the mitigation if costs exceed expectations.
-- **Toggle-off UX confirmation**: No surveyed competitor explicitly confirmed their toggle-off behavior for reactions. The "click active reaction to deactivate" model is assumed from GitHub/Slack/Discord patterns. If users in testing expect no toggle-off, the DynamoDB pattern supports both models — this is a UX decision, not an architecture change.
-- **Touch target validation**: The 44 px minimum must be validated on real iOS and Android devices, not just browser DevTools mobile emulation. Plan one real-device test pass after Phase 2 completes.
+- **Sort canonical location conflict:** ARCHITECTURE.md Step 3 recommends moving the debounced sort into `useSessionState`. PITFALLS.md Pitfall 7 recommends keeping it in `QAPanel` with `useSessionState` returning unsorted questions. These conflict. Resolution: follow PITFALLS.md — `QAPanel` owns the single debounced sort; `useSessionState` returns raw `state.questions`; provide a separate `focusedQuestion` selector in the hook for the host toolbar use case.
+
+- **Framer Motion `mode` under high load:** STACK.md notes to avoid `AnimatePresence` at list scale (50–500 items). PITFALLS.md notes `mode="sync"` as a fix for rapid subscription events missing exit animations. The correct `mode` value should be validated against load during Phase 2 testing. Low risk — changing `mode` after the fact is a one-line fix.
+
+- **`useEffectEvent` vs `stateRef` vs reducer rollback:** Three valid solutions exist for Pitfall 2. `useEffectEvent` is recommended because it is the React 19 canonical answer and is stable in the installed version (19.2.3). The `stateRef` approach is the fallback if `useEffectEvent` has any unexpected behavior in the specific usage context. Confirm the chosen approach during Phase 1 implementation.
+
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
-- Live codebase source code analysis — `packages/functions/src/resolvers/qa.ts`, `packages/frontend/src/hooks/use-fingerprint.ts`, `packages/frontend/src/hooks/use-session-updates.ts`, `infra/schema.graphql`
-- DynamoDB UpdateExpression ADD atomicity — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD
-- DynamoDB item size constraints (400 KB limit) — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
-- AppSync real-time subscriptions — https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-data.html
-- AppSync subscription message size limit (240 KB) — https://aws.amazon.com/about-aws/whats-new/2024/04/aws-appsync-increases-service-quota-adds-subscription/
-- TanStack Query optimistic updates — https://tanstack.com/query/v5/docs/react/guides/optimistic-updates
-- WCAG 2.2 Target Size Minimum (2.5.8) — https://a11ypros.com/blog/mobile-accessibility-testing-checklist-2025-edition
-- Emoji accessibility best practices — https://www.boia.org/blog/emojis-and-web-accessibility-best-practices
+- Direct codebase analysis — `session-live-page.tsx`, `session-live-host-page.tsx`, `qa-panel.tsx`, `question-card.tsx`, `clipboard-panel.tsx`, `use-session-state.ts`, `new-content-banner.tsx`, `session-shell.tsx`
+- [React `useEffectEvent` docs](https://react.dev/reference/react/useEffectEvent) — stable in React 19.2; stale closure solution
+- [WAI-ARIA APG Tabs Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) — tab bar DOM structure and keyboard requirements
+- [Motion docs: AnimatePresence](https://motion.dev/docs/react-animate-presence) — key prop rules and `mode` options
+- [GetStream — livestream chat UX threads and replies](https://getstream.io/blog/exploring-livestream-chat-ux-threads-and-replies/) — collapsed-by-default replies pattern rationale
+- [NNGroup — empty state interface design](https://www.nngroup.com/articles/empty-state-interface-design/) — connection-aware empty state rationale
 
 ### Secondary (MEDIUM confidence)
 
-- Slido emoji reactions (January 2026 launch) — https://community.slido.com/product-news-announcements-108/what-s-new-in-slido-january-2026-7498
-- Mentimeter reactions help center — https://help.mentimeter.com/en/articles/8069507-reactions-from-the-audience
-- Pigeonhole Live reactions feature page — https://pigeonholelive.com/features/reactions/
-- Zoom webinar reactions — https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0059191
-- DynamoDB one-to-many modeling — https://www.alexdebrie.com/posts/dynamodb-one-to-many/
-- TanStack Query concurrent optimistic updates — https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
-- DynamoDB race conditions and conditional writes — https://awsfundamentals.com/blog/understanding-and-handling-race-conditions-at-dynamodb
-- Ably: Emoji reactions for in-game chat with React — https://ably.com/blog/emojis-for-in-game-chat-with-react
+- Slido, Vevox, Pigeonhole, Mentimeter help documentation and community forums — competitor interaction pattern analysis (vote button states, ownership indicators, reply threading)
+- [Sara Soueidan — accessible aria-live notifications Part 1 and Part 2](https://www.sarasoueidan.com/blog/accessible-notifications-with-aria-live-regions-part-1/) — debounced singleton announcer pattern
+- [TkDodo — hooks, dependencies and stale closures](https://tkdodo.eu/blog/hooks-dependencies-and-stale-closures) — `useCallback` dependency rules
+- [The Power of Keys in Framer Motion — nan.fyi](https://www.nan.fyi/keys-in-framer-motion) — key stability in decomposed components
+- [developerway.com — how to use memo and useCallback](https://www.developerway.com/posts/how-to-use-memo-use-callback) — when `React.memo` has zero effect without stabilizing all props
+- [k9n.dev — when your live region isn't live (2025)](https://k9n.dev/blog/2025-11-aria-live/) — React-specific live region pitfalls including element remounting
+
+### Tertiary (LOW confidence)
+
+- Competitor UX detail inferred from marketing pages (Pigeonhole Live, Mentimeter) — confirmed with multiple secondary sources where possible
 
 ---
 
-_Research completed: 2026-03-15_
+_Research completed: 2026-03-16_
 _Ready for roadmap: yes_

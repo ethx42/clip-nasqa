@@ -1,427 +1,448 @@
 # Pitfalls Research
 
-**Domain:** Emoji reactions on Q&A in real-time presentation tool — adding reactions to an existing Next.js + DynamoDB + AppSync system
-**Researched:** 2026-03-15
-**Confidence:** HIGH for DynamoDB and AppSync limits (official docs verified); HIGH for React optimistic update patterns (Context7/official docs verified); MEDIUM for rate-limiting edge cases and UX patterns (community sources, multiple corroborating)
+**Domain:** Real-time React component refactoring (v1.3 participant & host UX refactor)
+**Researched:** 2026-03-16
+**Confidence:** HIGH — findings grounded in direct codebase inspection (all component files read) plus verification against official React docs, Motion docs, and WAI-ARIA APG.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause silent data corruption, item write failures, or subscription storms when bolting emoji reactions onto an existing real-time Q&A system.
-
----
-
-### Pitfall 1: Storing Reactor Fingerprints on the Question/Reply Item Violates the 400KB DynamoDB Limit
+### Pitfall 1: AnimatePresence Breaks When the Keyed Wrapper Moves Inside an Extracted Component
 
 **What goes wrong:**
-The existing `upvoteQuestion` resolver stores voter deduplication in a `voters` SS (String Set) attribute directly on the Question item. Copying this pattern for reactions — adding a `reactor_<emoji>` SS attribute per emoji type — means each item accretes one fingerprint string per reactor per emoji. At 500 participants reacting with all 6 emojis, a single Question item could accumulate 3,000 fingerprint strings (~50-100 bytes each), pushing the item toward or past DynamoDB's hard 400KB item size limit. When the item exceeds 400KB, DynamoDB rejects the write with `ValidationException: Item size has exceeded the maximum allowed size`, causing all reaction mutations to silently fail for popular questions.
+`AnimatePresence` tracks child mounts/unmounts by the `key` prop on its **immediate** children. In `qa-panel.tsx`, each `motion.div` wraps a `QuestionCard` and holds the question ID as the key. If the refactor moves `QuestionCard` into state-specific variants (normal, banned, hidden) and any variant component returns its own outer wrapper, while the `motion.div` is moved inside those variants or eliminated in favor of them, the exit animation stops working silently. Items disappear instantly instead of fading out with the configured `exit={{ opacity: 0, height: 0 }}`.
+
+Current risk zone — `qa-panel.tsx` lines 141–173:
+
+```tsx
+<AnimatePresence initial={false}>
+  {sortedQuestions.map((question) => (
+    <motion.div       // key must stay HERE, on the direct child of AnimatePresence
+      key={question.id}
+      layout
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+    >
+      <QuestionCard ... />
+    </motion.div>
+  ))}
+</AnimatePresence>
+```
+
+If `QuestionCard` is split into `NormalQuestionCard`, `BannedQuestionCard`, `HiddenQuestionCard` and the switch logic is moved inside the map callback, the `motion.div` wrapper must remain in `QAPanel`, not be absorbed into the variant components.
 
 **Why it happens:**
-The existing vote system stores `voters` as a Set on the item because the total voter deduplication set is bounded by connected participants (~500 max), and only one vote type exists. With 6 emoji types each maintaining a full Set of reactors, the multiplier blows the same budget. Developers copy the working vote pattern without accounting for the 6x amplification.
+Developers decomposing a large render block pull inner JSX into new sub-components. It is tempting to put the `motion.div` wrapper inside each variant so it "owns" its animation. The rule that `AnimatePresence` needs keys on its **direct children** is non-obvious when reading extracted code.
+
+React Fragment wrappers compound this: if an extracted component returns `<>...</>`, React does not propagate the `key` prop into Fragment, breaking AnimatePresence's identity tracking entirely.
 
 **How to avoid:**
-Do NOT store reactor fingerprints per-emoji on the Question/Reply item itself. Use one of two patterns:
+Keep the `motion.div key={question.id}` permanently in `QAPanel`. Variants are pure presentation components; the animated wrapper is layout infrastructure that lives in the list owner. The rule: whichever component owns the `AnimatePresence` owns the keyed wrappers.
 
-Option A (preferred — separate item per reaction): Model each reaction as a separate DynamoDB item with PK: `SESSION#slug`, SK: `REACTION#questionId#emoji#fingerprint`. The Question/Reply item only stores aggregate counts as a Map attribute: `reactionCounts: { "👍": 3, "❤️": 12 }`. Deduplication is enforced via the unique SK (a second PUT with the same SK is a no-op if the fingerprint already exists, or use a conditional expression).
-
-Option B (acceptable for small scale): Keep one `reactors` SS on the item but scope it as a global dedup set (any reaction by fingerprint counts once). This caps item growth at max connected participants × 1 fingerprint, matching the vote pattern. Loses per-emoji dedup granularity.
-
-For Nasqa Live's 50-500 participant scale, Option A is the right choice. It also makes it trivial to load aggregate counts without scanning reactor sets.
+When `layout` prop is needed alongside exit animations (reordering the list on vote changes), wrap the whole list in `<LayoutGroup>` to ensure sibling cards outside the exiting item also animate their layout change.
 
 **Warning signs:**
 
-- Popular questions stop accepting reactions silently (DynamoDB `ValidationException` swallowed in resolver error handler)
-- `ReturnValues: "ALL_NEW"` on update returning smaller count than expected
-- CloudWatch Lambda error logs showing `Item size has exceeded maximum allowed size`
+- Questions transition from normal to banned state: the card disappears instantly (pop) instead of fading out.
+- Snippets deleted by the host vanish without the height collapse animation.
+- Layout jumps immediately on card removal (missing LayoutGroup when layout prop is present).
+- Console shows no error — animation failure is silent.
 
-**Phase to address:** Phase 1 (DynamoDB schema and resolver design) — the data model must be decided before writing any resolver code
-
----
-
-### Pitfall 2: The Existing `voters` Set Will Conflict if Reaction Dedup Is Added to the Same Item
-
-**What goes wrong:**
-The existing `upvoteQuestion` mutation stores `voters` (a SS attribute) on the Question item. If the reactions implementation also attempts to add a `voters` or `reactors` Set to the same item, the two systems will share or collide on the same attribute namespace. Worse, if reaction dedup is added naively as a second attribute on the Question item alongside the upvote `voters` Set, any future migration that needs to separate them requires a full table scan to rewrite items. Additionally, the existing `upvoteQuestion` UpdateExpression uses `ADD ... DELETE voters :fpSet` — mixing Set operations across two different interaction types on the same item creates concurrent write contention (both vote and reaction mutations could be in-flight simultaneously on the same item, each attempting a conditional SET operation).
-
-**Why it happens:**
-Reactions feel like "another kind of vote" and developers reach for the same DynamoDB item as the natural home. The existing schema has no explicit separation between voting state and reaction state.
-
-**How to avoid:**
-Model reactions as entirely separate DynamoDB items (separate SK prefix: `REACTION#`). The Question item retains its existing `voters`, `upvoteCount`, `downvoteCount` attributes with zero modification. Reaction counts are a separate `reactionCounts` Map attribute OR are derived from separate REACTION# items. This ensures:
-
-- Zero risk of concurrent write contention between vote and reaction mutations on the same item
-- Existing vote tests pass without modification
-- Reaction data can be cleared, migrated, or extended independently
-
-**Warning signs:**
-
-- The reaction resolver touches the same DynamoDB Key (PK + SK) as `upvoteQuestion`
-- `ConditionalCheckFailedException` rate rising on upvote mutations after reactions are deployed
-- Unit tests for upvoteQuestion starting to fail after reaction code merges
-
-**Phase to address:** Phase 1 (schema design review) — the resolver must never write to the same item key as an existing mutation without explicit coordination
+**Phase to address:** Component extraction phase — whichever phase splits `QuestionCard` into state-specific variants and extracts `SnippetCard` to its own file.
 
 ---
 
-### Pitfall 3: Reaction Updates Flood the AppSync Subscription Channel
+### Pitfall 2: Stale Closure in Extracted `useSessionMutations` Captures Wrong State for Rollback
 
 **What goes wrong:**
-The existing `onSessionUpdate` subscription fires for every mutation listed in the `@aws_subscribe` directive. If `reactToItem` is added to that list, each reaction click by any participant triggers a WebSocket broadcast to all 50-500 connected clients. A session with 200 participants where each reacts to a popular question generates 200 subscription messages in rapid succession, each containing the full `SessionUpdate` payload. AppSync charges per 5KB of outbound subscription data and has a default limit of 1,000 outbound messages per second per API. In practice, the problem is UI thrashing: every client's React tree re-renders on each incoming subscription event, causing jank and dropped frames in the question feed when reaction events flood in.
+Both `SessionLivePage` and `SessionLiveHostPage` define `handleDownvote` as a plain `async function` inside the component body, closing over the live `state` from `useSessionState`. The rollback calculation reads current question data:
+
+```typescript
+// In SessionLiveHostPage — identical copy exists in SessionLivePage
+const q = state.questions.find((q) => q.id === questionId);
+return remove ? Math.max(0, q.downvoteCount - 1) : q.downvoteCount + 1;
+```
+
+When this handler is extracted to a `useSessionMutations` hook and wrapped in `useCallback`, `state` is captured at the time `useCallback` memoizes the function. If `state` is omitted from the dependency array (common, to avoid rebuilding callbacks on every render), the rollback calculation uses the downvote count from the render when the callback was first created — not the render when the action is actually executed. In a real-time session where subscription events continuously update counts, this produces rollbacks that set counts to wrong values.
 
 **Why it happens:**
-The union-type single-channel subscription is an intentional architecture decision for simplicity, and it works well for low-frequency events (snippets, questions, replies). Reactions are fundamentally higher frequency — they are designed to be clicked repeatedly and quickly. Treating them identically to "QUESTION_ADDED" events mismatches the frequency assumption of the subscription design.
+Developers correctly know that `dispatch` is stable and can be omitted from deps. By analogy they omit `state`, not realizing that `dispatch` is special (React guarantees its identity) while `state` is a plain object that changes on every reducer dispatch.
 
 **How to avoid:**
 
-- Keep reaction mutations on the subscription channel (it is the right channel) but debounce the broadcast on the server side: the reaction resolver should coalesce rapid reaction updates for the same `(questionId, emoji)` pair within a 500ms window before publishing the subscription event. The Lambda resolver can use DynamoDB's `UpdateItem` with `ReturnValues: "ALL_NEW"` to get the latest aggregate count after any number of updates, then publish only one subscription event per debounce window. (Note: debouncing in Lambda requires a short-lived cache or conditional TTL logic — simplest approach is: only broadcast if the count changed by >= 1 and at least 500ms has passed since the last broadcast for that item.)
-- Alternatively, on the frontend, debounce subscription event processing for `REACTION_UPDATED` events specifically: buffer incoming events for 300ms and apply only the latest count, rather than re-rendering on every event.
-- Keep the `payload` for reaction events minimal: only `{ questionId, replyId, emoji, count }` — never include the full reactor fingerprint list.
+Option A (preferred) — move rollback computation into the reducer so it always has current state:
+
+```typescript
+// New action type: let the reducer compute rollback from its own state
+dispatch({ type: "DOWNVOTE_ROLLBACK", payload: { questionId, wasRemoving: remove } });
+// Inside sessionReducer, case "DOWNVOTE_ROLLBACK":
+//   reads state.questions.find(...) on the current state at dispatch time
+```
+
+Option B — use a `stateRef` that the hook reads instead of closing over `state`:
+
+```typescript
+const stateRef = useRef(state);
+useLayoutEffect(() => {
+  stateRef.current = state;
+});
+// Handlers read stateRef.current.questions.find(...) — always current
+```
+
+Option C — React 19's `useEffectEvent` (stable in React 19.2): wrap the rollback calculation in a `useEffectEvent` callback that reads the latest `state` without being a reactive dependency.
+
+Do NOT solve this by including `state` in `useCallback` dependencies — that rebuilds all handlers on every reducer dispatch, causing all `QuestionCard` children to re-render on every vote from any participant.
 
 **Warning signs:**
 
-- React DevTools Profiler showing dozens of re-renders per second during a reaction burst
-- AppSync subscription message count in CloudWatch spiking 10x above baseline when reactions are added
-- UI frame rate dropping below 30fps during reaction activity in Chrome Performance tab
+- Downvote rollback after a server error sets the count to 0 or a value from a previous render.
+- Unit test for rollback passes when run in isolation (single mutation), fails when run after prior mutations have changed state.
+- Double vote: optimistic +1 applied, network error triggers rollback, rollback uses stale count producing net -1 instead of 0.
 
-**Phase to address:** Phase 1 (resolver design) and Phase 2 (frontend subscription handler) — the payload shape must be defined before frontend integration
+**Phase to address:** `useSessionMutations` hook extraction phase (the 270-line orchestrator → 40-line composition root refactor).
 
 ---
 
-### Pitfall 4: Optimistic UI Produces Stale Counts When Two Users React Simultaneously
+### Pitfall 3: `aria-live` Announcement Storms Under High Real-Time Load
 
 **What goes wrong:**
-The existing vote system applies optimistic UI by immediately incrementing a local counter and rolling back on error. For reactions, this pattern has a subtle flaw: if User A and User B both react with "👍" at the same moment, User A's optimistic state shows count=1, the server resolves both reactions atomically to count=2, and the subscription broadcast delivers count=2 to both clients. User A's TanStack Query cache holds the optimistic count=1. When the query invalidation triggers a refetch, the cache snaps from 1 to 2 — this is a visible count jump that contradicts the optimistic update. For the vote system this is acceptable because votes are rare. For reactions in a popular session this can happen dozens of times per minute.
+Adding `aria-live` to `NewContentBanner` (planned in v1.3) in a session with 50+ active participants causes screen readers to queue dozens of sequential announcements. NVDA and JAWS do not debounce `aria-live="polite"` regions — they announce every DOM text change the moment the user is idle. Questions arriving at 2–5 per second produce "3 new questions… 4 new questions… 5 new questions…" as a continuous stream the screen reader cannot escape.
+
+The `NewContentBanner` in `new-content-banner.tsx` currently has no ARIA annotation. If `aria-live` is placed directly on the banner element that shows/hides, there is a second problem: `if (!visible) return null` unmounts the DOM node. Screen readers track live regions by DOM node identity — unmounting and remounting the node resets the listener, causing the first announcement after remount to be silently dropped.
 
 **Why it happens:**
-Optimistic updates assume the local state IS the server state until confirmed. In a multi-user real-time system, the server state is being mutated by other clients concurrently. The optimistic update correctly reflects the local user's action, but the subscription channel continuously delivers ground truth that conflicts with it.
+Developers add `aria-live` to the most visible element (the banner itself) and tie the region's presence to the banner's `visible` prop. This conflates the visual component lifecycle with the accessibility announcement lifecycle, which must be independent.
 
 **How to avoid:**
-Use a "last-write-wins with subscription merge" strategy:
+Separate visual state from announcement state. Keep a permanently-mounted, visually-hidden `aria-live` region in a parent component (or layout root), and debounce the string written to it:
 
-- On the frontend, maintain a `localDelta` for each `(itemId, emoji)` pair rather than an absolute count. Display `serverCount + localDelta` optimistically.
-- When a `REACTION_UPDATED` subscription event arrives, apply `serverCount` from the event to the base count and reset `localDelta` to 0 (if the mutation has completed) or keep `localDelta` intact (if the mutation is still in-flight).
-- Never revert the subscription-delivered count to the pre-reaction state during rollback — only revert the `localDelta`.
+```tsx
+// In QAPanel or SessionShell — always mounted, always invisible
+<div aria-live="polite" aria-atomic="true" className="sr-only">
+  {debouncedAnnouncement}
+</div>;
 
-TanStack Query's `cancelQueries` + `setQueryData` pattern from the existing vote system is correct for the "prevent stale override" part, but the subscription handler must be aware of in-flight mutations and not overwrite optimistic state with a subscription event that arrived before the mutation resolved.
+// debouncedAnnouncement: updated at most every 2s from newQuestionCount
+const [debouncedAnnouncement, setDebouncedAnnouncement] = useState("");
+useEffect(() => {
+  if (newQuestionCount === 0) return;
+  const id = setTimeout(
+    () => setDebouncedAnnouncement(t("newQuestionBanner", { count: newQuestionCount })),
+    2000,
+  );
+  return () => clearTimeout(id);
+}, [newQuestionCount, t]);
+```
+
+The visual `NewContentBanner` continues to update immediately. The `aria-live` region updates at most every 2 seconds regardless of how many questions arrive.
 
 **Warning signs:**
 
-- Reaction counts visibly "jumping" during active sessions (up 1 then down 1 then up 2)
-- TanStack Query devtools showing frequent cache invalidations for reaction-bearing items during load testing
-- User reports that their reaction "disappeared" and then "came back" in the UI
+- NVDA or VoiceOver testing during active sessions produces continuous speech that cannot be interrupted.
+- `aria-live` is on an element that conditionally returns `null`.
+- Multiple `aria-live` regions in the component tree (each one announces independently).
 
-**Phase to address:** Phase 2 (frontend optimistic update implementation) — requires a deliberate state merging strategy before any optimistic code is written
+**Phase to address:** Accessibility pass phase — the ARIA `aria-live` on NewContentBanner and `role="tablist"` on SessionShell are planned together in v1.3.
 
 ---
 
-### Pitfall 5: Rate Limiting Reactions Using the Same Bucket as Questions Creates Unintended Cross-Throttling
+### Pitfall 4: Memoizing `QuestionCard` Without Stabilizing Callback Props Wastes the Optimization
 
 **What goes wrong:**
-The existing `checkRateLimit` function keys its DynamoDB bucket on the fingerprint alone: `RATELIMIT#${fingerprint}` + `BUCKET#${bucket}`. If reaction mutations are added to the same rate limiter with the same key pattern, a participant who reacts quickly (6 emojis in 6 seconds) consumes rate limit budget shared with their ability to ask questions. The inverse is also true: a participant who asks 3 questions in a minute (hitting the 3/min question limit) cannot react to anything for the rest of that minute. This is not the intended behavior — reactions should have an independent, higher-frequency rate limit.
+The v1.3 plan includes memoizing the `repliesByQuestion` grouping. But `QAPanel` rebuilds the `repliesByQuestion` Map inline on every render:
 
-Additionally, the existing rate limiter is a "count per window" bucket. For toggle behavior (react + unreact), an attacker can rapidly toggle a reaction on/off to inflate the subscription broadcast count without actually consuming rate limit budget (toggle-off is a remove, which the current logic counts the same as a toggle-on). 10 rapid toggles = 10 subscription events to all connected clients.
+```typescript
+// qa-panel.tsx — rebuilt on every render, new reference every time
+const repliesByQuestion = new Map<string, Reply[]>();
+for (const reply of replies) {
+  const existing = repliesByQuestion.get(reply.questionId) ?? [];
+  existing.push(reply);
+  repliesByQuestion.set(reply.questionId, existing);
+}
+```
+
+Even after wrapping `QuestionCard` in `React.memo`, it will re-render on every parent render because the callback props (`onUpvote`, `onDownvote`, `onReply`, `onFocus`, `onBanQuestion`, `onBanParticipant`, `onRestore`) are recreated as new function references on every render of `SessionLiveHostPage` / `SessionLivePage`. `React.memo` shallow-compares props — a new function reference always fails the comparison, making the `memo` wrapper have zero effect.
+
+In a session with 50 questions, every subscription event that updates any state (a single vote from another participant) causes all 50 `QuestionCard` instances to re-render unnecessarily.
 
 **Why it happens:**
-Reactions look like another action by the participant, so developers pass `fingerprint` as the rate limit key and reuse `checkRateLimit`. The semantic difference (reactions are higher-frequency, toggleable, and have different abuse profiles) is not obvious until load testing.
+Developers apply `React.memo` to the component and `useMemo` to data, but forget that callback props are part of the props object that `memo` compares. The optimization appears correct in code review but has no runtime effect.
 
 **How to avoid:**
+All three must be done together to achieve the optimization:
 
-- Use a separate rate limit key namespace for reactions: `RATELIMIT#REACTION#${fingerprint}` instead of `RATELIMIT#${fingerprint}`.
-- Set a higher limit for reactions (e.g., 30 reactions/minute vs 3 questions/minute).
-- For toggle-off (unreact) operations: do NOT call `checkRateLimit` at all — removing a reaction should be free. Only rate-limit adding reactions.
-- Add a short per-item cooldown: a participant cannot react to the same `(itemId, emoji)` more than once per 10 seconds. This prevents rapid-toggle abuse without penalizing normal use. Enforce via a conditional DynamoDB expression on the REACTION# item's `createdAt` timestamp.
+1. `React.memo` on `QuestionCard`.
+2. `useMemo` for `repliesByQuestion` in `QAPanel` (dependency: `[replies]`).
+3. `useCallback` for every handler prop passed to `QuestionCard`, with correct dependencies.
+
+For handlers in `useSessionMutations`, the stable-dispatch pattern means `dispatch` can stay in deps without causing rebuilds. The problematic deps are `state` (see Pitfall 2) and `fingerprint` (changes only on first load from localStorage). Fingerprint should be read via ref inside callbacks if it causes unnecessary rebuilds.
 
 **Warning signs:**
 
-- Users reporting "can't ask questions" after reacting to several items in quick succession
-- Rate limit errors appearing in the console during normal reaction use
-- Load test showing that 6 rapid reactions blocks the question submission UI
+- React DevTools Profiler: a single vote event highlights all 50 `QuestionCard` components as re-rendered, not just the one whose data changed.
+- Frame drops during active voting visible in Chrome DevTools Performance tab.
+- Adding `React.memo` to `QuestionCard` has no visible effect in the profiler (memos always miss).
 
-**Phase to address:** Phase 1 (resolver design) — the rate limit key and logic must be defined before the resolver is written
+**Phase to address:** QuestionCard extraction and memoization — must be done as one atomic phase. Partial application (memo without useCallback, or useCallback without memo) produces no benefit.
 
 ---
 
-### Pitfall 6: Reaction Subscription Events Contain the Full `payload` JSON Including Fingerprints — Privacy and Size Issue
+### Pitfall 5: Mobile Tab Switch Unmounts the Inactive Panel, Losing Scroll Position and Local State
 
 **What goes wrong:**
-The existing `upvoteQuestion` resolver returns `payload: JSON.stringify({ questionId, upvoteCount: newUpvoteCount })` — only aggregate counts, no fingerprints. If a reaction resolver naively returns `payload: JSON.stringify({ questionId, emoji, reactors: [...fingerprints] })` to let clients derive counts from the Set, every subscriber receives every reactor's fingerprint. In a session context, fingerprints are the only identity token participants have — broadcasting them in subscription events means any participant can harvest all other participants' device fingerprints from WebSocket frames, enabling targeted ban circumvention analysis and privacy violation.
+`SessionShell` on mobile renders:
 
-Even ignoring privacy: at 500 participants each with a 36-character fingerprint UUID, the reactors array alone is 18KB per emoji type × 6 emojis = 108KB per payload. AppSync's documented maximum outbound message size is 240KB (raised from 128KB in 2024). A full reactor-list payload approaches that limit.
+```tsx
+{
+  activeTab === "clipboard" ? clipboardSlot : qaSlot;
+}
+```
+
+Switching tabs unmounts the inactive panel completely. `QAPanel` holds non-trivial local state: `showNewBanner`, `newQuestionCount`, `debouncedQuestions`, and a `scrollContainerRef`. When the user switches to Clipboard and back to Q&A, all of this resets. The scroll position is lost — if the user had scrolled through 20 questions and found one to reply to, they are returned to the top. Worse, if a `QuestionCard` had an open reply textarea, the text they typed is gone.
+
+Adding ARIA `role="tablist"` / `role="tab"` / `role="tabpanel"` to the current buttons also requires both tabpanels to be present in the DOM simultaneously — a hidden tabpanel should use the `hidden` attribute, not DOM removal, per WAI-ARIA APG spec. With conditional rendering, the ARIA attributes will reference non-existent DOM elements, causing screen readers to fail silently.
 
 **Why it happens:**
-Developers want clients to be able to compute counts AND dedup state locally without a refetch. Sending the full reactor set seems efficient. The privacy implication of broadcasting device fingerprints is non-obvious.
+Conditional rendering is the simplest tab implementation. The ARIA requirement that panels remain in the DOM is non-intuitive.
 
 **How to avoid:**
+Replace conditional rendering with CSS visibility using the `hidden` attribute:
 
-- Reaction subscription payloads MUST only contain aggregate counts: `{ questionId, replyId, emoji, count, userHasReacted: boolean }`.
-- The `userHasReacted` boolean is computed server-side per subscriber (if using AppSync enhanced subscription filters with Lambda resolvers) OR derived client-side from localStorage (if the client tracks its own reactions).
-- For Nasqa Live: the client tracks its own reactions in localStorage (same pattern as upvotes). The payload only needs `{ itemId, emoji, count }`.
-- Never put fingerprints in the subscription payload.
+```tsx
+<div
+  role="tabpanel"
+  id="panel-clipboard"
+  aria-labelledby="tab-clipboard"
+  hidden={activeTab !== "clipboard"}
+  className={activeTab !== "clipboard" ? "hidden" : "flex h-full w-full"}
+>
+  {clipboardSlot}
+</div>
+<div
+  role="tabpanel"
+  id="panel-qa"
+  aria-labelledby="tab-qa"
+  hidden={activeTab !== "qa"}
+  className={activeTab !== "qa" ? "hidden" : "flex h-full w-full"}
+>
+  {qaSlot}
+</div>
+```
+
+`hidden` keeps the DOM and React state alive (scroll preserved by the browser), while the ARIA `hidden` attribute makes the inactive panel inert for screen readers. Both requirements are satisfied simultaneously.
+
+Tab buttons must use `role="tab"` with `aria-controls` referencing their panel ID, and `aria-selected` to reflect active state. The WAI-ARIA APG keyboard pattern requires left/right arrow keys to move between tabs:
+
+```typescript
+function handleTabKeyDown(e: React.KeyboardEvent, current: Tab) {
+  if (e.key === "ArrowRight") setActiveTab(current === "clipboard" ? "qa" : "clipboard");
+  if (e.key === "ArrowLeft") setActiveTab(current === "qa" ? "clipboard" : "qa");
+}
+```
 
 **Warning signs:**
 
-- Subscription payload JSON containing a `reactors` or `fingerprints` array
-- Browser Network tab showing WebSocket frames > 10KB for reaction events
-- Privacy audit flagging device fingerprint exposure in subscription channel
+- Switching to Clipboard and back resets the QA panel's new-question count to 0.
+- Reply text typed in a `QuestionCard` is lost on tab switch.
+- axe-core flags "tab references non-existent panel element" after adding ARIA attributes.
+- Screen reader does not announce panel content on tab switch.
 
-**Phase to address:** Phase 1 (resolver design) — the payload schema is defined when the resolver is written
+**Phase to address:** ARIA tablist / SessionShell accessibility phase.
 
 ---
 
-### Pitfall 7: Emoji Rendering Bundle Budget Violation
+### Pitfall 6: `QuestionCard` Local State Desynchronizes from Subscription-Driven `isFocused` Prop
 
 **What goes wrong:**
-The project has a hard constraint: initial JS payload < 80KB gzipped. The 6-emoji fixed palette uses native OS emoji (rendered by the browser as text). This is zero bundle cost. However, if any developer adds an emoji rendering library (twemoji, emoji-mart, EmojiButton, etc.) to "ensure consistent cross-platform appearance," the bundle cost is immediate and severe: twemoji adds ~30-80KB gzipped, emoji-mart adds ~100-200KB gzipped. Either addition would push the page over the 80KB budget.
+`QuestionCard` initializes `showReplies` from the `question.isFocused` prop:
 
-Cross-platform emoji inconsistency (Android vs iOS vs Windows renders the same emoji differently) is a real concern that makes these libraries tempting. The constraint must be documented as a deliberate decision or the library will appear in a PR.
+```typescript
+const [showReplies, setShowReplies] = useState(question.isFocused);
+```
+
+`useState` reads its argument only once — at mount. If a question becomes focused via a subscription event after the card has mounted, `showReplies` stays `false`. The planned v1.3 feature "auto-expand replies for focused questions" will silently not work for any card that was already mounted when the focus event arrived.
+
+Splitting `QuestionCard` into state-specific variants makes this worse. If the variant switches (e.g., `isHidden` becomes `true`) without a React key change, the new render uses the existing component instance and the stale `useState` initialization is never re-run.
 
 **Why it happens:**
-Native emoji rendering produces visually inconsistent output across platforms. Developers see this inconsistency during testing on different devices and reach for an image-based emoji library to normalize appearance. The bundle impact is not checked until CI runs the bundle analyzer.
+`useState(initialValue)` is a common pattern for "derived initial state" that developers assume stays synchronized with prop changes. React explicitly does not re-initialize state on re-render — this is the expected behavior, but it surprises developers when props are subscription-driven.
 
 **How to avoid:**
+Replace the `useState` initialization with a `useEffect` that syncs one-way from prop to state (open on focus, do not auto-close on unfocus to preserve user intent):
 
-- Explicitly document that native emoji rendering is required. No emoji libraries. No SVG sprite sheets for emoji.
-- Use native emoji characters as `button` content with an `aria-label` attribute describing the reaction. The visual rendering is intentionally platform-native.
-- Add a bundle size CI check (already planned in v1.1) that fails if the initial JS payload exceeds 80KB gzipped. This is the enforcement mechanism.
-- If visual consistency becomes a product requirement in a future milestone, the correct approach is a self-hosted SVG sprite (not a library), with per-emoji SVGs of the specific emojis only (~2-3KB total for 6 emojis at ~400-500 bytes each compressed).
+```typescript
+const [showReplies, setShowReplies] = useState(question.isFocused);
+useEffect(() => {
+  if (question.isFocused) setShowReplies(true);
+}, [question.isFocused]);
+```
+
+When splitting into variants, give each variant a compound key so React remounts cleanly on variant change:
+
+```tsx
+// In QAPanel map callback:
+key={`${question.id}-${question.isBanned ? "banned" : question.isHidden ? "hidden" : "normal"}`}
+```
+
+This forces a clean remount on state transition, resetting all local state consistently. Pair with the AnimatePresence rule from Pitfall 1: the key must be on the `motion.div`, not inside a variant component.
 
 **Warning signs:**
 
-- `import { Emoji } from 'emoji-mart'` or `import twemoji` appearing in any component file
-- Bundle size increasing by > 5KB for a "small" reactions feature
-- CI bundle check failing after the reactions PR merges
+- Host focuses a question; participant who already has the card mounted sees the focused ring/badge appear but the reply section remains collapsed.
+- Manual "show replies" toggle works, but subscription-driven auto-expand does not.
+- Unit test for auto-expand only passes when `isFocused: true` was set before the component mounted.
 
-**Phase to address:** Phase 2 (frontend component implementation) — the constraint must be in the component design brief before any code is written
+**Phase to address:** QuestionCard variant extraction phase, specifically the auto-expand replies feature.
 
 ---
 
-### Pitfall 8: `aria-label` Missing or Wrong on Reaction Buttons — Screen Readers Read Raw Emoji Characters
+### Pitfall 7: Duplicate Sort Logic Between `useSessionState` and `QAPanel` Produces Divergent Ordering
 
 **What goes wrong:**
-Reaction buttons that render as `<button>👍</button>` with no `aria-label` cause screen readers to announce the emoji's Unicode description ("thumbs up sign") or nothing at all depending on the OS and screen reader version. The button's purpose is "React with thumbs up (3 reactions)" — the count is the critical missing piece. Additionally, after a user reacts, the button state changes (active/toggled) but if `aria-pressed` is not set, screen readers have no way to convey the "you have reacted" state. This renders the entire reaction system inaccessible to keyboard and screen reader users.
+Questions are sorted in two places:
+
+1. `useSessionState.ts` lines 221–226: sorts questions for `sortedQuestions` output.
+2. `qa-panel.tsx` lines 79–94: re-sorts using a debounced snapshot to implement visual stability.
+
+Both sort by `isFocused` first, then `upvoteCount` desc, then `createdAt` desc. The two sorts can temporarily disagree when the debounce timer is active. This means the host and participant views can show different orderings during the 1-second debounce window, since `SessionLiveHostPage` passes `sortedQuestions` from `useSessionState` into `QAPanel`, which then re-sorts it.
+
+When extracting the sort to a single canonical location, there is a risk of accidentally removing the debounce, which causes cards to visibly jump position on every vote from any participant.
 
 **Why it happens:**
-Emoji buttons look "obviously" meaningful visually. The accessible name and state management for interactive emoji elements is a non-trivial concern that is addressed post-implementation or not at all.
+The debounce sort in `QAPanel` was added to prevent card jumping, without removing the pre-sort from `useSessionState`. The two layers are now both active and redundant.
 
 **How to avoid:**
 
-- Every reaction button must have: `aria-label="React with [emoji name]: [count] reactions"` and `aria-pressed={userHasReacted}`.
-- Update `aria-label` dynamically when count changes: `aria-label="React with thumbs up: 4 reactions"`.
-- The reaction count span should be `aria-hidden="true"` (it is redundant with `aria-label`).
-- Group the 6 reaction buttons in a `role="group"` with `aria-label="Reactions"` to give screen reader users context.
-- All 6 buttons must be keyboard-reachable via Tab and activatable via Enter/Space.
-- Use `next-intl` translation keys for the `aria-label` format string so all three locales (en, es, pt) have correct labels.
+- `useSessionState` should NOT pre-sort questions. Return `state.questions` unsorted.
+- `QAPanel` owns the sort + debounce. It receives unsorted questions from the parent.
+- The debounced sort is the single source of truth for display order.
+
+This is the correct separation: `useSessionState` is a state container; `QAPanel` is a display component that owns its display-specific optimizations (debounce, visual stability).
+
+If `sortedQuestions` from `useSessionState` is also used elsewhere (e.g., the host toolbar showing the first focused question), provide a separate `focusedQuestion` selector in the hook rather than sorting the entire list.
 
 **Warning signs:**
 
-- `axe-core` or `eslint-plugin-jsx-a11y` flagging empty accessible name on button elements
-- Screen reader announcing "Button, 3" (just the count) instead of the full label
-- Keyboard Tab navigation skipping over reaction buttons because `<button>` content is only emoji with no accessible name
+- Host and participant see different question ordering during an active vote event.
+- Removing `sortedQuestions` from `useSessionState` breaks the host page (a consumer other than `QAPanel` is using it).
+- After removing the pre-sort, `QAPanel` shows unsorted questions briefly before the debounce fires.
 
-**Phase to address:** Phase 2 (frontend component implementation) — ARIA attributes must be in the initial component, not bolted on afterward
-
----
-
-### Pitfall 9: Mobile Touch Targets for Reaction Buttons Are Too Small
-
-**What goes wrong:**
-Six emoji reaction buttons displayed in a horizontal row on a question card must each be at least 44×44px to meet WCAG 2.2 success criterion 2.5.8 (Target Size Minimum). In a typical compact Q&A feed layout, reaction buttons are rendered small (24px emoji with 4px padding = ~32×32px) to avoid dominating the card UI. On mobile, participants miss the intended target and accidentally trigger adjacent reactions. The error rate for small touch targets on touch screens is documented; the 44px minimum is specifically for mobile interaction.
-
-**Why it happens:**
-Designers size buttons for visual proportion, not touch ergonomics. The buttons look fine on desktop. Mobile testing with touch is often deferred.
-
-**How to avoid:**
-
-- Each reaction button: minimum `min-h-[44px] min-w-[44px]` with `flex items-center justify-center`. Use padding to expand the hit area without enlarging the visual emoji size.
-- Alternatively, use a transparent pseudo-element or CSS `::after` to expand the touch target without changing layout.
-- Test on a real iOS and Android device, not just browser DevTools mobile emulation. Browser emulation does not replicate touch accuracy.
-- Run axe-core in mobile testing mode to flag target size violations.
-
-**Warning signs:**
-
-- Reaction buttons with `h-8 w-8` (32px) or smaller Tailwind classes
-- Repeated accidental reactions reported in user testing
-- axe-core reporting "Target Size" WCAG 2.5.8 violations
-
-**Phase to address:** Phase 2 (frontend component implementation) — minimum touch target size is a design constraint, not a post-ship fix
-
----
-
-### Pitfall 10: Reaction Counts Re-render All Questions on Every Subscription Event
-
-**What goes wrong:**
-In the current architecture, `getSessionData` returns all questions and replies in a single query. The TanStack Query cache key is likely `['sessionData', sessionSlug]`. When a reaction subscription event arrives, if the handler invalidates the entire `sessionData` cache key, all questions and replies re-render simultaneously — including items with no reaction activity. In a session with 100 questions and 500 participants reacting actively, this means 100 question components re-rendering on every reaction event.
-
-**Why it happens:**
-The single-query `getSessionData` pattern is simple and efficient for initial load. It becomes a liability when fine-grained real-time updates need to avoid full-list re-renders. The existing vote system has this same problem, but upvotes are low-frequency (one per participant). Reactions are high-frequency (multiple per participant per item).
-
-**How to avoid:**
-
-- Handle `REACTION_UPDATED` subscription events with surgical cache updates, NOT cache invalidation. Use TanStack Query's `queryClient.setQueryData` to update only the specific item in the cached list:
-  ```typescript
-  queryClient.setQueryData(["sessionData", sessionSlug], (old) => ({
-    ...old,
-    questions: old.questions.map((q) =>
-      q.id === questionId
-        ? { ...q, reactionCounts: { ...q.reactionCounts, [emoji]: newCount } }
-        : q,
-    ),
-  }));
-  ```
-- Use React `memo` on `QuestionCard` and `ReplyCard` components with a stable props equality check, so only the single updated item re-renders.
-- Keep reaction counts as a `Map` attribute on the item (or derived from REACTION# items on initial load) so the data shape supports surgical updates.
-
-**Warning signs:**
-
-- React DevTools Profiler showing all `QuestionCard` components re-rendering when a single reaction fires
-- Frame drops visible in the browser when reacting during a session with > 20 questions
-- TanStack Query devtools showing full `sessionData` invalidation on every `REACTION_UPDATED` event
-
-**Phase to address:** Phase 2 (frontend subscription handler) — the cache update strategy must be designed before the subscription handler is written
+**Phase to address:** QAPanel sort deduplication phase, done simultaneously with the `useSessionMutations` extraction.
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
-
-| Shortcut                                                            | Immediate Benefit                            | Long-term Cost                                                                 | When Acceptable                                |
-| ------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------- |
-| Storing reactor fingerprints as a Set on the Question item          | Matches existing vote pattern, simple        | 400KB item limit hit at ~1,000 reactors across 6 emoji types                   | Never — separate REACTION# items from day one  |
-| Reusing the same `RATELIMIT#${fingerprint}` key for reactions       | No new code                                  | Questions and reactions share rate budget; reactions block question submission | Never — reactions need their own namespace     |
-| Sending full reactor fingerprint list in subscription payload       | Client can compute counts and state locally  | Privacy exposure, payload bloat approaching AppSync 240KB limit                | Never — always send only aggregate counts      |
-| Using an emoji library (twemoji, emoji-mart) for visual consistency | Consistent emoji appearance across platforms | Bundle budget violated immediately; breaks 80KB gzip constraint                | Never in v1.2 — native emoji only              |
-| Invalidating full `sessionData` cache on reaction events            | Simple, consistent with existing patterns    | All 100 questions re-render on every reaction; frame drops in active sessions  | Only acceptable with < 10 questions in session |
-| Skipping `aria-label` and `aria-pressed` on emoji buttons           | Faster initial implementation                | Reaction UI inaccessible to screen reader users; violates WCAG 2.2 AA          | Never — ARIA attributes are not optional       |
+| Shortcut                                                                        | Immediate Benefit                     | Long-term Cost                                                                                  | When Acceptable                                                        |
+| ------------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Duplicate handler logic in `SessionLivePage` and `SessionLiveHostPage`          | Avoids abstraction complexity         | Two places to fix every mutation bug; `handleDownvote` is verbatim duplicated across both files | Never — extract `useSessionMutations` in v1.3                          |
+| `repliesByQuestion` Map rebuilt inline on every `QAPanel` render                | Simple to read                        | Rebuilds O(n replies) on every subscription event, even if replies did not change               | Never once session has > 20 replies                                    |
+| Double sort: `useSessionState` pre-sorts AND `QAPanel` re-sorts with debounce   | Each component appears self-contained | Divergent ordering during debounce window; unnecessary sort work                                | Never — one canonical sort per render path                             |
+| `formatRelativeTime` defined locally in `question-card.tsx`                     | No import needed                      | Will diverge if copied to reply-list or other locations                                         | Acceptable only during initial scaffolding — extract before v1.3 ships |
+| Mobile `activeTab === "clipboard" ? clipboardSlot : qaSlot` conditional unmount | Simplest tab implementation           | Panel state lost on every tab switch; ARIA tabpanel requirement violated                        | Never for a production tab UI                                          |
+| `useState(question.isFocused)` for initial `showReplies`                        | Derived initial state reads naturally | Subscription-driven prop changes after mount never update the local state                       | Never when props are subscription-driven                               |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when wiring reactions into the existing stack.
-
-| Integration                          | Common Mistake                                                                             | Correct Approach                                                                                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| DynamoDB + reaction dedup            | Adding `reactor_👍` SS attribute on Question item                                          | Separate REACTION# SK items; aggregate counts stored as Map on Question item                                              |
-| AppSync schema + reactions           | Adding `reactToItem` to existing `@aws_subscribe` list without testing broadcast frequency | Add to subscription list but implement server-side coalescing or frontend event debouncing                                |
-| GraphQL schema + `SessionUpdate`     | Adding a new `eventType` value (`REACTION_UPDATED`) without updating the union enum        | Add `REACTION_UPDATED` to `SessionEventType` enum in `schema.graphql` AND in `@nasqa/core` types before any resolver code |
-| Rate limiter + reactions             | Calling `checkRateLimit(fingerprint, 30, 60)` with the existing key pattern                | Use `checkRateLimit('REACTION#' + fingerprint, 30, 60)` — separate namespace                                              |
-| TanStack Query + subscription events | `queryClient.invalidateQueries(['sessionData'])` on every reaction event                   | `queryClient.setQueryData` surgical update — never invalidate the full session list for reaction events                   |
-| next-intl + reaction `aria-label`    | Hardcoding English strings in `aria-label`                                                 | Define i18n keys for all 6 reaction labels in `@nasqa/core/i18n.ts` and use `useTranslations()`                           |
-| Subscription handler + optimistic UI | `setQueryData` from subscription overwriting in-flight optimistic state                    | Check for in-flight mutations before applying subscription updates; use `isMutating` from TanStack Query                  |
+| Integration                                      | Common Mistake                                                                                                                                                                                                                | Correct Approach                                                                                                                                                 |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AppSync + optimistic update + extraction         | Moving mutation handlers to a hook breaks the `_opt_` ID dedup in the reducer if the handler no longer passes `optimisticId`                                                                                                  | Pass `optimisticId: tempId` in all `SNIPPET_ADDED` and `QUESTION_ADDED` dispatches after extraction; the reducer dedup logic depends on it                       |
+| AppSync + subscription + component extraction    | Moving `useSessionUpdates` into a child component (e.g., inside `QAPanel`) causes a new WebSocket handshake every time the parent re-renders                                                                                  | `useSessionUpdates` must remain in the root orchestrator — never descend into panel components                                                                   |
+| next-intl + shared utility extraction            | `formatRelativeTime` currently takes `tSession` as a parameter. Calling `useTranslations()` inside a plain utility function fails (hooks can only be called inside components/hooks)                                          | Keep the translation function as a required parameter of the utility: `formatRelativeTime(createdAt, tSession)`, or make it a hook: `useRelativeTime(createdAt)` |
+| Framer Motion + React 19 concurrent rendering    | Rapid subscription events (5+ per second) can cause AnimatePresence to miss exit animations for fast-changing lists                                                                                                           | Use `mode="sync"` on `AnimatePresence` if items disappear without exit animations during rapid events; `"popLayout"` is best for reordering                      |
+| Framer Motion `layout` + `AnimatePresence`       | `layout` prop on list items causes sibling cards to animate when one is removed, but without `LayoutGroup` they may not animate their layout change                                                                           | Wrap the animated list in `<LayoutGroup>` when both `layout` and exit animations are active on the same list                                                     |
+| Base UI Dialog + QuestionCard variant extraction | The ban confirmation `Dialog.Root` is embedded in the main `QuestionCard`; extracting a `BannedQuestionCard` variant that does not contain the Dialog breaks the confirm flow                                                 | Keep `Dialog.Root` only in the full (normal) `QuestionCard` variant; banned and hidden variants are pure display components                                      |
+| `useCallback` + `useReducer` dispatch            | Wrapping handlers in `useCallback` with `dispatch` as the only dependency is safe because `dispatch` is stable. Adding `state` to deps rebuilds all callbacks on every state change, causing all memo'd children to re-render | Move state-reading logic from handlers into the reducer; keep callback deps to `[dispatch, sessionSlug, fingerprint]`                                            |
 
 ---
 
 ## Performance Traps
 
-Patterns that work locally but degrade at session load.
-
-| Trap                                                                 | Symptoms                                                                    | Prevention                                                                                        | When It Breaks                                                |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Invalidating full `sessionData` cache on reaction events             | All questions re-render simultaneously; visible frame drops                 | Surgical `setQueryData` for reaction-bearing items only                                           | At > 20 questions + > 50 concurrent reactors                  |
-| No debounce on subscription event processing for reactions           | UI re-renders at the rate of incoming WebSocket events (potentially 50/sec) | Buffer `REACTION_UPDATED` events for 200-300ms and apply latest count                             | At > 10 concurrent participants reacting simultaneously       |
-| DynamoDB GET to verify fingerprint dedup on every reaction           | Latency doubles for reaction mutations; Lambda timeout risk at scale        | Use conditional PutItem on REACTION# item (fails if duplicate) instead of a GET + conditional PUT | At > 200 reactions/minute on a single session                 |
-| Reactor fingerprint Set on Question item growing unbounded           | DynamoDB `ValidationException` on reaction mutations for popular questions  | Separate REACTION# items with dedup enforced by SK uniqueness                                     | At ~1,000 total reactions per question across all emoji types |
-| Rendering 6 reaction buttons per question × 100 questions with state | React tree has 600 interactive buttons; initial render slow                 | Defer rendering reaction buttons until a question card is in viewport (Intersection Observer)     | At > 50 questions in the feed                                 |
-
----
-
-## Security Mistakes
-
-Domain-specific security issues in the reactions feature.
-
-| Mistake                                                   | Risk                                                                                                                    | Prevention                                                                                                                     |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Broadcasting reactor fingerprints in subscription payload | Any participant can harvest all other participants' device fingerprints; enables ban circumvention analysis             | Payload contains only `{ itemId, emoji, count }` — never fingerprints                                                          |
-| Not enforcing ban check on reaction mutations             | Banned participants can still react, cluttering the feed and bypassing moderation intent                                | Call `checkNotBanned(sessionSlug, fingerprint)` at the start of the reaction resolver, same as `addQuestion`                   |
-| No input validation on emoji type in reaction resolver    | Arbitrary emoji injection into DynamoDB; storage of unexpected characters                                               | Validate `emoji` argument against the fixed allowlist `['👍', '❤️', '🎉', '😂', '🤔', '👀']` using Zod before any DB operation |
-| Rate limit toggle abuse (rapid react/unreact)             | 100 toggle events = 100 subscription broadcasts to all clients with no rate limit consumed                              | Apply rate limit to toggle-on only; add per-item cooldown of 10s for re-reaction after toggle-off                              |
-| hostSecret not required for reactions                     | No attack vector since reactions are public, but the convention for public mutations is consistent fingerprint tracking | Use fingerprint + ban check as the auth pattern; hostSecret is not needed for reactions                                        |
+| Trap                                                                             | Symptoms                                                                        | Prevention                                                                            | When It Breaks                                       |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| All `QuestionCard` instances re-render on every subscription event               | Frame drops on vote events; DevTools shows 50 card re-renders for 1 data change | `React.memo` + `useCallback` on all handler props + `useMemo` for `repliesByQuestion` | Noticeable at ~15 questions on mobile, severe at 40+ |
+| `repliesByQuestion` Map rebuilt inline on every `QAPanel` render                 | O(n replies) per render; minor cost grows with session length                   | `useMemo([replies])`                                                                  | Relevant at 200+ total replies                       |
+| Double sort per render (useSessionState + QAPanel)                               | CPU proportional to question count; both runs execute even when nothing changed | Remove pre-sort from `useSessionState`; QAPanel owns single debounced sort            | Noticeable at 30+ questions                          |
+| Debounce timer in `QAPanel` reset on every tab switch (mobile unmount)           | Sort order jumps on tab return; debounce state lost                             | Keep panels mounted with CSS `hidden`; debounce state survives                        | Every tab switch on mobile                           |
+| `linkifyText` called for every question on every render                          | Grows with question text length × question count                                | Memoize per `question.id + question.text` with `useMemo` inside QuestionCard          | Noticeable at 50+ questions with long text           |
+| `QAPanel`'s `prevQuestionCount.current` ref tracking broken after mobile unmount | New content banner counter resets silently to 0 on every tab switch             | Keep panels mounted (same fix as scroll preservation)                                 | Every tab switch on mobile                           |
 
 ---
 
 ## UX Pitfalls
 
-User experience mistakes specific to reactions in a live session Q&A context.
-
-| Pitfall                                                               | User Impact                                                                                                     | Better Approach                                                                                                                 |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| No visual distinction between "you reacted" vs "others reacted"       | Users cannot tell if they already reacted; double-tap causes confused toggle                                    | Highlighted/filled button state when `userHasReacted === true`; persist per `(fingerprint, itemId, emoji)` in localStorage      |
-| Reaction counts updating too aggressively (every event)               | Numbers flickering rapidly during popular sessions; visually distracting                                        | Debounce count display updates by 300ms — show the latest count after a brief quiet period                                      |
-| Reaction buttons visible but disabled during session load             | Users click reactions before WebSocket is connected; mutation fires but subscription confirmation never arrives | Show reaction buttons only after subscription connection is confirmed; use connection state from the existing WebSocket context |
-| `aria-live` announcing every count increment during a popular session | Screen reader reads "4 reactions, 5 reactions, 6 reactions" continuously                                        | Debounce `aria-live` announcements for reaction counts; announce at most once per 2 seconds per item                            |
-| No i18n for reaction tooltip/aria-label format                        | en/es/pt users see English-only accessible labels                                                               | Add i18n keys `reactions.thumbsUp`, `reactions.heart`, etc. in `@nasqa/core/i18n.ts`; use in `aria-label` format string         |
-| Reactions allowed on banned/hidden questions                          | Audiences react to content that is community-moderated as problematic                                           | Hide reaction buttons on `isHidden === true` and `isBanned === true` items; do not render the interaction affordance at all     |
+| Pitfall                                                                                  | User Impact                                                                                                | Better Approach                                                                                              |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Vote buttons without `active:scale-95` or pending state                                  | No tactile feedback; users double-tap, triggering accidental double-dispatch visible as optimistic flicker | Add `active:scale-95` CSS + disable the clicked button during in-flight request                              |
+| No identity chip in QAInput                                                              | Participant does not know which name will appear on their question before submitting                       | Show avatar + name chip in `QAInput`; click to open `IdentityEditor` directly                                |
+| Own question indistinguishable from others at a glance                                   | Participant loses track of their question in high-vote sessions                                            | Left border + subtle background tint on `isOwn === true` questions                                           |
+| Empty state shown to banned users with same copy as regular empty state                  | Banned user sees "Ask a question" empty state but input is disabled — confusing                            | Contextually different empty state for `isUserBanned === true`                                               |
+| Two clicks required to reply to a focused question (show replies, then open reply input) | Friction reduces engagement for the host's featured question                                               | Auto-open reply section for `question.isFocused === true`; merge reply action into the section header        |
+| `NewContentBanner` not visually dismissible via keyboard                                 | Keyboard-only users cannot scroll to top using the banner                                                  | `role="button"` + `tabIndex={0}` is already implemented — verify in test suite; ensure focus ring is visible |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete but are missing critical pieces — specific to reactions integration.
-
-- [ ] **DynamoDB schema:** Reaction REACTION# items created but aggregate `reactionCounts` Map not backfilled on Question/Reply items — `getSessionData` returns items with no `reactionCounts` key, causing undefined errors in the frontend count display.
-- [ ] **GraphQL schema:** `REACTION_UPDATED` event type added to `schema.graphql` but NOT added to `SessionEventType` enum in `@nasqa/core/src/types.ts` — TypeScript compile passes but runtime events are `unknown` type.
-- [ ] **Subscription list:** `reactToItem` mutation added to `@aws_subscribe(mutations: [...])` in the schema but the mutation was not actually deployed via `sst deploy` — subscription silently ignores reaction events.
-- [ ] **Rate limiting:** Reaction resolver calls `checkRateLimit` but does NOT call `checkNotBanned` — banned participants can still flood reactions.
-- [ ] **Optimistic UI:** Reaction buttons show optimistic count but do NOT persist `userHasReacted` to localStorage — page refresh causes the button to show "not reacted" even though the server has the reaction recorded.
-- [ ] **Emoji validation:** Resolver accepts any string as `emoji` argument — Zod validation not added, allowing arbitrary character injection.
-- [ ] **Touch targets:** Reaction button renders correctly on desktop but is 32×32px on mobile — the 44px minimum was not applied to the mobile breakpoint.
-- [ ] **aria-label:** `aria-label` is static ("React with thumbs up") but does not include the current count or the user's reaction state — screen readers cannot convey reaction totals or toggle state.
-- [ ] **i18n:** `aria-label` strings hardcoded in English in the component — es/pt locales receive English labels.
-- [ ] **Reactions on hidden items:** Reaction buttons render on `isHidden === true` questions — the conditional render guard was not added.
+- [ ] **QuestionCard variants extracted:** Verify `AnimatePresence` still produces exit animations when a question becomes `isBanned: true` via subscription event — add a visual regression or interaction test.
+- [ ] **`useSessionMutations` extracted:** Run rollback tests on the 2nd, 3rd, and 4th mutation call with state changes between each call. Stale closure bugs are invisible in first-call tests.
+- [ ] **ARIA tablist added to `SessionShell`:** Verify with axe-core that `role="tab"` has `aria-controls` pointing to a present `role="tabpanel"` element — requires both panels to be in DOM.
+- [ ] **`aria-live` on NewContentBanner:** Test with a screen reader simulation during rapid question arrival (10 events in 3 seconds) — confirm announcements are debounced and not fired per-event.
+- [ ] **`repliesByQuestion` memoized:** Confirm with React DevTools Profiler that a new question subscription event does not cause cards with unchanged replies to re-render.
+- [ ] **Mobile tab switch preserves scroll:** QA panel scrolled 200px, switch to Clipboard, switch back — scroll position must be at 200px, not 0.
+- [ ] **`isFocused` auto-expand:** With a card already mounted (`showReplies = false`), dispatch `QUESTION_UPDATED` with `isFocused: true` — reply section must open without user interaction.
+- [ ] **Duplicate sort removed:** After removing pre-sort from `useSessionState`, confirm no other consumer of `sortedQuestions` breaks (grep for all `sortedQuestions` usages).
 
 ---
 
 ## Recovery Strategies
 
-When pitfalls occur despite prevention, how to recover.
-
-| Pitfall                                                               | Recovery Cost | Recovery Steps                                                                                                                                                                                     |
-| --------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Reactor fingerprints stored on Question item, approaching 400KB limit | HIGH          | Write a DynamoDB migration script to extract fingerprints from Question items into separate REACTION# items; update resolvers; backfill aggregate counts; requires downtime or double-write period |
-| Rate limit namespace collision with questions                         | LOW           | Deploy updated resolver with separate `RATELIMIT#REACTION#` key; existing rate limit counters expire naturally within 1 minute                                                                     |
-| Subscription flooding all clients with reaction events                | MEDIUM        | Add debounce logic in Lambda resolver; redeploy; optionally add frontend event buffer as immediate mitigation before resolver deploy                                                               |
-| Full `sessionData` cache invalidation causing re-renders              | LOW           | Update subscription handler to use `setQueryData` surgical update; deploy frontend update                                                                                                          |
-| Emoji library accidentally added, bundle size exceeded                | MEDIUM        | Remove library, replace with native emoji, adjust styling; re-run bundle analysis to confirm budget compliance                                                                                     |
-| Fingerprints exposed in subscription payload                          | HIGH          | Hotfix resolver to strip fingerprints from payload; rotate fingerprint tokens for affected sessions (sessions are 24h TTL — natural expiry limits blast radius)                                    |
+| Pitfall                                                       | Recovery Cost | Recovery Steps                                                                                                                           |
+| ------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| AnimatePresence key broken after extraction                   | LOW           | Identify the `motion.div` that lost its direct-child position; move it back to `QAPanel`'s map callback; structural fix, no logic change |
+| Stale closure in extracted hook causing wrong rollback counts | MEDIUM        | Add `stateRef` pattern immediately as a quick fix; schedule full reducer-based rollback refactor as follow-up                            |
+| `aria-live` announcement storm                                | LOW           | Wrap the live region text update in `setTimeout(..., 2000)` debounce; move `aria-live` to a permanently-mounted element                  |
+| All `QuestionCard` instances re-rendering                     | MEDIUM        | Add `React.memo` + `useCallback` on handlers; can be applied incrementally per handler                                                   |
+| Mobile panel state lost on tab switch                         | MEDIUM        | Replace conditional rendering with `hidden` attribute; requires verifying both panels render on initial mobile load                      |
+| `isFocused` not auto-expanding replies                        | LOW           | Add `useEffect` sync from `question.isFocused` → `showReplies` state                                                                     |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls.
-
-| Pitfall                                                                    | Prevention Phase                                      | Verification                                                                                                            |
-| -------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Reactor fingerprints on Question item violate 400KB limit (Pitfall 1)      | Phase 1: DynamoDB schema design                       | Write a test that simulates 500 participants reacting with all 6 emojis; confirm Question item size stays under 50KB    |
-| Reaction dedup collides with existing `voters` Set (Pitfall 2)             | Phase 1: Resolver design review                       | Confirm reaction resolver NEVER touches the same DynamoDB Key as `upvoteQuestion`; unit test both resolvers in parallel |
-| Reaction subscription events flood the channel (Pitfall 3)                 | Phase 1 (payload shape) + Phase 2 (frontend debounce) | Load test with 100 concurrent reactors; measure subscription message rate in CloudWatch                                 |
-| Optimistic UI stale counts from concurrent reactions (Pitfall 4)           | Phase 2: Frontend subscription handler design         | Test with two browser windows reacting simultaneously; counts must converge without visible flicker                     |
-| Rate limit namespace collision between questions and reactions (Pitfall 5) | Phase 1: Resolver implementation                      | Verify reacting 30 times does not trigger RATE_LIMIT_EXCEEDED on question submission                                    |
-| Fingerprints in subscription payload (Pitfall 6)                           | Phase 1: Resolver payload schema                      | Assert in resolver unit tests that `payload` JSON never contains a `fingerprint`, `reactors`, or `voters` key           |
-| Emoji library violating 80KB bundle budget (Pitfall 7)                     | Phase 2: Frontend component PR review                 | Bundle size CI check must pass; no emoji library imports permitted                                                      |
-| Missing ARIA on reaction buttons (Pitfall 8)                               | Phase 2: Frontend component implementation            | axe-core scan returns zero violations for reaction button elements; keyboard navigation test passes                     |
-| Mobile touch targets too small (Pitfall 9)                                 | Phase 2: Frontend component implementation            | Real device test on iOS and Android; all 6 buttons must have >= 44px hit area                                           |
-| Full session re-render on reaction events (Pitfall 10)                     | Phase 2: Subscription handler                         | React Profiler during load test; only the reacted item's component should highlight as re-rendered                      |
+| Pitfall                                | Prevention Phase                                               | Verification                                                                                                              |
+| -------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| AnimatePresence key stability          | Component extraction (QuestionCard variants, SnippetCard)      | Interaction test: ban a question via subscription event; confirm animated exit plays (not instant pop)                    |
+| Stale closure in `useSessionMutations` | Hook extraction phase                                          | Unit test: call `handleDownvote` twice with a reducer dispatch between calls; assert correct rollback count on both calls |
+| `aria-live` announcement storm         | Accessibility pass (aria-live + ARIA tablist phase)            | Screen reader audit: dispatch 10 `QUESTION_ADDED` events in 3s; assert ≤ 2 announcements were made                        |
+| `QuestionCard` re-render cascade       | QuestionCard + QAPanel optimization (same phase as extraction) | React DevTools Profiler: single vote event touches only 1 card out of 50                                                  |
+| Mobile tab panel remount               | ARIA tablist / SessionShell phase                              | E2E: scroll QA panel 200px, switch tab, switch back; assert `scrollTop` is ~200, not 0                                    |
+| `isFocused` desync                     | QuestionCard variant + auto-expand feature                     | Integration test: mount card with `isFocused: false`, update prop to `true` via dispatch, assert reply section opens      |
+| Duplicate sort                         | `useSessionMutations` + QAPanel cleanup phase                  | Assert `useSessionState` output is unsorted; assert `QAPanel` output is sorted; no double-sort in profiler                |
 
 ---
 
 ## Sources
 
-- DynamoDB item size constraints — 400KB limit including attribute names (verified, HIGH confidence): https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
-- DynamoDB limits overview — practical implications of the 400KB limit (MEDIUM confidence): https://www.alexdebrie.com/posts/dynamodb-limits/
-- DynamoDB one-to-many modeling — separate items vs. nested Sets for unbounded relationships (HIGH confidence): https://www.alexdebrie.com/posts/dynamodb-one-to-many/
-- AppSync subscription message size limit — 240KB maximum outbound payload per message (verified, MEDIUM confidence): https://aws.amazon.com/about-aws/whats-new/2024/04/aws-appsync-increases-service-quota-adds-subscription/
-- AppSync real-time subscriptions documentation — connection and throughput limits (HIGH confidence): https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-data.html
-- TanStack Query optimistic updates — concurrent mutation handling and `setQueryData` (HIGH confidence): https://tanstack.com/query/v5/docs/react/guides/optimistic-updates
-- TanStack Query concurrent optimistic updates blog (MEDIUM confidence): https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
-- DynamoDB race conditions and conditional writes (MEDIUM confidence): https://awsfundamentals.com/blog/understanding-and-handling-race-conditions-at-dynamodb
-- Emoji accessibility best practices — `aria-label` requirements for emoji buttons (HIGH confidence): https://www.boia.org/blog/emojis-and-web-accessibility-best-practices
-- WCAG 2.2 Target Size Minimum (2.5.8) — 44×44px mobile touch target requirement (HIGH confidence): https://a11ypros.com/blog/mobile-accessibility-testing-checklist-2025-edition
-- AppSync enhanced subscription filtering — limits and field restrictions (HIGH confidence): https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-enhanced-filtering.html
+- [Motion docs: AnimatePresence](https://motion.dev/docs/react-animate-presence) — official API and key prop requirements
+- [The Power of Keys in Framer Motion — nan.fyi](https://www.nan.fyi/keys-in-framer-motion) — key stability patterns and decomposition mistakes
+- [AnimatePresence + layout animations bug #1983 — motiondivision/motion](https://github.com/motiondivision/motion/issues/1983) — documented interaction between `layout` and exit animations
+- [AnimatePresence fast-changing content bug #907 — framer/motion](https://github.com/framer/motion/issues/907) — rapid subscription events confusing exit tracking
+- [Hooks, Dependencies and Stale Closures — TkDodo](https://tkdodo.eu/blog/hooks-dependencies-and-stale-closures) — authoritative guide to stale closures in custom hooks
+- [useEffectEvent — React official docs](https://react.dev/reference/react/useEffectEvent) — stable React 19.2 solution for stale closures in effects
+- [React functional component WebSocket stale handler #16975](https://github.com/facebook/react/issues/16975) — canonical example of stale closure in subscription callbacks
+- [ARIA live regions — MDN](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions) — authoritative spec for live region behavior
+- [Accessible notifications with aria-live — Sara Soueidan Part 1](https://www.sarasoueidan.com/blog/accessible-notifications-with-aria-live-regions-part-1/) and [Part 2](https://www.sarasoueidan.com/blog/accessible-notifications-with-aria-live-regions-part-2/) — debouncing and singleton announcer patterns
+- [When your live region isn't live — k9n.dev 2025](https://k9n.dev/blog/2025-11-aria-live/) — React-specific live region pitfalls including element remounting
+- [WAI-ARIA Tabs Pattern — W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) — authoritative keyboard navigation and DOM structure requirements for tablist
+- [How to avoid performance pitfalls with memo, useMemo, useCallback — DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-avoid-performance-pitfalls-in-react-with-memo-usememo-and-usecallback) — memoization pairing requirements
+- [How to use memo and useCallback — developerway.com](https://www.developerway.com/posts/how-to-use-memo-use-callback) — when memoization has zero effect without stabilizing all props
 
 ---
 
-_Pitfalls research for: emoji reactions on Q&A in a real-time Next.js + DynamoDB + AppSync presentation session tool_
-_Researched: 2026-03-15_
+_Pitfalls research for: Nasqa Live — v1.3 Participant & Host UX Refactor_
+_Researched: 2026-03-16_

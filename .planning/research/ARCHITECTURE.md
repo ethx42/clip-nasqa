@@ -1,675 +1,587 @@
-# Architecture Research: Emoji Reactions (v1.2)
+# Architecture Research: Participant & Host UX Refactor (v1.3)
 
-**Domain:** Emoji reactions on Q&A items in an existing real-time Next.js + AppSync + DynamoDB app
-**Researched:** 2026-03-15
-**Confidence:** HIGH — all integration points derived directly from source code analysis of the existing codebase
-
----
-
-## Context: What Already Exists
-
-This document is integration-focused research for v1.2 reactions. It does not re-document the base architecture (see `.planning/codebase/ARCHITECTURE.md`). It answers: "What exactly changes, what exactly is new, and in what order do we build it?"
-
-The existing system's reaction-adjacent pattern to mirror:
-
-```
-DynamoDB (Question item)
-  voters       SS (String Set) — upvote dedup
-  downvoters   SS (String Set) — downvote dedup
-  upvoteCount  N
-  downvoteCount N
-
-Lambda resolver (upvoteQuestion)
-  ADD upvoteCount :delta, voters :fpSet
-  ConditionExpression: NOT contains(voters, :fp)
-
-Frontend (useFingerprint hook)
-  localStorage key: votes:{sessionSlug}     → JSON array of questionIds
-  localStorage key: downvotes:{sessionSlug} → JSON array of questionIds
-
-Frontend (useSessionState reducer)
-  QUESTION_UPDATED action carries upvoteCount / downvoteCount
-
-AppSync schema
-  upvoteQuestion / downvoteQuestion mutations → QUESTION_UPDATED event
-```
-
-Reactions must slot into every layer of this exact pattern, with extensions for:
-
-- Both Questions and Replies (votes are Questions-only today)
-- 6 emoji slots instead of 1 binary vote
-- Per-emoji counts surfaced to the UI (votes only surface a count total)
+**Domain:** Decomposition of monolithic session components in a real-time Next.js + AppSync app
+**Researched:** 2026-03-16
+**Confidence:** HIGH — all findings derived directly from source code analysis of the existing codebase
 
 ---
 
-## System Overview: Reactions Data Flow
+## Context: What This Document Covers
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        FRONTEND                                   │
-│                                                                   │
-│  ReactionBar component (NEW)                                      │
-│    ↓ onClick(emoji)                                               │
-│  useReactions hook (NEW)                                          │
-│    ↓ checks localStorage reacted:{sessionSlug}:{targetId}         │
-│    ↓ dispatches ADD_REACTION_OPTIMISTIC to reducer                │
-│    ↓ calls reactAction (Server Action, NEW)                       │
-│                                                                   │
-│  useSessionState reducer (MODIFIED)                               │
-│    ADD_REACTION_OPTIMISTIC — immediate local update               │
-│    REACTION_UPDATED        — authoritative update from sub        │
-│                                                                   │
-│  useSessionUpdates hook (MODIFIED)                                │
-│    case "REACTION_UPDATED": dispatch REACTION_UPDATED             │
-└──────────────────┬───────────────────────────────────────────────┘
-                   │ Server Action HTTP POST
-┌──────────────────▼───────────────────────────────────────────────┐
-│                   NEXT.JS SERVER ACTION                           │
-│  reactAction({ sessionSlug, targetId, targetType, emoji, fp })   │
-│    → appsyncMutation(REACT, args)                                 │
-└──────────────────┬───────────────────────────────────────────────┘
-                   │ GraphQL mutation
-┌──────────────────▼───────────────────────────────────────────────┐
-│                   APPSYNC + LAMBDA                                │
-│                                                                   │
-│  react mutation → reactResolver Lambda                            │
-│    checkNotBanned(sessionSlug, fingerprint)                       │
-│    checkRateLimit(fingerprint, 10, 60)   ← 10 reactions/min      │
-│    DynamoDB UpdateCommand:                                        │
-│      ADD reactions.👍Count :delta                                  │
-│      ADD/DELETE reactions.👍reactors :fpSet                        │
-│    returns SessionUpdate {                                        │
-│      eventType: REACTION_UPDATED,                                 │
-│      payload: { targetId, targetType, emoji, counts, reacted }    │
-│    }                                                              │
-└──────────────────┬───────────────────────────────────────────────┘
-                   │ AppSync subscription broadcast
-┌──────────────────▼───────────────────────────────────────────────┐
-│               ALL CONNECTED CLIENTS                               │
-│  onSessionUpdate → REACTION_UPDATED event                         │
-│    dispatch REACTION_UPDATED to reducer                           │
-│    UI re-renders ReactionBar with new counts                      │
-└──────────────────────────────────────────────────────────────────┘
-```
+This is integration-focused research for v1.3. It answers exactly three questions:
+
+1. How should the existing session components be restructured?
+2. What are the integration points between extracted hooks, decomposed components, and shared utilities?
+3. In what order should the work be done?
+
+It does not re-document base architecture already covered in `.planning/codebase/ARCHITECTURE.md`.
 
 ---
 
-## DynamoDB Storage Pattern
+## Existing System: Diagnosis
 
-### Recommended: Flat Attribute Per Emoji (not a Map)
+Before prescribing the target structure, here is an accurate diagnosis of each problem component based on direct source code analysis.
 
-Two options exist. The flat attribute approach is recommended.
+### SessionLivePage + SessionLiveHostPage (God Orchestrators)
 
-**Option A (recommended): Flat attributes per emoji on the item**
+Both files share the same structural problem. They directly define 6-9 async mutation handlers inline, interleaving optimistic dispatch, fingerprint tracking, Server Action calls, and error rollback. The two files are nearly 50% duplicated — `handleUpvote`, `handleDownvote`, `handleAddQuestion`, and `handleReply` are copy-pasted between them with one line difference (`isHostReply: true/false`).
 
-```
-Question / Reply DynamoDB item gains these new attributes:
+**Lines:** `session-live-page.tsx` ~260 lines, `session-live-host-page.tsx` ~335 lines.
+**Duplication:** `handleUpvote` (28 lines × 2), `handleDownvote` (50 lines × 2), `handleAddQuestion` (26 lines × 2), `handleReply` (30 lines × 2).
+**Root cause:** Mutation logic lives in the component instead of a dedicated hook.
 
-reactions_👍_count    N   (atomic counter, default 0)
-reactions_❤️_count    N
-reactions_🎉_count    N
-reactions_😂_count    N
-reactions_🤔_count    N
-reactions_👀_count    N
-reactions_👍_reactors SS  (String Set of fingerprints)
-reactions_❤️_reactors SS
-reactions_🎉_reactors SS
-reactions_😂_reactors SS
-reactions_🤔_reactors SS
-reactions_👀_reactors SS
-```
+### QAPanel: Duplicate Sorting
 
-**Option B (not recommended): DynamoDB Map attribute**
+`QAPanel` re-implements the sorting + debouncing logic that `useSessionState` already owns. The hook exports `sortedQuestions`, but `QAPanel` ignores it and performs its own `useMemo` sort with a separate debounced snapshot (`debouncedQuestions`). This means sorting logic runs twice and lives in two places.
 
-```
-reactions: {
-  M: {
-    "👍": { M: { count: { N: "3" }, reactors: { SS: ["fp1", "fp2"] } } }
-  }
-}
-```
+The debounced visual stability (cards don't jump on every vote) is a legitimate concern — but it belongs in the hook, not the panel. The panel should accept a pre-sorted list and own only scroll position + banner visibility.
 
-**Why Option A over Option B:**
+### QuestionCard: Four Visual States in One Component
 
-DynamoDB's `ADD` operation (used for atomic counter increments) works on top-level number attributes or elements of a Set. It does NOT work on nested Map values. Using a Map would require a `SET reactions.#emoji.#count = reactions.#emoji.#count + :delta` expression — which is NOT atomic; it's a read-modify-write that requires a ConditionExpression to be safe at scale.
+`QuestionCard` handles four distinct rendering paths with early returns:
 
-Flat attributes allow the same `ADD reactions_👍_count :delta` + `ADD/DELETE reactions_👍_reactors :fpSet` pattern already proven in the existing `upvoteQuestion` resolver. This is a direct reuse of a battle-tested pattern.
+1. **Banned:** Tombstone card (`question.isBanned`)
+2. **Community-hidden (collapsed):** Dimmed expand prompt (`question.isHidden && !showHiddenContent`)
+3. **Community-hidden (expanded):** Full card with amber "hidden" badge overlay
+4. **Normal / focused:** Full card with optional focused glow
 
-**Attribute naming:** Use `reactions_[emoji]_count` and `reactions_[emoji]_reactors`. DynamoDB attribute names support Unicode, so `reactions_👍_count` is valid. However, because emoji in attribute names requires ExpressionAttributeNames escaping on every query, a safer convention is to use the emoji name: `reactions_thumbsup_count`, `reactions_heart_count`, etc. This avoids any edge cases with Unicode in DynamoDB expression tokenization.
+Each path has different markup, different action availability, and different host controls. They share only the outer container and the props signature. The 430-line result is hard to navigate and hard to test in isolation.
 
-**Recommended safe names:**
+### formatRelativeTime: Duplicated in 5 Files
 
-| Emoji | Count Attr           | Reactors Attr           |
-| ----- | -------------------- | ----------------------- |
-| 👍    | `rxn_thumbsup_count` | `rxn_thumbsup_reactors` |
-| ❤️    | `rxn_heart_count`    | `rxn_heart_reactors`    |
-| 🎉    | `rxn_party_count`    | `rxn_party_reactors`    |
-| 😂    | `rxn_laugh_count`    | `rxn_laugh_reactors`    |
-| 🤔    | `rxn_think_count`    | `rxn_think_reactors`    |
-| 👀    | `rxn_eyes_count`     | `rxn_eyes_reactors`     |
+The function exists in 5 locations:
 
-**TTL:** Reactions live on Question and Reply items. They inherit the item's existing TTL — no new TTL management needed.
+| File                  | Variant                                                                   |
+| --------------------- | ------------------------------------------------------------------------- |
+| `clipboard-panel.tsx` | Uses `Date.now()` in ms, converts to minutes                              |
+| `snippet-card.tsx`    | Uses `Date.now()` in ms, hardcoded English strings ("just now", "1m ago") |
+| `snippet-hero.tsx`    | Identical to `snippet-card.tsx`                                           |
+| `question-card.tsx`   | Uses `Math.floor(Date.now() / 1000)` in seconds, uses `t()` for i18n      |
+| `reply-list.tsx`      | Identical to `question-card.tsx`                                          |
 
-**Impact on initial load (`getSessionData` query):** The resolver currently projects all attributes. It must be updated to include the 12 new reaction attributes in the returned shape. Since DynamoDB returns all attributes by default (no ProjectionExpression is used in the current implementation), no query change is needed — the new attributes appear automatically. Only the TypeScript type definitions and GraphQL schema need updating.
+The variants differ in two ways: unit (ms vs seconds) and i18n (hardcoded strings vs `t()` keys). The correct canonical form uses seconds and i18n keys — this is what `question-card.tsx` and `reply-list.tsx` use. The `snippet-card.tsx` and `snippet-hero.tsx` variants have already-stale hardcoded English.
 
-### DynamoDB UpdateExpression Pattern (per emoji)
+### repliesByQuestion: Computed Without Memoization
 
-```typescript
-// Adding a reaction (remove=false)
-UpdateExpression: "ADD rxn_thumbsup_count :delta, rxn_thumbsup_reactors :fpSet"
-ConditionExpression: "NOT contains(rxn_thumbsup_reactors, :fp) OR attribute_not_exists(rxn_thumbsup_reactors)"
+`QAPanel` computes `repliesByQuestion` (Map grouping) inline on every render with a plain `for` loop — no `useMemo`. This runs on every re-render triggered by any state change (scroll events, vote updates, banner visibility). With 100 replies and high-frequency AppSync events during a live session, this is unnecessary allocation work.
 
-// Removing a reaction (remove=true)
-UpdateExpression: "ADD rxn_thumbsup_count :delta DELETE rxn_thumbsup_reactors :fpSet"
-ConditionExpression: "contains(rxn_thumbsup_reactors, :fp)"
+`useSessionState` already exports a `repliesByQuestion` callback, but `QAPanel` ignores it and recalculates locally.
 
-// Values
-":delta": remove ? -1 : 1
-":fp": fingerprint
-":fpSet": new Set([fingerprint])
-```
+### SessionShell: Missing ARIA Semantics
 
-This is identical to `upvoteQuestion`. The only variable is the attribute name prefix (`rxn_thumbsup` vs `rxn_heart` etc.).
+The mobile tab bar uses `<button>` elements with custom styling but no `role="tablist"` / `role="tab"` / `aria-selected` semantics. Screen readers cannot identify this as a tab interface.
+
+### SnippetCard: Embedded in clipboard-panel.tsx
+
+The `SnippetCard` function component lives inside `clipboard-panel.tsx` (lines 49-139). It is not exported, not testable in isolation, and cannot be imported by other components. The `snippet-card.tsx` file that already exists in the session folder is a Server Component variant used in a different context — these need to be rationalized.
 
 ---
 
-## GraphQL Schema Changes
+## Target Architecture
 
-### New Enum Values
-
-```graphql
-enum SessionEventType {
-  # ... existing values unchanged ...
-  SNIPPET_ADDED
-  SNIPPET_DELETED
-  CLIPBOARD_CLEARED
-  QUESTION_ADDED
-  QUESTION_UPDATED
-  REPLY_ADDED
-  PARTICIPANT_BANNED
-  REACTION_UPDATED # NEW
-}
-```
-
-### Reaction Counts Type
-
-```graphql
-type ReactionCounts {
-  thumbsup: Int!
-  heart: Int!
-  party: Int!
-  laugh: Int!
-  think: Int!
-  eyes: Int!
-}
-```
-
-### Question and Reply Type Extensions
-
-```graphql
-type Question {
-  # ... existing fields unchanged ...
-  reactions: ReactionCounts! # NEW — defaults to all zeros
-}
-
-type Reply {
-  # ... existing fields unchanged ...
-  reactions: ReactionCounts! # NEW — defaults to all zeros
-}
-```
-
-### New Mutation
-
-```graphql
-type Mutation {
-  # ... existing mutations unchanged ...
-  react(
-    sessionSlug: String!
-    targetId: String!
-    targetType: String! # "question" | "reply"
-    emoji: String! # "thumbsup" | "heart" | "party" | "laugh" | "think" | "eyes"
-    fingerprint: String!
-    remove: Boolean
-  ): SessionUpdate!
-}
-```
-
-### Subscription Extension
-
-```graphql
-type Subscription {
-  onSessionUpdate(sessionSlug: String!): SessionUpdate
-    @aws_subscribe(
-      mutations: [
-        # ... existing mutations ...
-        "react" # NEW — add to the list
-      ]
-    )
-}
-```
-
-No new subscription channel is needed. `REACTION_UPDATED` is a new event type on the existing channel.
-
----
-
-## Component Boundaries
-
-### New vs. Modified — Explicit List
-
-**NEW files:**
-
-| File                                                        | Package   | Purpose                                              |
-| ----------------------------------------------------------- | --------- | ---------------------------------------------------- |
-| `packages/functions/src/resolvers/reactions.ts`             | functions | Lambda resolver for `react` mutation                 |
-| `packages/frontend/src/actions/reactions.ts`                | frontend  | Server Action wrapping `react` mutation              |
-| `packages/frontend/src/components/session/reaction-bar.tsx` | frontend  | ReactionBar UI component for Questions and Replies   |
-| `packages/frontend/src/hooks/use-reactions.ts`              | frontend  | localStorage reaction tracking + optimistic dispatch |
-| `packages/frontend/src/lib/graphql/mutations.ts` additions  | frontend  | `REACT` mutation string (added to existing file)     |
-
-**MODIFIED files:**
-
-| File                                                 | Package   | What Changes                                                                                                                                                                                      |
-| ---------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `infra/schema.graphql`                               | infra     | Add `ReactionCounts` type, `reactions` field to `Question`/`Reply`, `react` mutation, `REACTION_UPDATED` enum value, `react` to subscription list                                                 |
-| `packages/core/src/types.ts`                         | core      | Add `ReactionCounts` interface, `reactions` field to `Question`/`Reply`/`QuestionItem`/`ReplyItem` interfaces, `ReactArgs` mutation args interface, `REACTION_UPDATED` to `SessionEventType` enum |
-| `packages/functions/src/resolvers/index.ts`          | functions | Export `reactHandler` from new `reactions.ts`                                                                                                                                                     |
-| `packages/frontend/src/hooks/use-session-state.ts`   | frontend  | Add `REACTION_UPDATED` action type; add reaction update handler to reducer; extend `SessionAction` union                                                                                          |
-| `packages/frontend/src/hooks/use-session-updates.ts` | frontend  | Add `case "REACTION_UPDATED"` to the subscription event switch                                                                                                                                    |
-| `packages/frontend/src/hooks/use-fingerprint.ts`     | frontend  | Add reaction tracking: `reactedIds` map, `addReaction`, `removeReaction` functions with localStorage persistence                                                                                  |
-| `packages/frontend/src/lib/graphql/mutations.ts`     | frontend  | Add `REACT` mutation constant                                                                                                                                                                     |
-| `sst.config.ts`                                      | infra     | Wire `reactHandler` Lambda to `react` AppSync resolver                                                                                                                                            |
-
-**NOT modified:**
-
-| File                                                                    | Why untouched                                                                                    |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `packages/functions/src/resolvers/rate-limit.ts`                        | `checkRateLimit` and `checkNotBanned` are already reusable — called directly from `reactions.ts` |
-| `packages/frontend/src/hooks/use-session-updates.ts` subscription setup | Only the switch block changes, not the subscription wiring                                       |
-| `packages/frontend/src/lib/appsync-server.ts`                           | Generic `appsyncMutation` helper is already parameterized                                        |
-| All other existing resolvers                                            | No interaction with reaction data                                                                |
-
----
-
-## Data Flow Details
-
-### Add Reaction — Happy Path
+### System Overview
 
 ```
-1. User clicks 👍 on QuestionCard
-2. ReactionBar calls useReactions.addReaction("thumbsup", questionId)
-3. useReactions checks localStorage: reacted:{sessionSlug}:{questionId}
-   → { thumbsup: false, heart: false, ... }
-   → thumbsup is false, proceed
-4. useReactions dispatches ADD_REACTION_OPTIMISTIC to reducer
-   → Question.reactions.thumbsup += 1 immediately in local state
-5. useReactions persists to localStorage: thumbsup: true for this questionId
-6. useReactions calls reactAction({ sessionSlug, targetId: questionId,
-     targetType: "question", emoji: "thumbsup", fingerprint, remove: false })
-7. reactAction calls appsyncMutation(REACT, args)
-8. Lambda reactResolver:
-   a. checkNotBanned(sessionSlug, fingerprint)
-   b. checkRateLimit(fingerprint, 10, 60)
-   c. DynamoDB UpdateCommand (conditional: NOT contains reactors)
-   d. Returns REACTION_UPDATED with authoritative counts
-9. AppSync broadcasts REACTION_UPDATED to all subscribers
-10. useSessionUpdates receives REACTION_UPDATED
-    → dispatches REACTION_UPDATED to reducer
-    → reducer replaces optimistic count with authoritative count
-    → ReactionBar re-renders with authoritative count
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          PAGE LAYER (Server Components)                  │
+│  app/[locale]/session/[slug]/page.tsx                                    │
+│  app/[locale]/session/[slug]/host/page.tsx                               │
+└──────────────────────────────────┬──────────────────────────────────────┘
+                                   │ passes initialData props
+┌──────────────────────────────────▼──────────────────────────────────────┐
+│                      COMPOSITION ROOT (Client Components)                │
+│                                                                          │
+│  SessionLivePage (participant)    SessionLiveHostPage (host)             │
+│    - useSessionState              - useSessionState                      │
+│    - useSessionUpdates            - useSessionUpdates                    │
+│    - useFingerprint               - useFingerprint                       │
+│    - useIdentity                  - useIdentity                          │
+│    - useSessionMutations (NEW)    - useSessionMutations (NEW)            │
+│    - ~40 lines of composition     - ~50 lines of composition             │
+└──────────┬────────────────────────────────────────────────┬─────────────┘
+           │                                                │
+┌──────────▼────────────────┐                 ┌────────────▼──────────────┐
+│       SessionShell        │                 │  (no additional layer)    │
+│  - tab state              │                 │                           │
+│  - ARIA tablist           │                 │                           │
+│  - clipboardSlot / qaSlot │                 │                           │
+└──────────┬────────────────┘                 └───────────────────────────┘
+           │
+    ┌──────┴──────┐
+    │             │
+┌───▼───┐   ┌────▼────┐
+│Clip.  │   │QAPanel  │
+│Panel  │   │         │
+│       │   │ - scroll │
+│ - scr │   │ - banner │
+│ - ban │   │ - sorted │
+│ - pag │   │   Qs     │
+└───┬───┘   └────┬────┘
+    │             │
+┌───▼───┐   ┌────▼──────────┐
+│Snippet│   │ QuestionCard  │
+│Card   │   │ (split into   │
+│(file) │   │  variants)    │
+└───────┘   └───────────────┘
 ```
 
-### Reaction Conflict — Double-Click
+### Hook Layer: What Each Hook Owns
 
 ```
-1. User clicks 👍 twice rapidly
-2. First click: optimistic update + Server Action call in flight
-3. Second click: localStorage already shows thumbsup: true → block UI
-   (same pattern as votedIds check in useFingerprint today)
-4. If Server Action returns VOTE_CONFLICT (ConditionalCheckFailedException):
-   → reactAction returns { ok: false, error: "REACTION_CONFLICT" }
-   → useReactions rolls back optimistic update
-   → localStorage reverts thumbsup: false
+useSessionState     → reducer + sorted questions + repliesByQuestion (debounced)
+useSessionUpdates   → AppSync subscription + connectionStatus + lastHostActivity
+useFingerprint      → device identity + vote tracking (localStorage)
+useIdentity         → optional display name + email (localStorage)
+useSessionMutations → all async mutation handlers (NEW — extracted from both pages)
 ```
 
-### Remove Reaction (Toggle)
+### Component Layer: What Each Component Owns
 
 ```
-1. User clicks 👍 again on a question they already reacted to
-2. ReactionBar detects: reactedEmojis.has("thumbsup") === true → this is a remove
-3. Same flow as add, but remove: true passed to reactAction
-4. Optimistic: reactions.thumbsup -= 1, localStorage thumbsup: false
-5. DynamoDB: ADD rxn_thumbsup_count -1 DELETE rxn_thumbsup_reactors :fpSet
+SessionLivePage / SessionLiveHostPage
+  → composition only: wire hooks → panels → shell
+
+SessionShell
+  → tab bar with ARIA semantics, layout, badge counts
+
+ClipboardPanel
+  → scroll container, new-snippet banner, pagination sentinel
+  → renders SnippetCard (imported, not embedded)
+
+SnippetCard (own file, client component)
+  → hero/compact variants, expand toggle, delete button, Shiki rendering
+
+QAPanel
+  → scroll container, new-question banner
+  → receives pre-sorted questions from useSessionState
+  → uses repliesByQuestion from useSessionState (memoized)
+  → no sorting logic of its own
+
+QuestionCardNormal      → full card: voting, replies, host controls
+QuestionCardBanned      → tombstone card
+QuestionCardHidden      → collapse/expand prompt + host restore
 ```
 
 ---
 
-## Frontend State Changes
-
-### SessionAction Union Extension
-
-```typescript
-// packages/frontend/src/hooks/use-session-state.ts
-
-// NEW action types to add to SessionAction union:
-| {
-    type: "REACTION_UPDATED";
-    payload: {
-      targetId: string;
-      targetType: "question" | "reply";
-      emoji: string;
-      counts: ReactionCounts;  // authoritative counts from server
-    };
-  }
-| {
-    type: "ADD_REACTION_OPTIMISTIC";
-    payload: {
-      targetId: string;
-      targetType: "question" | "reply";
-      emoji: keyof ReactionCounts;
-      delta: 1 | -1;
-    };
-  }
-```
-
-### Reducer Cases
-
-```typescript
-case "ADD_REACTION_OPTIMISTIC": {
-  const { targetId, targetType, emoji, delta } = action.payload;
-  if (targetType === "question") {
-    return {
-      ...state,
-      questions: state.questions.map((q) =>
-        q.id !== targetId ? q : {
-          ...q,
-          reactions: { ...q.reactions, [emoji]: q.reactions[emoji] + delta },
-        }
-      ),
-    };
-  }
-  // targetType === "reply"
-  return {
-    ...state,
-    replies: state.replies.map((r) =>
-      r.id !== targetId ? r : {
-        ...r,
-        reactions: { ...r.reactions, [emoji]: r.reactions[emoji] + delta },
-      }
-    ),
-  };
-}
-
-case "REACTION_UPDATED": {
-  const { targetId, targetType, counts } = action.payload;
-  if (targetType === "question") {
-    return {
-      ...state,
-      questions: state.questions.map((q) =>
-        q.id !== targetId ? q : { ...q, reactions: counts }
-      ),
-    };
-  }
-  return {
-    ...state,
-    replies: state.replies.map((r) =>
-      r.id !== targetId ? r : { ...r, reactions: counts }
-    ),
-  };
-}
-```
-
-### SessionState Shape Change
-
-```typescript
-// No change to the SessionState interface shape itself.
-// The reactions field is added to Question and Reply types in @nasqa/core.
-// The reducer handles it via those extended types automatically.
-```
-
-### useFingerprint Extension
-
-```typescript
-// packages/frontend/src/hooks/use-fingerprint.ts
-// New localStorage key pattern:
-function reactionsKey(sessionSlug: string, targetId: string): string {
-  return `reactions:${sessionSlug}:${targetId}`;
-}
-// Value: JSON object { thumbsup: boolean, heart: boolean, ... }
-
-// New return values added to FingerprintResult:
-reactedMap: Map<string, Set<string>>;  // targetId → Set of emoji names reacted
-addReaction: (targetId: string, emoji: string) => void;
-removeReaction: (targetId: string, emoji: string) => void;
-hasReacted: (targetId: string, emoji: string) => boolean;
-```
-
-The `reactedMap` initializes from localStorage on mount for the current session. Each `addReaction` / `removeReaction` persists to the corresponding key.
-
----
-
-## localStorage Tracking Design
-
-**Key:** `reactions:{sessionSlug}:{targetId}`
-**Value:** JSON object: `{ "thumbsup": true, "heart": false, "party": true, ... }`
-
-This matches the existing `votes:{sessionSlug}` pattern but scoped to each individual target (Question or Reply). This is more specific than a session-wide set because a user can react to multiple items.
-
-**Why per-item keys over a session-wide map:**
-
-The existing vote tracking uses a flat array of IDs (`votes:{sessionSlug}` = `["q1", "q2"]`). For reactions, each item has 6 independent booleans. Storing as `reactions:{sessionSlug}:{id}` keeps each item's state isolated and avoids deserializing the entire session's reaction history on every reaction check.
-
-**Initialization:** On mount, `useFingerprint` does not pre-load all reaction keys (there could be hundreds of items). Instead, `hasReacted(targetId, emoji)` reads and caches lazily on first access per targetId.
-
----
-
-## Subscription Event Payload Design
-
-The `REACTION_UPDATED` event payload is:
-
-```json
-{
-  "targetId": "01HXYZ...",
-  "targetType": "question",
-  "emoji": "thumbsup",
-  "counts": {
-    "thumbsup": 5,
-    "heart": 2,
-    "party": 0,
-    "laugh": 1,
-    "think": 0,
-    "eyes": 3
-  }
-}
-```
-
-**Why send all counts, not just the changed emoji's count:**
-
-The reducer replaces the entire `reactions` object (`{ ...q, reactions: counts }`). Sending the full counts snapshot eliminates the need for per-emoji delta logic in the reducer and ensures all clients converge on the same state even if events arrive out of order or are missed.
-
-This is the same philosophy as `QUESTION_UPDATED` sending `upvoteCount` (the absolute value) rather than a delta.
-
----
-
-## Rate Limiting for Reactions
-
-Reactions reuse `checkRateLimit` from `packages/functions/src/resolvers/rate-limit.ts` without modification.
-
-**Recommended limit:** 10 reactions/minute per fingerprint. Rationale:
-
-- 3 questions/minute is the current public write limit
-- Reactions are lighter-weight (no text content), so a higher limit is appropriate
-- 10/minute prevents reaction spam (rapid-fire clicking across many items) while supporting genuine engagement
-
-The `react` mutation does NOT check rate limits for host users — same as the existing host mutations (snippet push, focus, ban) skip public rate limits.
-
-Ban enforcement: `checkNotBanned` is called before any reaction write. A banned participant cannot react.
-
----
-
-## ReactionBar Component
-
-### Props
-
-```typescript
-interface ReactionBarProps {
-  targetId: string;
-  targetType: "question" | "reply";
-  reactions: ReactionCounts; // from Question or Reply
-  sessionSlug: string;
-  fingerprint: string;
-  disabled?: boolean; // true when participant is banned
-}
-```
-
-### Emoji Palette (fixed 6, no picker)
-
-```typescript
-const EMOJI_PALETTE = [
-  { key: "thumbsup", glyph: "👍" },
-  { key: "heart", glyph: "❤️" },
-  { key: "party", glyph: "🎉" },
-  { key: "laugh", glyph: "😂" },
-  { key: "think", glyph: "🤔" },
-  { key: "eyes", glyph: "👀" },
-] as const;
-```
-
-The glyph is display-only. The `key` is what's stored in DynamoDB and localStorage.
-
-### Bundle Considerations
-
-The 6 emoji glyphs are Unicode characters rendered by the OS emoji font — zero bundle cost. No emoji library needed. This was explicitly called out in PROJECT.md ("no emoji picker — bundle budget").
-
----
-
-## Build Order
-
-Dependencies flow from data layer up to UI. Each step unblocks the next.
+## Recommended Project Structure (delta from current)
 
 ```
-STEP 1: Core types (@nasqa/core)
-  Add ReactionCounts interface, reactions field to Question/Reply/
-  QuestionItem/ReplyItem, ReactArgs interface, REACTION_UPDATED to
-  SessionEventType enum.
-  Why first: All other layers import from @nasqa/core. TypeScript
-  compile errors in subsequent steps require this to exist.
-  Files: packages/core/src/types.ts
-
-STEP 2: GraphQL schema (infra)
-  Add ReactionCounts type, reactions to Question/Reply, react mutation,
-  REACTION_UPDATED enum value, react to subscription list.
-  Why second: Lambda resolver and frontend mutations depend on the schema.
-  AppSync will reject mutations that aren't in the schema.
-  Files: infra/schema.graphql
-
-STEP 3: Lambda resolver (functions)
-  Implement reactResolver in packages/functions/src/resolvers/reactions.ts.
-  Wire to sst.config.ts.
-  Why third: Testable independently. Subscription events don't flow until
-  this exists.
-  Files: packages/functions/src/resolvers/reactions.ts
-         packages/functions/src/resolvers/index.ts (add export)
-         sst.config.ts (wire resolver)
-
-STEP 4: Server Action (frontend)
-  Add reactAction in packages/frontend/src/actions/reactions.ts.
-  Add REACT mutation string to packages/frontend/src/lib/graphql/mutations.ts.
-  Why fourth: Depends on schema (step 2) and resolver (step 3).
-  Files: packages/frontend/src/actions/reactions.ts
-         packages/frontend/src/lib/graphql/mutations.ts
-
-STEP 5: State reducer (frontend)
-  Add REACTION_UPDATED and ADD_REACTION_OPTIMISTIC cases to
-  useSessionState reducer. Extend SessionAction union type.
-  Why fifth: useReactions hook (step 6) and subscription handler (step 7)
-  dispatch to this reducer.
-  Files: packages/frontend/src/hooks/use-session-state.ts
-
-STEP 6: useFingerprint extension + useReactions hook (frontend)
-  Extend useFingerprint with reaction localStorage tracking.
-  Create useReactions hook that orchestrates optimistic dispatch,
-  localStorage gate, and Server Action call.
-  Why sixth: Depends on reducer (step 5) and Server Action (step 4).
-  Files: packages/frontend/src/hooks/use-fingerprint.ts
-         packages/frontend/src/hooks/use-reactions.ts
-
-STEP 7: Subscription handler (frontend)
-  Add REACTION_UPDATED case to useSessionUpdates switch.
-  Why seventh: By now the reducer handles the action correctly.
-  Files: packages/frontend/src/hooks/use-session-updates.ts
-
-STEP 8: ReactionBar UI component (frontend)
-  Build ReactionBar component using useReactions hook.
-  Integrate into QuestionCard and ReplyCard.
-  Why last: Depends on all layers being in place. UI work proceeds
-  once data flows correctly end-to-end.
-  Files: packages/frontend/src/components/session/reaction-bar.tsx
-         (modify QuestionCard and ReplyCard to accept + render ReactionBar)
+packages/frontend/src/
+├── hooks/
+│   ├── use-session-state.ts        MODIFIED — add debounced sort, expose repliesByQuestion as memo
+│   ├── use-session-updates.ts      unchanged
+│   ├── use-fingerprint.ts          unchanged
+│   ├── use-identity.ts             unchanged
+│   └── use-session-mutations.ts    NEW — extracted mutation handlers
+│
+├── lib/
+│   └── format-relative-time.ts     NEW — canonical shared utility
+│
+└── components/session/
+    ├── session-live-page.tsx        MODIFIED — ~40 lines after extraction
+    ├── session-live-host-page.tsx   MODIFIED — ~50 lines after extraction
+    ├── session-shell.tsx            MODIFIED — ARIA tablist semantics
+    ├── clipboard-panel.tsx          MODIFIED — remove embedded SnippetCard, import it
+    ├── snippet-card-live.tsx        NEW — client SnippetCard extracted from clipboard-panel
+    ├── qa-panel.tsx                 MODIFIED — remove sorting, accept sorted props
+    ├── question-card.tsx            MODIFIED — routes to variant subcomponents
+    ├── question-card-normal.tsx     NEW — full normal/focused card
+    ├── question-card-banned.tsx     NEW — tombstone variant
+    ├── question-card-hidden.tsx     NEW — community-hidden variant
+    ├── qa-input.tsx                 MODIFIED — identity chip in input area
+    ├── reply-list.tsx               MODIFIED — use shared formatRelativeTime
+    ├── new-content-banner.tsx       MODIFIED — add aria-live="polite"
+    └── [other files unchanged]
 ```
+
+Note on naming: The existing `snippet-card.tsx` is a Server Component used in the initial page render. The new `snippet-card-live.tsx` is the Client Component currently embedded in `clipboard-panel.tsx`. Both serve different purposes and should not be merged.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Atomic Set-Based Dedup (reuse from votes)
+### Pattern 1: Mutation Hook Extraction
 
-**What:** Use DynamoDB String Sets with conditional `ADD`/`DELETE` expressions to enforce per-user dedup atomically at the database layer. The frontend localStorage provides a client-side gate that prevents redundant API calls, but the database is authoritative.
+**What:** Extract all async mutation handlers from a composition root component into a dedicated hook. The hook receives `dispatch`, `fingerprint`, `sessionSlug`, and `hostSecretHash` as parameters. It returns named handler functions. The component calls the hook and spreads or passes the handlers to child panels.
 
-**When to use:** Any boolean per-user state on an item (voted, reacted, flagged). The Set stores which fingerprints have taken the action; the counter is the Set's cardinality derived by the atomic ADD.
+**When to use:** When a component's render method is dominated by non-render code (async functions, optimistic dispatch patterns, error toasts). The composition root should be ~40 lines of "wire A to B" not 300 lines of "implement A."
 
-**Trade-offs:** 12 new attributes per Question/Reply item. At 500 participants reacting to 50 questions, each reactions\_\*\_reactors Set could hold up to 500 fingerprints (36-char UUIDs). That is ~18KB per question item for reactors alone. DynamoDB item limit is 400KB — this is not a concern at the target scale (50-500 participants).
+**Trade-offs:** Adds one indirection layer. Handlers in a hook cannot access component-local state unless passed as parameters — this is a feature, not a bug (forces explicit data flow).
 
-### Pattern 2: Authoritative Snapshot in Subscription Payload
+**Shape:**
 
-**What:** The subscription event payload includes the full `counts` object (all 6 emoji counts), not just the emoji that changed. The reducer performs a full replacement: `reactions: counts`.
+```typescript
+// hooks/use-session-mutations.ts
 
-**When to use:** When multiple fast events (e.g., rapid reactions during a talk) could cause count drift if only deltas are sent. Full snapshot ensures convergence.
+interface UseSessionMutationsArgs {
+  sessionSlug: string;
+  dispatch: React.Dispatch<SessionAction>;
+  fingerprint: string;
+  authorName: string | undefined;
+  votedIds: Set<string>;
+  downvotedIds: Set<string>;
+  addVote: (id: string) => void;
+  removeVote: (id: string) => void;
+  addDownvote: (id: string) => void;
+  removeDownvote: (id: string) => void;
+  // Host-only (optional):
+  hostSecretHash?: string;
+}
 
-**Trade-offs:** Slightly larger payload (~100 bytes per event vs ~30 bytes for delta). Acceptable given AppSync WebSocket overhead and the 50-500 participant target.
+interface UseSessionMutationsResult {
+  // Shared
+  handleUpvote: (questionId: string, remove: boolean) => Promise<void>;
+  handleDownvote: (questionId: string, remove: boolean) => Promise<void>;
+  handleAddQuestion: (text: string) => Promise<void>;
+  handleReply: (questionId: string, text: string) => Promise<void>;
+  // Host-only (undefined when no hostSecretHash)
+  handleDeleteSnippet?: (snippetId: string) => Promise<void>;
+  handleClearClipboard?: () => Promise<void>;
+  handleFocusQuestion?: (questionId: string | undefined) => Promise<void>;
+  handleBanQuestion?: (questionId: string) => Promise<void>;
+  handleBanParticipant?: (participantFingerprint: string) => Promise<void>;
+  handleRestoreQuestion?: (questionId: string) => Promise<void>;
+}
+```
 
-### Pattern 3: Emoji Key Normalization (glyph in UI, key in storage)
+The participant page passes no `hostSecretHash` — host-only handlers remain `undefined` and are not passed to panels. This eliminates the need for the panels to conditionally check `isHost` for actions they should never call.
 
-**What:** The UI displays the emoji glyph (Unicode character). The database, API, and localStorage use a normalized ASCII key (`thumbsup`, `heart`, etc.). Mapping is defined once in a constant (`EMOJI_PALETTE`) and used throughout.
+### Pattern 2: Debounced Sort in Hook, Not in Panel
 
-**When to use:** Any time emoji need to appear in DynamoDB attribute names, JSON keys, or URL parameters.
+**What:** Move the debounced sort (visual stability of card order under fast vote changes) out of `QAPanel` and into `useSessionState`. The hook's `sortedQuestions` return value already does an immediate sort; add a `debouncedSortedQuestions` alongside it that uses a 1-second debounce on order. Expose only `debouncedSortedQuestions` from the hook (rename to `sortedQuestions` — same API, better implementation location).
 
-**Trade-offs:** Requires one mapping layer. The EMOJI_PALETTE constant in `reaction-bar.tsx` (or a shared `packages/core/src/reactions.ts` module) is the single source of truth.
+**Why this location:** The hook owns session state. Sort order is derived state from session state. Debouncing the sort is a refinement of that derivation. `QAPanel` should own scroll behavior, not data ordering.
+
+**When to use:** When a panel re-implements derived data transformations that the upstream hook already conceptually owns.
+
+**Implementation note:** The existing `QAPanel` debounce is correctly structured (debounce on questions array → stable orderMap → apply to latest questions). The logic should move verbatim; only the location changes.
+
+### Pattern 3: repliesByQuestion Memoization
+
+**What:** `QAPanel` currently builds `repliesByQuestion` (a `Map<string, Reply[]>`) on every render. Move to `useMemo` keyed on `state.replies`. The `useSessionState` hook already exports a `repliesByQuestion` callback — but it's a function, not a Map. Change it to return the pre-computed Map directly, computed once with `useMemo`.
+
+**Current shape (keep as is — already correct pattern, just needs `useMemo`):**
+
+```typescript
+// In useSessionState:
+const repliesByQuestion = useCallback(
+  (questionId: string) => state.replies.filter(...).sort(...),
+  [state.replies]
+);
+```
+
+**Recommended change:**
+
+```typescript
+const repliesByQuestionMap = useMemo(() => {
+  const map = new Map<string, Reply[]>();
+  for (const reply of state.replies) {
+    const existing = map.get(reply.questionId) ?? [];
+    existing.push(reply);
+    map.set(reply.questionId, existing);
+  }
+  // sort each group by createdAt asc
+  for (const [id, replies] of map) {
+    map.set(
+      id,
+      [...replies].sort((a, b) => a.createdAt - b.createdAt),
+    );
+  }
+  return map;
+}, [state.replies]);
+```
+
+`QAPanel` receives this Map as a prop and calls `repliesByQuestionMap.get(question.id) ?? []`.
+
+### Pattern 4: QuestionCard Variant Decomposition
+
+**What:** `QuestionCard` dispatches to four rendering paths. Extract each path into its own component. The parent `QuestionCard` (or the list renderer in `QAPanel`) acts as a discriminator that selects the right variant.
+
+**Two valid approaches:**
+
+**Approach A — Discriminator in QuestionCard (recommended):**
+
+```typescript
+// question-card.tsx (new role: discriminator)
+export function QuestionCard(props: QuestionCardProps) {
+  if (props.question.isBanned) return <QuestionCardBanned />;
+  if (props.question.isHidden) return <QuestionCardHidden {...props} />;
+  return <QuestionCardNormal {...props} />;
+}
+```
+
+`QAPanel` continues to render `<QuestionCard>` with no awareness of variants. The discriminator is co-located with the type logic.
+
+**Approach B — Discriminator in QAPanel:**
+
+`QAPanel` selects the variant directly. More explicit, but couples the list renderer to the variant taxonomy.
+
+Approach A is recommended because `QAPanel` does not need to know why a card looks different — it only needs to show a card. The variant is an implementation detail of the card.
+
+**Props per variant:**
+
+```typescript
+// question-card-banned.tsx — minimal props
+interface QuestionCardBannedProps {
+  question: Pick<Question, "id">; // only id needed for key
+}
+
+// question-card-hidden.tsx
+interface QuestionCardHiddenProps {
+  question: Question;
+  isHost: boolean;
+  onRestore?: (questionId: string) => void;
+}
+
+// question-card-normal.tsx — full props (same as current QuestionCardProps minus isBanned/isHidden paths)
+interface QuestionCardNormalProps {
+  question: Question;
+  replies: Reply[];
+  isHost: boolean;
+  fingerprint: string;
+  votedQuestionIds: Set<string>;
+  downvotedQuestionIds: Set<string>;
+  onUpvote: (questionId: string, remove: boolean) => void;
+  onDownvote: (questionId: string, remove: boolean) => void;
+  onReply: (questionId: string, text: string) => void;
+  onFocus?: (questionId: string | undefined) => void;
+  onBanQuestion?: (questionId: string) => void;
+  onBanParticipant?: (participantFingerprint: string) => void;
+}
+```
+
+`QuestionCardNormal` will be roughly 250 lines — still large, but it has a single coherent rendering path and can be tested in isolation with a single state configuration.
+
+### Pattern 5: Shared formatRelativeTime Utility
+
+**What:** Create `packages/frontend/src/lib/format-relative-time.ts` with a single canonical implementation. All components import from this location.
+
+**Canonical form (seconds-based + i18n):**
+
+```typescript
+// lib/format-relative-time.ts
+type TFunction = (key: string, values?: Record<string, number>) => string;
+
+export function formatRelativeTime(createdAtSeconds: number, t: TFunction): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diffSeconds = now - createdAtSeconds;
+
+  if (diffSeconds < 60) return t("timeJustNow");
+  if (diffSeconds < 3600) return t("timeMinutesAgo", { count: Math.floor(diffSeconds / 60) });
+  if (diffSeconds < 86400) return t("timeHoursAgo", { count: Math.floor(diffSeconds / 3600) });
+  return t("timeDaysAgo", { count: Math.floor(diffSeconds / 86400) });
+}
+```
+
+**Files to migrate:** `question-card.tsx`, `reply-list.tsx`, `clipboard-panel.tsx` (the embedded `SnippetCard`), `snippet-card.tsx`, `snippet-hero.tsx`.
+
+The `snippet-card.tsx` and `snippet-hero.tsx` variants currently use hardcoded English strings. After migration they will use i18n keys — this is a breaking improvement (they gain localization support they currently lack).
+
+**Note on the `t` parameter:** `snippet-card.tsx` and `snippet-hero.tsx` are Server Components that currently do not call `useTranslations`. After migration, they will need `const t = await getTranslations("session")` (the server-side equivalent). This is a minor addition, not a structural change.
 
 ---
 
-## Anti-Patterns
+## Data Flow
 
-### Anti-Pattern 1: DynamoDB Map for Reaction Counts
+### Before: Mutation in Component
 
-**What people do:** Store reactions as `{ M: { "👍": { count: 3, reactors: [...] } } }` thinking it's more "structured."
+```
+User action (click upvote)
+    ↓
+QuestionCard.handleUpvoteClick()
+    ↓ calls
+QAPanel.onUpvote(questionId, remove)  ← prop drilled from parent
+    ↓ calls
+SessionLivePage.handleUpvote(questionId, remove)  ← defined inline in component
+    ↓
+dispatch(QUESTION_UPDATED, optimistic delta)   ← optimistic
+addVote(questionId) / removeVote(questionId)   ← fingerprint tracking
+upvoteQuestionAction(...)                      ← Server Action
+    ↓ on error
+dispatch(QUESTION_UPDATED, rollback delta)
+removeVote / addVote (revert)
+toast.error(...)
+```
 
-**Why it's wrong:** DynamoDB `ADD` does not work on nested Map values. Incrementing a nested counter requires `SET reactions.thumbsup.count = reactions.thumbsup.count + :delta` — which is NOT atomic. Under concurrent writes (many users reacting simultaneously), this pattern produces incorrect counts.
+### After: Mutation in Hook
 
-**Do this instead:** Flat top-level attributes (`rxn_thumbsup_count`, `rxn_thumbsup_reactors`). The `ADD` operation on top-level attributes IS atomic.
+```
+User action (click upvote)
+    ↓
+QuestionCardNormal.handleUpvoteClick()
+    ↓ calls
+QAPanel.onUpvote(questionId, remove)  ← prop from parent (unchanged)
+    ↓ calls
+useSessionMutations.handleUpvote(questionId, remove)  ← hook result
+    ↓
+[same dispatch / fingerprint / Server Action / rollback pattern]
+[now in one place, not duplicated across two page components]
+```
 
-### Anti-Pattern 2: Separate Subscription Channel for Reactions
+### Subscription Flow (unchanged)
 
-**What people do:** Add a new `onReactionUpdate` subscription to avoid "polluting" the existing `onSessionUpdate` channel.
+```
+AppSync WebSocket event
+    ↓
+useSessionUpdates.subscribe (unchanged)
+    ↓ dispatch(QUESTION_UPDATED | SNIPPET_ADDED | ...)
+useSessionState reducer (unchanged)
+    ↓ state update
+sortedQuestions / repliesByQuestionMap recomputed (useMemo)
+    ↓
+QAPanel re-renders with new sorted list
+QuestionCard re-renders with new reply list
+```
 
-**Why it's wrong:** Each AppSync subscription is a separate WebSocket connection. Adding a second subscription doubles connection overhead per client. The existing union-type pattern (one channel, typed payloads) was chosen specifically to avoid this. `REACTION_UPDATED` is a new event type on the existing channel.
+---
 
-**Do this instead:** Add `REACTION_UPDATED` to `SessionEventType` and `react` to the `@aws_subscribe` list. Zero new subscription infrastructure.
+## New vs. Modified: Explicit List
 
-### Anti-Pattern 3: Storing Emoji Glyphs as DynamoDB Attribute Names
+### NEW files
 
-**What people do:** Name attributes `reactions_👍_count` because it matches the UI directly.
+| File                                                                | Purpose                                                                |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `packages/frontend/src/hooks/use-session-mutations.ts`              | All async mutation handlers, shared between participant and host pages |
+| `packages/frontend/src/lib/format-relative-time.ts`                 | Canonical i18n-aware relative time formatter                           |
+| `packages/frontend/src/components/session/snippet-card-live.tsx`    | Client SnippetCard extracted from `clipboard-panel.tsx`                |
+| `packages/frontend/src/components/session/question-card-normal.tsx` | Normal/focused question card variant                                   |
+| `packages/frontend/src/components/session/question-card-banned.tsx` | Banned (tombstone) question card variant                               |
+| `packages/frontend/src/components/session/question-card-hidden.tsx` | Community-hidden question card variant                                 |
 
-**Why it's wrong:** While DynamoDB supports Unicode attribute names, they require `ExpressionAttributeNames` escaping in every UpdateExpression, GetItem, and Query that references them. This makes every query more verbose and error-prone.
+### MODIFIED files
 
-**Do this instead:** Use ASCII normalized keys (`rxn_thumbsup_count`). Map to glyphs in the UI layer only.
+| File                                                                  | What Changes                                                                                               |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `packages/frontend/src/components/session/session-live-page.tsx`      | Remove all inline handlers; call `useSessionMutations`; pass returned handlers to panels; ~40 lines result |
+| `packages/frontend/src/components/session/session-live-host-page.tsx` | Same as above + host-secret setup remains; ~50 lines result                                                |
+| `packages/frontend/src/hooks/use-session-state.ts`                    | Add debounced sort (move from QAPanel); change `repliesByQuestion` from callback to `useMemo` Map          |
+| `packages/frontend/src/components/session/qa-panel.tsx`               | Remove local sort + debounce; remove local repliesByQuestion; accept sorted questions + Map as props       |
+| `packages/frontend/src/components/session/clipboard-panel.tsx`        | Remove embedded `SnippetCard` function; import `SnippetCardLive` instead                                   |
+| `packages/frontend/src/components/session/question-card.tsx`          | Become discriminator: check isBanned/isHidden, delegate to variant components                              |
+| `packages/frontend/src/components/session/session-shell.tsx`          | Add `role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls` to mobile tab buttons                 |
+| `packages/frontend/src/components/session/new-content-banner.tsx`     | Add `aria-live="polite"` to the sticky banner container                                                    |
+| `packages/frontend/src/components/session/qa-input.tsx`               | Add identity chip (avatar + name display, click to open IdentityEditor)                                    |
+| `packages/frontend/src/components/session/reply-list.tsx`             | Import `formatRelativeTime` from `lib/format-relative-time.ts` instead of inline copy                      |
+| `packages/frontend/src/components/session/snippet-card.tsx`           | Import `formatRelativeTime` from `lib/format-relative-time.ts`; add `getTranslations`                      |
+| `packages/frontend/src/components/session/snippet-hero.tsx`           | Same as snippet-card.tsx                                                                                   |
 
-### Anti-Pattern 4: Loading All Reaction States on Mount
+### NOT modified
 
-**What people do:** In `useFingerprint`, iterate all `reactions:{sessionSlug}:*` localStorage keys on mount to pre-populate the full reaction state map.
+| File                                                           | Why untouched                                                          |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `packages/frontend/src/hooks/use-session-updates.ts`           | No changes to subscription behavior                                    |
+| `packages/frontend/src/hooks/use-fingerprint.ts`               | No new tracking needed for this milestone                              |
+| `packages/frontend/src/hooks/use-identity.ts`                  | No interface changes                                                   |
+| `packages/frontend/src/components/session/host-input.tsx`      | No changes in scope                                                    |
+| `packages/frontend/src/components/session/host-toolbar.tsx`    | No changes in scope                                                    |
+| `packages/frontend/src/components/session/live-indicator.tsx`  | No changes in scope                                                    |
+| `packages/frontend/src/components/session/identity-editor.tsx` | Already a standalone component; QAInput links to it, not the other way |
+| All Server Actions (`/actions/*`)                              | Mutation handlers call them unchanged; no signature changes            |
 
-**Why it's wrong:** There is no efficient way to enumerate keys by prefix in localStorage. `localStorage.length` + iterating all keys is O(n) on total localStorage size, and a session with 100 questions × 6 emojis = 600 potential keys would be slow.
+---
 
-**Do this instead:** Load lazily. `hasReacted(targetId, emoji)` reads and caches the per-item key on first access. Only items visible in the viewport will be accessed.
+## Build Order
+
+Dependencies flow from the bottom of the call chain upward. Each step must be complete before the steps that depend on it.
+
+```
+STEP 1: Shared utility
+  Create lib/format-relative-time.ts (canonical implementation).
+  Why first: Everything that uses time display can be updated to import
+  from here. No dependencies — pure function.
+  Files: packages/frontend/src/lib/format-relative-time.ts (NEW)
+
+STEP 2: Migrate formatRelativeTime consumers
+  Update reply-list.tsx, question-card.tsx, clipboard-panel.tsx (its
+  embedded SnippetCard), snippet-card.tsx, snippet-hero.tsx to import
+  from step 1. Add getTranslations to the two Server Components.
+  Why second: Before extracting SnippetCard from clipboard-panel in step 4,
+  the embedded function should already be using the shared utility so the
+  extracted file is clean from day one.
+  Files: reply-list.tsx, question-card.tsx, snippet-card.tsx,
+         snippet-hero.tsx (all MODIFIED)
+
+STEP 3: useSessionState — debounced sort + memoized repliesByQuestion
+  Move the debounced sort logic from QAPanel into useSessionState.
+  Rename output to sortedQuestions (same name, different origin).
+  Change repliesByQuestion from a callback to a useMemo Map.
+  Why third: QAPanel (step 5) and both page components depend on this.
+  If done after QAPanel, there is a temporary state where the hook and
+  the panel both own sorting — worse than the current situation.
+  Files: packages/frontend/src/hooks/use-session-state.ts (MODIFIED)
+
+STEP 4: Extract SnippetCard from ClipboardPanel
+  Move the embedded SnippetCard function to snippet-card-live.tsx.
+  Update clipboard-panel.tsx to import it.
+  Why fourth: Independent of mutation extraction. This is pure co-location
+  cleanup with no behavioral change. Do it before mutation extraction
+  to keep step 5's diff focused on logic, not component movement.
+  Files: packages/frontend/src/components/session/snippet-card-live.tsx (NEW)
+         packages/frontend/src/components/session/clipboard-panel.tsx (MODIFIED)
+
+STEP 5: Extract useSessionMutations
+  Create the hook. Move all mutation handlers from session-live-page.tsx
+  and session-live-host-page.tsx into it. Start with the shared handlers
+  (handleUpvote, handleDownvote, handleAddQuestion, handleReply), then add
+  the host-only handlers (handleDeleteSnippet, handleClearClipboard,
+  handleFocusQuestion, handleBanQuestion, handleBanParticipant,
+  handleRestoreQuestion).
+  Why fifth: Both page components (step 6) depend on this hook. The hook
+  itself depends only on dispatch (from useSessionState, step 3) and
+  fingerprint tracking (unchanged).
+  Files: packages/frontend/src/hooks/use-session-mutations.ts (NEW)
+
+STEP 6: Slim down page components
+  Update session-live-page.tsx and session-live-host-page.tsx to call
+  useSessionMutations and pass the returned handlers to panels.
+  Remove all inline handler definitions.
+  Why sixth: Depends on the hook from step 5. After this step,
+  both pages should be composition-only: hook calls + JSX structure.
+  Files: session-live-page.tsx (MODIFIED)
+         session-live-host-page.tsx (MODIFIED)
+
+STEP 7: Update QAPanel to remove sorting
+  Remove the useMemo sort, the debounced state, and the inline
+  repliesByQuestion Map construction from QAPanel. It now accepts
+  sortedQuestions directly and uses the Map from useSessionState.
+  Update props interface to reflect this.
+  Why seventh: Step 3 must be complete first (the hook now provides
+  these). Doing this before page components are slimmed is fine,
+  but doing it before the hook is ready would break the app.
+  Files: packages/frontend/src/components/session/qa-panel.tsx (MODIFIED)
+         session-live-page.tsx (MODIFIED — update QAPanel props)
+         session-live-host-page.tsx (MODIFIED — update QAPanel props)
+
+STEP 8: Decompose QuestionCard into variants
+  Create QuestionCardBanned, QuestionCardHidden, QuestionCardNormal.
+  Update QuestionCard to be a discriminator that routes to variants.
+  Why eighth: Depends on steps 2 (formatRelativeTime already migrated),
+  step 7 (QAPanel already cleaned). The variant components do not depend
+  on any of the hook changes from steps 3-6.
+  Files: question-card-normal.tsx (NEW)
+         question-card-banned.tsx (NEW)
+         question-card-hidden.tsx (NEW)
+         question-card.tsx (MODIFIED — becomes discriminator)
+
+STEP 9: SessionShell ARIA semantics
+  Add role="tablist", role="tab", aria-selected, aria-controls to
+  the mobile tab buttons.
+  Why ninth: Independent of all above steps. Can be done any time, but
+  placing it last avoids merge conflicts with any other changes to the
+  shell layout. It is a pure markup addition with no logic changes.
+  Files: packages/frontend/src/components/session/session-shell.tsx (MODIFIED)
+
+STEP 10: NewContentBanner aria-live + QAInput identity chip
+  Add aria-live="polite" to NewContentBanner.
+  Add identity chip to QAInput (avatar + name, click to edit).
+  Why tenth: Both are self-contained UI changes. Placing them last
+  avoids interfering with the structural changes in steps 1-9.
+  The identity chip reads from useIdentity (unchanged hook) and
+  opens IdentityEditor (unchanged component) — no new hook required.
+  Files: new-content-banner.tsx (MODIFIED)
+         qa-input.tsx (MODIFIED)
+```
 
 ---
 
@@ -677,50 +589,85 @@ STEP 8: ReactionBar UI component (frontend)
 
 ### Internal Boundaries
 
-| Boundary                                        | Communication                                 | Notes                                                      |
-| ----------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `reaction-bar.tsx` ↔ `use-reactions.ts`         | Direct hook call                              | `useReactions` returns `{ counts, reactedEmojis, toggle }` |
-| `use-reactions.ts` ↔ `use-session-state.ts`     | `dispatch(ADD_REACTION_OPTIMISTIC)`           | Same reducer dispatch pattern as vote system               |
-| `use-reactions.ts` ↔ `use-fingerprint.ts`       | `hasReacted`, `addReaction`, `removeReaction` | Extended from existing fingerprint hook                    |
-| `use-reactions.ts` ↔ `actions/reactions.ts`     | Server Action call                            | Same `{ ok, error }` return pattern                        |
-| `actions/reactions.ts` ↔ AppSync                | `appsyncMutation(REACT, args)`                | Reuses existing `appsync-server.ts` helper                 |
-| `reactions.ts` resolver ↔ `rate-limit.ts`       | `checkNotBanned`, `checkRateLimit`            | No modification to rate-limit.ts needed                    |
-| `reactions.ts` resolver ↔ DynamoDB              | Flat attribute `ADD` + conditional            | Same pattern as `upvoteQuestion`                           |
-| `use-session-updates.ts` ↔ AppSync subscription | New case in existing switch                   | No new subscription wiring                                 |
+| Boundary                                                                                                                                      | Communication                                                                                   | Notes                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `session-live-page.tsx` ↔ `use-session-mutations.ts`                                                                                          | Direct hook call                                                                                | Page passes dispatch, fingerprint, sessionSlug, authorName as args; receives handler functions back                |
+| `session-live-host-page.tsx` ↔ `use-session-mutations.ts`                                                                                     | Same as above + hostSecretHash                                                                  | Host-only handlers only non-undefined when hostSecretHash is present                                               |
+| `use-session-mutations.ts` ↔ `use-session-state.ts`                                                                                           | `dispatch` parameter                                                                            | Hook receives dispatch as a parameter, not via context — explicit dependency                                       |
+| `use-session-mutations.ts` ↔ `use-fingerprint.ts`                                                                                             | `addVote`, `removeVote`, `addDownvote`, `removeDownvote`, `votedIds`, `downvotedIds` parameters | Fingerprint tracking stays in useFingerprint; mutation hook coordinates between fingerprint state and server calls |
+| `qa-panel.tsx` ↔ `use-session-state.ts`                                                                                                       | Props: `sortedQuestions: Question[]`, `repliesByQuestionMap: Map<string, Reply[]>`              | Panel no longer owns derivation; hook owns it                                                                      |
+| `question-card.tsx` ↔ variant components                                                                                                      | Direct JSX import                                                                               | Discriminator selects variant; QAPanel sees only QuestionCard                                                      |
+| `clipboard-panel.tsx` ↔ `snippet-card-live.tsx`                                                                                               | Direct JSX import                                                                               | SnippetCardLive exported from its own file, imported into panel                                                    |
+| `reply-list.tsx`, `question-card-normal.tsx`, `snippet-card-live.tsx`, `snippet-card.tsx`, `snippet-hero.tsx` ↔ `lib/format-relative-time.ts` | Named import                                                                                    | Single source of truth for relative time formatting                                                                |
+| `qa-input.tsx` ↔ `use-identity.ts`                                                                                                            | `useIdentity()` call inside QAInput                                                             | QAInput reads identity to display chip; already used in session-live-page.tsx                                      |
+| `qa-input.tsx` ↔ `identity-editor.tsx`                                                                                                        | State: `showEditor` boolean + render IdentityEditor inside/alongside                            | QAInput triggers editor open; editor manages its own form state                                                    |
 
 ### External Services
 
-| Service  | Impact                           | Notes                                                                           |
-| -------- | -------------------------------- | ------------------------------------------------------------------------------- |
-| AppSync  | Schema change required           | Add type, mutation, enum value, subscription list entry                         |
-| DynamoDB | New attributes on existing items | No table redesign; new attributes are sparse (added on first reaction)          |
-| Lambda   | New function (reactResolver)     | Wire in sst.config.ts; reuses existing DynamoDB client and rate-limit utilities |
+No changes to external service integration. All AppSync mutations, DynamoDB reads, and subscription patterns remain identical. This milestone is purely frontend restructuring.
 
 ---
 
 ## Scaling Considerations
 
-| Concern                       | At current target (50-500 participants)                             | Notes                                                                                                                                |
-| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| DynamoDB item size            | ~18KB worst case per item                                           | Well under 400KB limit                                                                                                               |
-| Reaction write throughput     | 500 users × 10 reactions/min = 5,000 writes/min per session         | DynamoDB on-demand handles this without configuration                                                                                |
-| Subscription broadcast volume | 1 REACTION_UPDATED event per reaction, broadcast to all subscribers | At 500 subscribers × 5,000 events/min = 2.5M messages/min. AppSync charges per million messages ($1.00). Monitor cost at this scale. |
-| localStorage key count        | 100 questions × 1 key per item = 100 new keys per session           | Negligible                                                                                                                           |
+| Concern             | Impact of Refactor                                                                            | Notes                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Re-render frequency | Improved — repliesByQuestion Map computed once per replies change, not per render             | At 100 questions + high-frequency vote events, this eliminates ~100 Map constructions per vote event |
+| Sort stability      | Unchanged — debounced sort already exists, just moved to hook                                 | No behavioral change for participants                                                                |
+| Bundle size         | Neutral to slightly better — extracted files enable better tree-shaking of variant components | `QuestionCardBanned` and `QuestionCardHidden` are much smaller than the monolithic card              |
+| Test surface        | Improved — each variant testable in isolation with minimal props                              | `QuestionCardBanned` needs only `question.id` to render                                              |
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Moving Logic Without Moving Tests
+
+**What people do:** Extract `handleUpvote` into a hook, but leave test coverage gaps because the function "moved but wasn't changed."
+
+**Why it's wrong:** The extraction changes the function's calling context. Edge cases around optimistic rollback (the `state.questions.find` pattern for downvote count) should be tested in the hook's unit tests, not assumed correct.
+
+**Do this instead:** Write unit tests for `useSessionMutations` as part of step 5. The existing mutation logic is non-trivial (mutual exclusion between upvote/downvote, count floor at 0) and deserves isolated test coverage at the hook level.
+
+### Anti-Pattern 2: Discriminator in the List Renderer
+
+**What people do:** Put the isBanned/isHidden branching in `QAPanel`'s `.map()` call because "it's more explicit."
+
+**Why it's wrong:** `QAPanel` should not need to import and know about `QuestionCardBanned`, `QuestionCardHidden`, and `QuestionCardNormal`. This couples the list renderer to the card's internal state taxonomy. If a new variant is added (e.g., a pinned/sponsored question type), `QAPanel` would need to change even though it renders cards, not decides what kind of card to show.
+
+**Do this instead:** Discriminator in `QuestionCard` (Approach A from Pattern 4). `QAPanel` imports only `QuestionCard`. The card decides which variant to render.
+
+### Anti-Pattern 3: Prop Drilling repliesByQuestionMap Through Page
+
+**What people do:** Have the page component compute `repliesByQuestionMap` from `state.replies` and pass it through as a prop chain: `Page → QAPanel → QuestionCard`.
+
+**Why it's wrong:** The page component is a composition root — it should not derive data. It should wire hooks to components. Derivation belongs in the hook.
+
+**Do this instead:** `useSessionState` returns `repliesByQuestionMap` directly. `QAPanel` receives `sortedQuestions` and `repliesByQuestionMap` as props from the page. `QuestionCard` receives only its own `replies: Reply[]` slice. The Map lookup (`repliesByQuestionMap.get(question.id) ?? []`) happens in `QAPanel`, not in the page.
+
+### Anti-Pattern 4: Creating a God Hook to Replace the God Component
+
+**What people do:** Extract all mutation logic, state management, subscription handling, AND derived data into a single `useSession` hook that returns 20+ values.
+
+**Why it's wrong:** Replaces one monolith with another. Any change to subscription handling would require touching the same file as vote mutation logic.
+
+**Do this instead:** Keep the existing hook separation (`useSessionState`, `useSessionUpdates`, `useFingerprint`, `useIdentity`). Only extract `useSessionMutations` — it has a clear, bounded responsibility: async write operations with optimistic updates. The composition root calls all hooks and wires their outputs together. That's the composition root's job.
 
 ---
 
 ## Sources
 
-All findings are HIGH confidence — derived from direct source code analysis of the existing codebase, DynamoDB official documentation on atomic operations, and AppSync subscription patterns already in production in this project.
+All findings are HIGH confidence — derived from direct source code analysis of the existing codebase. No external sources required for a restructuring milestone.
 
-- DynamoDB `ADD` operation atomicity — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.ADD (confirmed: ADD is atomic for numbers and sets at the top-level attribute scope only)
-- DynamoDB String Set operations — https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html (confirmed: Unicode attribute names valid but require ExpressionAttributeNames escaping)
-- Existing `upvoteQuestion` resolver — `packages/functions/src/resolvers/qa.ts` (direct code analysis — the atomic Set pattern to mirror)
-- Existing `useFingerprint` hook — `packages/frontend/src/hooks/use-fingerprint.ts` (direct code analysis — the localStorage pattern to extend)
-- Existing subscription handler — `packages/frontend/src/hooks/use-session-updates.ts` (direct code analysis — the event switch to extend)
-- AppSync subscription `@aws_subscribe` — `infra/schema.graphql` (existing pattern to extend by adding `react` to the list)
+- `packages/frontend/src/components/session/session-live-page.tsx` — duplicate mutation handlers (source of `useSessionMutations` extraction)
+- `packages/frontend/src/components/session/session-live-host-page.tsx` — same pattern, host-specific handlers
+- `packages/frontend/src/components/session/qa-panel.tsx` — duplicate sort + inline repliesByQuestion (source of hook migration)
+- `packages/frontend/src/hooks/use-session-state.ts` — existing `repliesByQuestion` callback, existing sort; basis for memoized Map
+- `packages/frontend/src/components/session/question-card.tsx` — four-state rendering paths documented at lines 141-172 (banned), 150-172 (hidden), 175+ (normal/focused)
+- `packages/frontend/src/components/session/clipboard-panel.tsx` — embedded `SnippetCard` at lines 49-139
+- `formatRelativeTime` duplication confirmed in: `clipboard-panel.tsx`, `snippet-card.tsx`, `snippet-hero.tsx`, `question-card.tsx`, `reply-list.tsx` (5 files, 2 divergent implementations)
 
 ---
 
-_Architecture research for: emoji reactions — Nasqa Live v1.2_
-_Researched: 2026-03-15_
+_Architecture research for: Participant & Host UX Refactor — Nasqa Live v1.3_
+_Researched: 2026-03-16_
