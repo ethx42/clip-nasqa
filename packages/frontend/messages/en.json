@@ -129,7 +129,8 @@
     "failedClearClipboard": "Failed to clear clipboard",
     "rateLimited": "Too many requests. Try again in {seconds}s",
     "banned": "You've been blocked from posting in this session.",
-    "unexpectedError": "Something went wrong. Please try again."
+    "unexpectedError": "Something went wrong. Please try again.",
+    "networkError": "Connection lost. Please check your internet and try again."
   },
   "identity": {
     "whatsYourName": "What's your name?",

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { pushSnippetAction, renderHighlight } from "@/actions/snippet";
 import { detectLanguage, SUPPORTED_LANGUAGES } from "@/lib/detect-language";
+import { safeAction } from "@/lib/safe-action";
 
 interface HostInputProps {
   sessionSlug: string;
@@ -15,6 +16,7 @@ interface HostInputProps {
 
 export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: HostInputProps) {
   const t = useTranslations("session");
+  const tErrors = useTranslations("actionErrors");
   const [value, setValue] = useState("");
   const [detectedLang, setDetectedLang] = useState("text");
   const [highlightHtml, setHighlightHtml] = useState("");
@@ -99,13 +101,16 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       backdropRef.current.style.height = "auto";
     }
     const type = lang !== "text" ? "code" : "text";
-    const result = await pushSnippetAction({
-      sessionSlug,
-      hostSecretHash,
-      content,
-      type,
-      language: lang !== "text" ? lang : undefined,
-    });
+    const result = await safeAction(
+      pushSnippetAction({
+        sessionSlug,
+        hostSecretHash,
+        content,
+        type,
+        language: lang !== "text" ? lang : undefined,
+      }),
+      tErrors("networkError"),
+    );
     setIsPushing(false);
     if (!result.success) {
       // Restore content so the user doesn't lose their work
@@ -115,7 +120,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       return;
     }
     onSnippetPushed?.();
-  }, [value, isPushing, activeLang, sessionSlug, hostSecretHash, onSnippetPushed]);
+  }, [value, isPushing, activeLang, sessionSlug, hostSecretHash, onSnippetPushed, tErrors]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

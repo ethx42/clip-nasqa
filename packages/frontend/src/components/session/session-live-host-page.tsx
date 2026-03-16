@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ import { useSessionState } from "@/hooks/use-session-state";
 import { useSessionUpdates } from "@/hooks/use-session-updates";
 import { hashSecret } from "@/lib/hash-secret";
 import { loadHostSecret, storeHostSecret } from "@/lib/host-secret";
+import { safeAction } from "@/lib/safe-action";
 import type { Session } from "@/lib/session";
 
 interface SessionLiveHostPageProps {
@@ -51,6 +53,7 @@ export function SessionLiveHostPage({
   initialReplies,
   hostToolbar,
 }: SessionLiveHostPageProps) {
+  const tErrors = useTranslations("actionErrors");
   const [hostSecretHash, setHostSecretHash] = useState<string>("");
   const { name: authorName } = useIdentity();
 
@@ -78,7 +81,10 @@ export function SessionLiveHostPage({
   async function handleDeleteSnippet(snippetId: string) {
     // Optimistic removal
     dispatch({ type: "SNIPPET_DELETED", payload: { snippetId } });
-    const result = await deleteSnippetAction({ sessionSlug, hostSecretHash, snippetId });
+    const result = await safeAction(
+      deleteSnippetAction({ sessionSlug, hostSecretHash, snippetId }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       toast.error(result.error, { duration: 5000 });
     }
@@ -86,7 +92,10 @@ export function SessionLiveHostPage({
 
   async function handleClearClipboard() {
     dispatch({ type: "CLIPBOARD_CLEARED" });
-    const result = await clearClipboardAction({ sessionSlug, hostSecretHash });
+    const result = await safeAction(
+      clearClipboardAction({ sessionSlug, hostSecretHash }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       toast.error(result.error, { duration: 5000 });
     }
@@ -104,7 +113,10 @@ export function SessionLiveHostPage({
         }
       }
     }
-    const result = await focusQuestionAction({ sessionSlug, hostSecretHash, questionId });
+    const result = await safeAction(
+      focusQuestionAction({ sessionSlug, hostSecretHash, questionId }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       toast.error(result.error, { duration: 5000 });
     }
@@ -123,12 +135,15 @@ export function SessionLiveHostPage({
       addVote(questionId);
     }
 
-    const result = await upvoteQuestionAction({
-      sessionSlug,
-      questionId,
-      fingerprint,
-      remove,
-    });
+    const result = await safeAction(
+      upvoteQuestionAction({
+        sessionSlug,
+        questionId,
+        fingerprint,
+        remove,
+      }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       // VOTE_CONFLICT is a dedup signal — handle silently (not a user error)
@@ -166,7 +181,10 @@ export function SessionLiveHostPage({
 
     dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
-    const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
+    const result = await safeAction(
+      addQuestionAction({ sessionSlug, text, fingerprint, authorName }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
       toast.error(result.error, { duration: 5000 });
@@ -188,14 +206,17 @@ export function SessionLiveHostPage({
 
     dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
 
-    const result = await addReplyAction({
-      sessionSlug,
-      questionId,
-      text,
-      fingerprint,
-      isHostReply: true,
-      authorName,
-    });
+    const result = await safeAction(
+      addReplyAction({
+        sessionSlug,
+        questionId,
+        text,
+        fingerprint,
+        isHostReply: true,
+        authorName,
+      }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
@@ -230,7 +251,10 @@ export function SessionLiveHostPage({
       }
     }
 
-    const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
+    const result = await safeAction(
+      downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       // Rollback optimistic update
@@ -257,7 +281,10 @@ export function SessionLiveHostPage({
   async function handleBanQuestion(questionId: string) {
     // Optimistic: mark banned immediately
     dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: true } });
-    const result = await banQuestionAction({ sessionSlug, hostSecretHash, questionId });
+    const result = await safeAction(
+      banQuestionAction({ sessionSlug, hostSecretHash, questionId }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       // Rollback
       dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: false } });
@@ -266,11 +293,14 @@ export function SessionLiveHostPage({
   }
 
   async function handleBanParticipant(participantFingerprint: string) {
-    const result = await banParticipantAction({
-      sessionSlug,
-      hostSecretHash,
-      fingerprint: participantFingerprint,
-    });
+    const result = await safeAction(
+      banParticipantAction({
+        sessionSlug,
+        hostSecretHash,
+        fingerprint: participantFingerprint,
+      }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       toast.error(result.error, { duration: 5000 });
     }
@@ -278,7 +308,10 @@ export function SessionLiveHostPage({
 
   async function handleRestoreQuestion(questionId: string) {
     dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: false } });
-    const result = await restoreQuestionAction({ sessionSlug, hostSecretHash, questionId });
+    const result = await safeAction(
+      restoreQuestionAction({ sessionSlug, hostSecretHash, questionId }),
+      tErrors("networkError"),
+    );
     if (!result.success) {
       dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: true } });
       toast.error(result.error, { duration: 5000 });

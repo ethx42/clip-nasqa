@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useIdentity } from "@/hooks/use-identity";
 import { useSessionState } from "@/hooks/use-session-state";
 import { useSessionUpdates } from "@/hooks/use-session-updates";
+import { safeAction } from "@/lib/safe-action";
 import type { Session } from "@/lib/session";
 
 interface SessionLivePageProps {
@@ -43,6 +45,7 @@ export function SessionLivePage({
   initialQuestions,
   initialReplies,
 }: SessionLivePageProps) {
+  const tErrors = useTranslations("actionErrors");
   const { name: authorName } = useIdentity();
   const [joinModalOpen, setJoinModalOpen] = useState(false);
 
@@ -77,12 +80,15 @@ export function SessionLivePage({
       addVote(questionId);
     }
 
-    const result = await upvoteQuestionAction({
-      sessionSlug,
-      questionId,
-      fingerprint,
-      remove,
-    });
+    const result = await safeAction(
+      upvoteQuestionAction({
+        sessionSlug,
+        questionId,
+        fingerprint,
+        remove,
+      }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       // VOTE_CONFLICT is a dedup signal — handle silently (not a user error)
@@ -121,7 +127,10 @@ export function SessionLivePage({
 
     dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
-    const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
+    const result = await safeAction(
+      addQuestionAction({ sessionSlug, text, fingerprint, authorName }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
@@ -146,14 +155,17 @@ export function SessionLivePage({
 
     dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
 
-    const result = await addReplyAction({
-      sessionSlug,
-      questionId,
-      text,
-      fingerprint,
-      isHostReply: false,
-      authorName,
-    });
+    const result = await safeAction(
+      addReplyAction({
+        sessionSlug,
+        questionId,
+        text,
+        fingerprint,
+        isHostReply: false,
+        authorName,
+      }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       // Rollback: remove optimistic reply
@@ -190,7 +202,10 @@ export function SessionLivePage({
       }
     }
 
-    const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
+    const result = await safeAction(
+      downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove }),
+      tErrors("networkError"),
+    );
 
     if (!result.success) {
       // Rollback optimistic update
