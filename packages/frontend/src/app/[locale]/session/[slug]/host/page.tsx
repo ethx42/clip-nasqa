@@ -1,5 +1,4 @@
-import { getTranslations } from "next-intl/server";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { HostToolbar } from "@/components/session/host-toolbar";
 import { SessionLiveHostPage } from "@/components/session/session-live-host-page";
@@ -8,27 +7,16 @@ import { getSession, getSessionData } from "@/lib/session";
 
 export default async function HostPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<{ raw?: string }>;
 }) {
   const { slug } = await params;
-  const t = await getTranslations("pages");
+  const { raw } = await searchParams;
   const session = await getSession(slug);
 
-  if (!session) {
-    return (
-      <div className="flex min-h-[calc(100vh-49px)] flex-col items-center justify-center px-4 text-center">
-        <h1 className="mb-2 text-xl font-semibold text-foreground">{t("sessionNotFound")}</h1>
-        <p className="mb-6 text-sm text-muted-foreground">{t("sessionNotFoundDesc")}</p>
-        <Link
-          href="/"
-          className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white hover:bg-emerald-600"
-        >
-          {t("createNewSession")}
-        </Link>
-      </div>
-    );
-  }
+  if (!session) notFound();
 
   const { snippets, questions, replies } = await getSessionData(slug);
   const baseUrl = await getBaseUrl();
@@ -38,6 +26,7 @@ export default async function HostPage({
     <SessionLiveHostPage
       session={session}
       sessionSlug={slug}
+      rawSecret={raw}
       initialSnippets={snippets}
       initialQuestions={questions}
       initialReplies={replies}

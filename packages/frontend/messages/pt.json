@@ -26,13 +26,9 @@
     "speakerLive": "O apresentador está ao vivo — nenhum trecho compartilhado ainda.",
     "clipboard": "Área de Transferência",
     "qa": "Perguntas",
-    "copySecret": "Copiar Segredo",
     "copied": "Copiado!",
-    "secretWarning": "Salve este segredo agora — ele não será mostrado novamente.",
-    "hostUrl": "URL do Apresentador",
     "participantUrl": "URL do Participante",
     "qrCode": "Código QR",
-    "sessionCreated": "Sessão Criada!",
     "newContent": "Novo conteúdo",
     "newSnippet": "Novo trecho do apresentador",
     "newQuestionBanner": "{count, plural, one {Nova pergunta} other {# novas perguntas}}",
@@ -85,17 +81,12 @@
     "pushing": "Enviando...",
     "pasteOrType": "Cole ou digite código/texto...",
     "manual": "(manual)",
-    "hostSecret": "Segredo do Apresentador"
+    "share": "Compartilhar"
   },
   "pages": {
     "sessionNotFound": "Sessão não encontrada ou expirada",
     "sessionNotFoundDesc": "Esta sessão pode ter terminado ou o link está incorreto.",
     "createNewSession": "Criar uma nova sessão",
-    "hostControls": "Controles do Apresentador",
-    "hostControlsDesc": "Use a área de transferência e os painéis de perguntas para gerenciar a sessão.",
-    "goHome": "Ir para o início",
-    "pageExpired": "Esta página só está disponível logo após a criação da sessão.",
-    "goToHostView": "Ir para a vista do apresentador",
     "copyUrl": "Copiar URL"
   },
   "moderation": {
@@ -110,6 +101,13 @@
     "cancel": "Cancelar",
     "restore": "Restaurar",
     "hidden": "Oculto"
+  },
+  "errors": {
+    "connectionLost": "Conexão perdida",
+    "connectionLostDesc": "A conexão com esta sessão foi interrompida.",
+    "serverError": "Algo deu errado",
+    "serverErrorDesc": "Ocorreu um erro inesperado nesta sessão.",
+    "tryAgain": "Tentar novamente"
   },
   "identity": {
     "whatsYourName": "Qual é o seu nome?",

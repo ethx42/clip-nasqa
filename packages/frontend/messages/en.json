@@ -26,13 +26,9 @@
     "speakerLive": "Speaker is live — no snippets shared yet.",
     "clipboard": "Clipboard",
     "qa": "Q&A",
-    "copySecret": "Copy Secret",
     "copied": "Copied!",
-    "secretWarning": "Save this secret now — it won't be shown again.",
-    "hostUrl": "Host URL",
     "participantUrl": "Participant URL",
     "qrCode": "QR Code",
-    "sessionCreated": "Session Created!",
     "newContent": "New content",
     "newSnippet": "New snippet from speaker",
     "newQuestionBanner": "{count, plural, one {New question} other {# new questions}}",
@@ -85,17 +81,12 @@
     "pushing": "Pushing...",
     "pasteOrType": "Paste or type code/text...",
     "manual": "(manual)",
-    "hostSecret": "Host Secret"
+    "share": "Share"
   },
   "pages": {
     "sessionNotFound": "Session not found or expired",
     "sessionNotFoundDesc": "This session may have ended or the link is incorrect.",
     "createNewSession": "Create a new session",
-    "hostControls": "Host Controls",
-    "hostControlsDesc": "Use the clipboard and Q&A panels to manage the session.",
-    "goHome": "Go Home",
-    "pageExpired": "This page is only available immediately after session creation.",
-    "goToHostView": "Go to Host View",
     "copyUrl": "Copy URL"
   },
   "moderation": {
@@ -110,6 +101,13 @@
     "cancel": "Cancel",
     "restore": "Restore",
     "hidden": "Hidden"
+  },
+  "errors": {
+    "connectionLost": "Connection lost",
+    "connectionLostDesc": "The connection to this session was interrupted.",
+    "serverError": "Something went wrong",
+    "serverErrorDesc": "An unexpected error occurred in this session.",
+    "tryAgain": "Try again"
   },
   "identity": {
     "whatsYourName": "What's your name?",

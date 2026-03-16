@@ -26,13 +26,9 @@
     "speakerLive": "El presentador está en vivo — aún no hay fragmentos.",
     "clipboard": "Portapapeles",
     "qa": "Preguntas",
-    "copySecret": "Copiar Secreto",
     "copied": "¡Copiado!",
-    "secretWarning": "Guarda este secreto ahora — no se mostrará de nuevo.",
-    "hostUrl": "URL del Presentador",
     "participantUrl": "URL del Participante",
     "qrCode": "Código QR",
-    "sessionCreated": "¡Sesión Creada!",
     "newContent": "Nuevo contenido",
     "newSnippet": "Nuevo fragmento del presentador",
     "newQuestionBanner": "{count, plural, one {Nueva pregunta} other {# nuevas preguntas}}",
@@ -85,17 +81,12 @@
     "pushing": "Enviando...",
     "pasteOrType": "Pega o escribe código/texto...",
     "manual": "(manual)",
-    "hostSecret": "Secreto del Presentador"
+    "share": "Compartir"
   },
   "pages": {
     "sessionNotFound": "Sesión no encontrada o expirada",
     "sessionNotFoundDesc": "Esta sesión puede haber terminado o el enlace es incorrecto.",
     "createNewSession": "Crear una nueva sesión",
-    "hostControls": "Controles del Presentador",
-    "hostControlsDesc": "Usa el portapapeles y los paneles de preguntas para gestionar la sesión.",
-    "goHome": "Ir al inicio",
-    "pageExpired": "Esta página solo está disponible inmediatamente después de crear la sesión.",
-    "goToHostView": "Ir a la vista del presentador",
     "copyUrl": "Copiar URL"
   },
   "moderation": {
@@ -110,6 +101,13 @@
     "cancel": "Cancelar",
     "restore": "Restaurar",
     "hidden": "Oculta"
+  },
+  "errors": {
+    "connectionLost": "Conexión perdida",
+    "connectionLostDesc": "La conexión con esta sesión fue interrumpida.",
+    "serverError": "Algo salió mal",
+    "serverErrorDesc": "Ocurrió un error inesperado en esta sesión.",
+    "tryAgain": "Intentar de nuevo"
   },
   "identity": {
     "whatsYourName": "¿Cuál es tu nombre?",
