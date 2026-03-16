@@ -2,6 +2,7 @@ import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
 import { docClient } from "./index";
+import { logger } from "./logger";
 
 function tableName(): string {
   const name = process.env.TABLE_NAME;
@@ -14,7 +15,7 @@ function tableName(): string {
  * @param key - unique key for the rate limit (e.g. fingerprint or hostSecretHash)
  * @param limit - maximum number of requests allowed in the window
  * @param windowSeconds - window size in seconds (default: 60)
- * @throws Error('RATE_LIMIT_EXCEEDED') if limit is exceeded
+ * @throws Error('RATE_LIMIT_EXCEEDED:{remaining}') if limit is exceeded
  */
 export async function checkRateLimit(
   key: string,
@@ -48,7 +49,9 @@ export async function checkRateLimit(
     );
   } catch (err) {
     if (err instanceof ConditionalCheckFailedException) {
-      throw new Error("RATE_LIMIT_EXCEEDED");
+      const remaining = bucket + windowSeconds - Math.floor(Date.now() / 1000);
+      logger.warn({ key, remaining }, "rate limit exceeded");
+      throw new Error(`RATE_LIMIT_EXCEEDED:${remaining}`);
     }
     throw err;
   }
@@ -72,6 +75,10 @@ export async function checkNotBanned(sessionSlug: string, fingerprint: string): 
   );
 
   if (result.Item?.isBanned === true) {
+    logger.warn(
+      { sessionSlug, fingerprint: fingerprint.slice(0, 8) },
+      "banned participant attempted action",
+    );
     throw new Error("PARTICIPANT_BANNED");
   }
 }

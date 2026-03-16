@@ -4,6 +4,7 @@ import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { AppSyncResolverContext, GetSessionDataArgs } from "@nasqa/core";
 
 import { clearClipboard, deleteSnippet, pushSnippet } from "./clipboard";
+import { logger } from "./logger";
 import {
   handleBanParticipant,
   handleBanQuestion,
@@ -90,32 +91,61 @@ export const handler = async (event: AppSyncResolverContext): Promise<unknown> =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const args = event.arguments as any;
 
-  switch (fieldName) {
-    case "pushSnippet":
-      return pushSnippet(args);
-    case "deleteSnippet":
-      return deleteSnippet(args);
-    case "clearClipboard":
-      return clearClipboard(args);
-    case "addQuestion":
-      return addQuestion(args);
-    case "upvoteQuestion":
-      return upvoteQuestion(args);
-    case "addReply":
-      return addReply(args);
-    case "focusQuestion":
-      return focusQuestion(args);
-    case "banQuestion":
-      return handleBanQuestion(args);
-    case "banParticipant":
-      return handleBanParticipant(args);
-    case "downvoteQuestion":
-      return handleDownvoteQuestion(args);
-    case "restoreQuestion":
-      return handleRestoreQuestion(args);
-    case "getSessionData":
-      return getSessionData(args);
-    default:
-      throw new Error(`Unhandled field: ${fieldName}`);
+  const log = logger.child({
+    operation: fieldName,
+    sessionSlug: args?.sessionSlug ?? "unknown",
+  });
+
+  const start = Date.now();
+
+  try {
+    let result: unknown;
+
+    switch (fieldName) {
+      case "pushSnippet":
+        result = await pushSnippet(args);
+        break;
+      case "deleteSnippet":
+        result = await deleteSnippet(args);
+        break;
+      case "clearClipboard":
+        result = await clearClipboard(args);
+        break;
+      case "addQuestion":
+        result = await addQuestion(args);
+        break;
+      case "upvoteQuestion":
+        result = await upvoteQuestion(args);
+        break;
+      case "addReply":
+        result = await addReply(args);
+        break;
+      case "focusQuestion":
+        result = await focusQuestion(args);
+        break;
+      case "banQuestion":
+        result = await handleBanQuestion(args);
+        break;
+      case "banParticipant":
+        result = await handleBanParticipant(args);
+        break;
+      case "downvoteQuestion":
+        result = await handleDownvoteQuestion(args);
+        break;
+      case "restoreQuestion":
+        result = await handleRestoreQuestion(args);
+        break;
+      case "getSessionData":
+        result = await getSessionData(args);
+        break;
+      default:
+        throw new Error(`Unhandled field: ${fieldName}`);
+    }
+
+    log.info({ durationMs: Date.now() - start }, "resolver success");
+    return result;
+  } catch (err) {
+    log.error({ durationMs: Date.now() - start, err }, "resolver error");
+    throw err;
   }
 };
