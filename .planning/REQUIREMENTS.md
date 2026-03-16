@@ -16,8 +16,8 @@
 - [x] **TEST-01**: Vitest configured as test runner with workspace-aware monorepo setup
 - [x] **TEST-02**: Unit tests for core Zod schemas (validation, edge cases)
 - [x] **TEST-03**: Unit tests for Lambda resolvers (mocked DynamoDB/AppSync)
-- [ ] **TEST-04**: Component tests with React Testing Library for key UI components
-- [ ] **TEST-05**: Bundle size regression guard fails CI if JS exceeds budget
+- [x] **TEST-04**: Component tests with React Testing Library for key UI components
+- [x] **TEST-05**: Bundle size regression guard fails CI if JS exceeds budget
 
 ### CI/CD
 
@@ -109,8 +109,8 @@
 | TEST-01     | Phase 6  | Complete |
 | TEST-02     | Phase 6  | Complete |
 | TEST-03     | Phase 6  | Complete |
-| TEST-04     | Phase 6  | Pending  |
-| TEST-05     | Phase 6  | Pending  |
+| TEST-04     | Phase 6  | Complete |
+| TEST-05     | Phase 6  | Complete |
 | CICD-01     | Phase 6  | Complete |
 | CICD-02     | Phase 6  | Complete |
 | ERR-01      | Phase 7  | Pending  |

@@ -61,6 +61,9 @@ Recent decisions affecting current work:
 - [06-01]: aws-sdk-client-mock-vitest v7 requires `import "aws-sdk-client-mock-vitest/extend"` in setupFiles — bare import no longer registers matchers (breaking change from v6)
 - [06-01]: vitest functions project needs setupFiles to register aws-sdk-client-mock-vitest matchers globally across all resolver test files
 - [06-01]: test.projects API used (not deprecated vitest.workspace.ts) — vitest run not vitest for CI-safe non-watch execution
+- [06-02]: Real next-intl messages used in component tests (no useTranslations mocks) — wrapping in NextIntlClientProvider with en.json catches translation key mismatches
+- [06-02]: Bundle size script uses rootManifestFiles + polyfillFiles from build-manifest.json — paths are relative to .next/ not /\_next/
+- [06-02]: 156.7kB initial JS baseline documented — aws-amplify ~68kB alone exceeds 80kB budget; CI must use continue-on-error until aws-amplify replaced
 - [06-03]: bundle-size job uses continue-on-error: true — aws-amplify adds ~68kB gzipped (known Phase 3 constraint); remove when replaced
 - [06-03]: Job names (lint, typecheck, test, bundle-size) must match exactly when configuring branch protection required status checks
 - [06-03]: Branch protection must be configured manually after first CI run on main — GitHub only shows check names that have run within 7 days
@@ -79,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Completed 06-03-PLAN.md (GitHub Actions CI pipeline with 4 parallel jobs, npm and .next caching)
+Stopped at: Completed 06-02-PLAN.md (16 frontend component tests for QuestionCard + QAInput, bundle size guard script)
 Resume file: None

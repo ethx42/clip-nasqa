@@ -112,7 +112,7 @@ Plans:
 **Milestone Goal:** Harden the codebase for production reliability and developer experience — testing, CI/CD, error handling, observability, code quality gates, SEO, and accessibility.
 
 - [x] **Phase 5: Code Quality Gates** - Pre-commit hooks, Prettier formatting, and TypeScript strict mode so no quality debt enters the repo during hardening (completed 2026-03-15)
-- [ ] **Phase 6: Testing and CI** - Vitest test suite across schemas, resolvers, and components; GitHub Actions pipeline that runs lint, typecheck, test, and build on every PR
+- [x] **Phase 6: Testing and CI** - Vitest test suite across schemas, resolvers, and components; GitHub Actions pipeline that runs lint, typecheck, test, and build on every PR (completed 2026-03-16)
 - [ ] **Phase 7: Error Handling and Observability** - Next.js error boundaries with graceful fallbacks, structured server actions, and pino structured logging in Lambda resolvers
 - [ ] **Phase 8: SEO and Accessibility** - Dynamic per-session metadata, robots/sitemap, semantic HTML landmarks, ARIA labels, and keyboard navigation across all components
 
@@ -229,7 +229,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8 → 9 → 10
 | 3. Real-Time Core                   | v1.0      | 6/6            | Complete    | 2026-03-14 |
 | 4. Moderation, Identity, and Polish | v1.0      | 4/4            | Complete    | 2026-03-14 |
 | 5. Code Quality Gates               | v1.1      | 2/2            | Complete    | 2026-03-15 |
-| 6. Testing and CI                   | 1/3       | In Progress    |             | -          |
+| 6. Testing and CI                   | 3/3       | Complete       | 2026-03-16  | -          |
 | 7. Error Handling and Observability | v1.1      | 0/TBD          | Not started | -          |
 | 8. SEO and Accessibility            | v1.1      | 0/TBD          | Not started | -          |
 | 9. Reactions Data Model and Backend | v1.2      | 0/TBD          | Not started | -          |
