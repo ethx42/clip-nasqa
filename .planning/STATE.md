@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 6 of 8 (Testing and CI)
-Plan: 1 of 3 complete
-Status: In progress
-Last activity: 2026-03-15 — 06-01 complete: Vitest 4 configured, 58 unit tests passing for Zod schemas and Lambda resolvers
+Plan: 3 of 3 complete
+Status: Phase complete
+Last activity: 2026-03-16 — 06-03 complete: GitHub Actions CI pipeline with 4 parallel jobs (lint, typecheck, test, bundle-size) and npm/.next caching
 
-Progress: [██████████░░░░░░░░░░] 52% (v1.0 complete, v1.1 Phases 5-6 in progress)
+Progress: [████████████░░░░░░░░] 60% (v1.0 complete, v1.1 Phase 6 complete, Phases 7-8 remaining)
 
 ## Performance Metrics
 
@@ -61,6 +61,10 @@ Recent decisions affecting current work:
 - [06-01]: aws-sdk-client-mock-vitest v7 requires `import "aws-sdk-client-mock-vitest/extend"` in setupFiles — bare import no longer registers matchers (breaking change from v6)
 - [06-01]: vitest functions project needs setupFiles to register aws-sdk-client-mock-vitest matchers globally across all resolver test files
 - [06-01]: test.projects API used (not deprecated vitest.workspace.ts) — vitest run not vitest for CI-safe non-watch execution
+- [06-03]: bundle-size job uses continue-on-error: true — aws-amplify adds ~68kB gzipped (known Phase 3 constraint); remove when replaced
+- [06-03]: Job names (lint, typecheck, test, bundle-size) must match exactly when configuring branch protection required status checks
+- [06-03]: Branch protection must be configured manually after first CI run on main — GitHub only shows check names that have run within 7 days
+- [06-03]: Frontend typecheck runs as separate step (npx tsc --noEmit -p packages/frontend/tsconfig.json) — root tsconfig excludes frontend (Phase 5 decision)
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15
-Stopped at: Completed 06-01-PLAN.md (Vitest 4 monorepo configured, 58 unit tests for schemas and Lambda resolvers)
+Last session: 2026-03-16
+Stopped at: Completed 06-03-PLAN.md (GitHub Actions CI pipeline with 4 parallel jobs, npm and .next caching)
 Resume file: None

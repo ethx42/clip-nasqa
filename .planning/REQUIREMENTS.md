@@ -21,8 +21,8 @@
 
 ### CI/CD
 
-- [ ] **CICD-01**: GitHub Actions pipeline runs lint, typecheck, test, build on every PR
-- [ ] **CICD-02**: Pipeline caches node_modules and .next for fast runs
+- [x] **CICD-01**: GitHub Actions pipeline runs lint, typecheck, test, build on every PR
+- [x] **CICD-02**: Pipeline caches node_modules and .next for fast runs
 
 ### Error Handling
 
@@ -111,8 +111,8 @@
 | TEST-03     | Phase 6  | Complete |
 | TEST-04     | Phase 6  | Pending  |
 | TEST-05     | Phase 6  | Pending  |
-| CICD-01     | Phase 6  | Pending  |
-| CICD-02     | Phase 6  | Pending  |
+| CICD-01     | Phase 6  | Complete |
+| CICD-02     | Phase 6  | Complete |
 | ERR-01      | Phase 7  | Pending  |
 | ERR-02      | Phase 7  | Pending  |
 | ERR-03      | Phase 7  | Pending  |
