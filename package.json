@@ -11,6 +11,7 @@
     "lint": "npm run lint --workspace=packages/frontend",
     "typecheck": "npm run typecheck --workspace=packages/core && npm run typecheck --workspace=packages/functions",
     "test": "vitest run",
+    "check-bundle-size": "node scripts/check-bundle-size.mjs",
     "deploy": "npm run lint && npm run typecheck && AWS_REGION=us-east-1 sst deploy",
     "prepare": "husky || true"
   },
