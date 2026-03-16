@@ -26,14 +26,14 @@
 
 ### Error Handling
 
-- [ ] **ERR-01**: `global-error.tsx` catches root layout crashes with a recovery UI
-- [ ] **ERR-02**: `error.tsx` in session route segments provides graceful fallbacks
-- [ ] **ERR-03**: `not-found.tsx` renders a branded 404 page
+- [x] **ERR-01**: `global-error.tsx` catches root layout crashes with a recovery UI
+- [x] **ERR-02**: `error.tsx` in session route segments provides graceful fallbacks
+- [x] **ERR-03**: `not-found.tsx` renders a branded 404 page
 - [ ] **ERR-04**: Server Actions (createSession, Q&A) return structured errors instead of throwing
 
 ### Observability
 
-- [ ] **OBS-01**: Lambda resolvers use structured JSON logging (level, sessionSlug, operation, durationMs)
+- [x] **OBS-01**: Lambda resolvers use structured JSON logging (level, sessionSlug, operation, durationMs)
 
 ### SEO
 
@@ -145,11 +145,11 @@
 | TEST-05     | Phase 6  | Complete |
 | CICD-01     | Phase 6  | Complete |
 | CICD-02     | Phase 6  | Complete |
-| ERR-01      | Phase 7  | Pending  |
-| ERR-02      | Phase 7  | Pending  |
-| ERR-03      | Phase 7  | Pending  |
+| ERR-01      | Phase 7  | Complete |
+| ERR-02      | Phase 7  | Complete |
+| ERR-03      | Phase 7  | Complete |
 | ERR-04      | Phase 7  | Pending  |
-| OBS-01      | Phase 7  | Pending  |
+| OBS-01      | Phase 7  | Complete |
 | SEO-01      | Phase 8  | Pending  |
 | SEO-02      | Phase 8  | Pending  |
 | SEO-03      | Phase 8  | Pending  |

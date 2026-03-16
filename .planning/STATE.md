@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 6 of 13 (Testing and CI — complete)
-Plan: 3 of 3 complete
-Status: Phase complete — ready to plan Phase 7
-Last activity: 2026-03-16 — v1.3 roadmap created (Phases 11-13); v1.1 Phase 6 previously complete
+Phase: 7 of 13 (Error Handling and Observability — in progress)
+Plan: 1 of 2 complete
+Status: Executing — Plan 07-01 complete; Plan 07-02 next
+Last activity: 2026-03-16 — Phase 7 Plan 01 complete (error boundaries + pino logging)
 
-Progress: [████████░░░░░░░░░░░░] 40% (v1.0+v1.1 Phases 5-6 complete; Phases 7-13 remaining)
+Progress: [█████████░░░░░░░░░░░] 43% (v1.0+v1.1 Phases 5-7 partially complete; Phase 7 Plan 1/2 done)
 
 ## Performance Metrics
 
@@ -26,13 +26,14 @@ Progress: [████████░░░░░░░░░░░░] 40% (v1
 
 **By Phase:**
 
-| Phase                             | Plans | Total  | Avg/Plan |
-| --------------------------------- | ----- | ------ | -------- |
-| 01-infrastructure                 | 3     | 10 min | 5 min    |
-| 02-session-and-view-shell         | 3     | 10 min | 3 min    |
-| 03-real-time-core                 | 6     | 30 min | 5 min    |
-| 04-moderation-identity-and-polish | 4     | 20 min | 5 min    |
-| 05-code-quality-gates             | 2     | 18 min | 9 min    |
+| Phase                               | Plans       | Total  | Avg/Plan |
+| ----------------------------------- | ----------- | ------ | -------- |
+| 01-infrastructure                   | 3           | 10 min | 5 min    |
+| 02-session-and-view-shell           | 3           | 10 min | 3 min    |
+| 03-real-time-core                   | 6           | 30 min | 5 min    |
+| 04-moderation-identity-and-polish   | 4           | 20 min | 5 min    |
+| 05-code-quality-gates               | 2           | 18 min | 9 min    |
+| 07-error-handling-and-observability | 1 (partial) | 5 min  | 5 min    |
 
 **Recent Trend:**
 
@@ -54,6 +55,10 @@ Recent decisions affecting current work:
 - [v1.1 Roadmap]: Compress 7 research phases to 4 (quick depth) — QUAL merged into Phase 5; TEST+CICD merged into Phase 6; ERR+OBS merged into Phase 7; SEO+A11Y merged into Phase 8
 - [06-02]: 156.7kB initial JS baseline documented — aws-amplify ~68kB alone exceeds 80kB budget; CI must use continue-on-error until aws-amplify replaced
 - [06-03]: bundle-size job uses continue-on-error: true — aws-amplify adds ~68kB gzipped (known Phase 3 constraint); remove when replaced
+- [07-01]: global-error.tsx uses inline styles — Tailwind/ThemeProvider unavailable at root layout crash level; light-mode-only rendering accepted
+- [07-01]: rate-limit throws RATE_LIMIT_EXCEEDED:{remaining} format — encodes cooldown seconds for client-side display
+- [07-01]: pino logger at module level — Lambda warm-start performance: avoids re-init on each invocation
+- [07-01]: error.tsx classifies connection vs server errors by digest presence + message keywords — connection lost vs server error hint per user decision
 
 ### Pending Todos
 
@@ -70,5 +75,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: v1.3 roadmap (Phases 11-13) created; next action is to plan Phase 7
+Stopped at: Completed 07-01-PLAN.md (error boundaries + pino logging); next is 07-02-PLAN.md
 Resume file: None
