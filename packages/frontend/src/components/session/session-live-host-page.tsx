@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -28,11 +27,14 @@ import { useIdentity } from "@/hooks/use-identity";
 import { useSessionState } from "@/hooks/use-session-state";
 import { useSessionUpdates } from "@/hooks/use-session-updates";
 import { hashSecret } from "@/lib/hash-secret";
+import { loadHostSecret, storeHostSecret } from "@/lib/host-secret";
 import type { Session } from "@/lib/session";
 
 interface SessionLiveHostPageProps {
   session: Session;
   sessionSlug: string;
+  /** Raw secret passed via query param on first visit after session creation. */
+  rawSecret?: string;
   initialSnippets: Snippet[];
   initialQuestions: Question[];
   initialReplies: Reply[];
@@ -40,17 +42,10 @@ interface SessionLiveHostPageProps {
   hostToolbar?: React.ReactNode;
 }
 
-/**
- * Client wrapper for the host session view.
- *
- * In addition to participant capabilities, the host page:
- * - Reads the raw secret from window.location.hash (`#secret=...`)
- * - Hashes it client-side via SubtleCrypto and passes to authenticated mutations
- * - Handles pushSnippet, deleteSnippet, clearClipboard, focusQuestion
- */
 export function SessionLiveHostPage({
   session,
   sessionSlug,
+  rawSecret,
   initialSnippets,
   initialQuestions,
   initialReplies,
@@ -58,17 +53,14 @@ export function SessionLiveHostPage({
 }: SessionLiveHostPageProps) {
   const [hostSecretHash, setHostSecretHash] = useState<string>("");
   const { name: authorName } = useIdentity();
-  const tCommon = useTranslations("common");
 
-  // Extract and hash the secret from the URL hash fragment on mount
+  // Persist raw secret to localStorage (if provided via query param) and hash it
   useEffect(() => {
-    const match = window.location.hash.match(/secret=([^&]+)/);
-    if (match?.[1]) {
-      hashSecret(decodeURIComponent(match[1])).then((hash) => {
-        setHostSecretHash(hash);
-      });
-    }
-  }, []);
+    const secret = rawSecret || loadHostSecret(sessionSlug);
+    if (!secret) return;
+    if (rawSecret) storeHostSecret(sessionSlug, rawSecret);
+    hashSecret(secret).then((h) => setHostSecretHash(h));
+  }, [sessionSlug, rawSecret]);
 
   const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
     useFingerprint(sessionSlug);
@@ -87,16 +79,16 @@ export function SessionLiveHostPage({
     // Optimistic removal
     dispatch({ type: "SNIPPET_DELETED", payload: { snippetId } });
     const result = await deleteSnippetAction({ sessionSlug, hostSecretHash, snippetId });
-    if (!result.ok) {
-      toast.error(tCommon("error"));
+    if (!result.success) {
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
   async function handleClearClipboard() {
     dispatch({ type: "CLIPBOARD_CLEARED" });
     const result = await clearClipboardAction({ sessionSlug, hostSecretHash });
-    if (!result.ok) {
-      toast.error(tCommon("error"));
+    if (!result.success) {
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -113,8 +105,8 @@ export function SessionLiveHostPage({
       }
     }
     const result = await focusQuestionAction({ sessionSlug, hostSecretHash, questionId });
-    if (!result.ok) {
-      toast.error(tCommon("error"));
+    if (!result.success) {
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -138,17 +130,20 @@ export function SessionLiveHostPage({
       remove,
     });
 
-    if (!result.ok) {
-      dispatch({
-        type: "QUESTION_UPDATED",
-        payload: { questionId, upvoteDelta: remove ? 1 : -1 },
-      });
-      if (remove) {
-        addVote(questionId);
-      } else {
-        removeVote(questionId);
+    if (!result.success) {
+      // VOTE_CONFLICT is a dedup signal — handle silently (not a user error)
+      if (!("error" in result) || result.error !== "VOTE_CONFLICT") {
+        dispatch({
+          type: "QUESTION_UPDATED",
+          payload: { questionId, upvoteDelta: remove ? 1 : -1 },
+        });
+        if (remove) {
+          addVote(questionId);
+        } else {
+          removeVote(questionId);
+        }
+        toast.error(result.error, { duration: 5000 });
       }
-      toast.error(tCommon("error"));
     }
   }
 
@@ -172,9 +167,9 @@ export function SessionLiveHostPage({
     dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
     const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
-    if (!result.ok) {
+    if (!result.success) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -202,9 +197,9 @@ export function SessionLiveHostPage({
       authorName,
     });
 
-    if (!result.ok) {
+    if (!result.success) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -237,7 +232,7 @@ export function SessionLiveHostPage({
 
     const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
 
-    if (!result.ok) {
+    if (!result.success) {
       // Rollback optimistic update
       dispatch({
         type: "QUESTION_UPDATED",
@@ -255,7 +250,7 @@ export function SessionLiveHostPage({
       } else {
         removeDownvote(questionId);
       }
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -263,10 +258,10 @@ export function SessionLiveHostPage({
     // Optimistic: mark banned immediately
     dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: true } });
     const result = await banQuestionAction({ sessionSlug, hostSecretHash, questionId });
-    if (!result.ok) {
+    if (!result.success) {
       // Rollback
       dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isBanned: false } });
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -276,17 +271,17 @@ export function SessionLiveHostPage({
       hostSecretHash,
       fingerprint: participantFingerprint,
     });
-    if (!result.ok) {
-      toast.error(tCommon("error"));
+    if (!result.success) {
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
   async function handleRestoreQuestion(questionId: string) {
     dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: false } });
     const result = await restoreQuestionAction({ sessionSlug, hostSecretHash, questionId });
-    if (!result.ok) {
+    if (!result.success) {
       dispatch({ type: "QUESTION_UPDATED", payload: { questionId, isHidden: true } });
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 

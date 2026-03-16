@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { pushSnippetAction, renderHighlight } from "@/actions/snippet";
 import { detectLanguage, SUPPORTED_LANGUAGES } from "@/lib/detect-language";
@@ -12,72 +13,93 @@ interface HostInputProps {
   onSnippetPushed?: () => void;
 }
 
-/**
- * Client Component — host snippet composer with:
- * - Auto-resize textarea
- * - Language auto-detection with manual override dropdown
- * - Live Shiki preview via Server Action (300ms debounced)
- * - Cmd/Ctrl+Enter to push, "Push Snippet" button
- * - Input clears immediately after push (optimistic)
- */
 export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: HostInputProps) {
   const t = useTranslations("session");
   const [value, setValue] = useState("");
   const [detectedLang, setDetectedLang] = useState("text");
-  const [previewHtml, setPreviewHtml] = useState("");
+  const [highlightHtml, setHighlightHtml] = useState("");
   const [isPushing, setIsPushing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeLang = detectedLang;
+  const hasHighlight = activeLang !== "text" && highlightHtml !== "";
 
-  // Auto-resize textarea
-  const resizeTextarea = useCallback(() => {
+  // Sync scroll between textarea and highlight backdrop
+  const syncScroll = useCallback(() => {
     const ta = textareaRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = `${Math.min(ta.scrollHeight, 300)}px`;
+    const bd = backdropRef.current;
+    if (ta && bd) {
+      bd.scrollTop = ta.scrollTop;
+      bd.scrollLeft = ta.scrollLeft;
+    }
   }, []);
 
-  // Debounced live preview
-  const schedulePreview = useCallback((code: string, lang: string) => {
+  // Auto-resize both textarea and backdrop
+  const resize = useCallback(() => {
+    const ta = textareaRef.current;
+    const bd = backdropRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    const h = `${Math.min(ta.scrollHeight, 300)}px`;
+    ta.style.height = h;
+    if (bd) bd.style.height = h;
+  }, []);
+
+  // Debounced syntax highlight
+  const scheduleHighlight = useCallback((code: string, lang: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       if (!code.trim() || lang === "text") {
-        setPreviewHtml("");
+        setHighlightHtml("");
         return;
       }
       const html = await renderHighlight(code, lang);
-      setPreviewHtml(html);
-    }, 300);
+      setHighlightHtml(html);
+    }, 200);
   }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
       setValue(newValue);
-      resizeTextarea();
+      resize();
       const detected = detectLanguage(newValue);
       setDetectedLang(detected);
-      schedulePreview(newValue, detected);
+      scheduleHighlight(newValue, detected);
     },
-    [resizeTextarea, schedulePreview],
+    [resize, scheduleHighlight],
   );
 
   const handlePush = useCallback(async () => {
     const content = value.trim();
     if (!content || isPushing) return;
+
+    if (!hostSecretHash) {
+      toast.error("Host secret not ready — try again in a moment");
+      return;
+    }
+
+    // Cancel any pending highlight to avoid racing with the push server action
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+
     setIsPushing(true);
-    // Clear immediately (optimistic)
+    const lang = activeLang;
     setValue("");
-    setPreviewHtml("");
+    setHighlightHtml("");
     setDetectedLang("text");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-    const lang = activeLang;
+    if (backdropRef.current) {
+      backdropRef.current.style.height = "auto";
+    }
     const type = lang !== "text" ? "code" : "text";
-    await pushSnippetAction({
+    const result = await pushSnippetAction({
       sessionSlug,
       hostSecretHash,
       content,
@@ -85,10 +107,16 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       language: lang !== "text" ? lang : undefined,
     });
     setIsPushing(false);
+    if (!result.success) {
+      // Restore content so the user doesn't lose their work
+      setValue(content);
+      setDetectedLang(lang);
+      toast.error(result.error, { duration: 5000 });
+      return;
+    }
     onSnippetPushed?.();
   }, [value, isPushing, activeLang, sessionSlug, hostSecretHash, onSnippetPushed]);
 
-  // Keyboard shortcut: Cmd/Ctrl + Enter
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -100,22 +128,47 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
   );
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-3">
-      {/* Textarea */}
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder={t("pasteOrType")}
-        rows={3}
-        className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 font-mono text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-        style={{ minHeight: "80px", maxHeight: "300px" }}
-      />
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+      {/* Editor: overlay textarea on top of highlighted backdrop */}
+      <div className="relative" style={{ minHeight: "80px", maxHeight: "300px" }}>
+        {/* Highlighted backdrop — rendered behind the textarea */}
+        <div
+          ref={backdropRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl border border-transparent bg-background px-4 py-3"
+          style={{ minHeight: "80px" }}
+        >
+          {hasHighlight ? (
+            <div
+              className="shiki-wrapper whitespace-pre-wrap break-words font-mono text-[15px] leading-normal"
+              dangerouslySetInnerHTML={{ __html: highlightHtml }}
+            />
+          ) : (
+            <span className="whitespace-pre-wrap break-words font-mono text-[15px] leading-normal text-transparent">
+              {value}
+            </span>
+          )}
+        </div>
+
+        {/* Textarea — transparent text when highlighted, visible otherwise */}
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onScroll={syncScroll}
+          placeholder={t("pasteOrType")}
+          rows={3}
+          spellCheck={false}
+          className={`relative z-10 w-full resize-none rounded-xl border border-input bg-transparent px-4 py-3 font-mono text-[15px] leading-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition caret-foreground ${
+            hasHighlight ? "text-transparent" : "text-foreground"
+          }`}
+          style={{ minHeight: "80px", maxHeight: "300px" }}
+        />
+      </div>
 
       {/* Controls row */}
       <div className="flex items-center justify-between gap-3">
-        {/* Read-only language chip — only visible when there's content */}
         {value.trim() ? (
           <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -127,7 +180,6 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           <span />
         )}
 
-        {/* Push button */}
         <button
           type="button"
           onClick={() => void handlePush()}
@@ -140,14 +192,6 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           </kbd>
         </button>
       </div>
-
-      {/* Live preview */}
-      {previewHtml && (
-        <div
-          className="max-h-48 overflow-y-auto overflow-x-auto rounded-xl border border-border bg-background p-3 text-[15px]"
-          dangerouslySetInnerHTML={{ __html: previewHtml }}
-        />
-      )}
     </div>
   );
 }

@@ -1,26 +1,69 @@
-import { getTranslations } from "next-intl/server";
+"use client";
+
+import { ClipboardList, MessageCircleQuestion, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useActionState, useEffect } from "react";
+import { toast } from "sonner";
 
 import { createSession } from "@/actions/session";
+import type { ActionResult } from "@/lib/action-result";
 
-export default async function Home() {
-  const t = await getTranslations();
+const FEATURES = [
+  { icon: Zap, titleKey: "landing.featureClipboardTitle", descKey: "landing.featureClipboardDesc" },
+  {
+    icon: MessageCircleQuestion,
+    titleKey: "landing.featureQaTitle",
+    descKey: "landing.featureQaDesc",
+  },
+  {
+    icon: ClipboardList,
+    titleKey: "landing.featureNoSignupTitle",
+    descKey: "landing.featureNoSignupDesc",
+  },
+] as const;
+
+async function createSessionAction(
+  _prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult | null> {
+  const result = await createSession(formData);
+  // createSession redirects on success (never returns), so result is always a failure
+  return result ?? null;
+}
+
+export default function Home() {
+  const t = useTranslations();
+  const [state, formAction, isPending] = useActionState<ActionResult | null, FormData>(
+    createSessionAction,
+    null,
+  );
+
+  useEffect(() => {
+    if (state && !state.success) {
+      toast.error(state.error, { duration: 5000 });
+    }
+  }, [state]);
 
   return (
-    <div className="flex min-h-[calc(100vh-53px)] flex-col">
-      {/* Hero Section */}
-      <section className="flex flex-1 flex-col items-center justify-center px-5 py-20 text-center">
-        <div className="w-full max-w-3xl space-y-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl">
+    <div className="flex min-h-[calc(100dvh-53px)] flex-col">
+      {/* Hero */}
+      <section className="relative flex flex-1 flex-col items-center justify-center px-6 py-24 text-center lg:py-32">
+        {/* Subtle radial glow behind hero */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-1/2 top-1/3 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/8 blur-3xl" />
+        </div>
+
+        <div className="relative w-full max-w-2xl space-y-6">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             {t("landing.headline")}
           </h1>
-          <p className="mx-auto max-w-lg text-lg leading-relaxed text-muted-foreground">
+          <p className="mx-auto max-w-md text-lg leading-relaxed text-muted-foreground">
             {t("landing.subtitle")}
           </p>
 
-          {/* Inline session creation form */}
           <form
-            action={createSession}
-            className="mx-auto mt-10 flex w-full max-w-xl flex-col gap-4 rounded-2xl bg-card p-5 shadow-xl shadow-emerald-500/10 ring-1 ring-border sm:flex-row sm:gap-3"
+            action={formAction}
+            className="mx-auto mt-10 flex w-full max-w-lg flex-col gap-3 sm:flex-row"
           >
             <input
               name="title"
@@ -28,11 +71,12 @@ export default async function Home() {
               maxLength={50}
               placeholder={t("landing.placeholder")}
               required
-              className="flex-1 rounded-xl border border-input bg-background px-5 py-3.5 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
+              className="flex-1 rounded-xl border border-input bg-background px-5 py-3.5 text-base text-foreground placeholder:text-muted-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             />
             <button
               type="submit"
-              className="rounded-xl bg-emerald-500 px-7 py-3.5 text-base font-bold text-white transition hover:scale-[1.02] hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 active:scale-[0.98]"
+              disabled={isPending}
+              className="rounded-xl bg-emerald-500 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:scale-[1.02] hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("landing.cta")}
             </button>
@@ -40,33 +84,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Feature highlights */}
-      <section className="border-t border-border px-5 py-16">
-        <ul className="mx-auto grid max-w-3xl grid-cols-1 gap-6 sm:grid-cols-3">
-          {[
-            {
-              icon: "\u26A1",
-              titleKey: "landing.featureClipboardTitle",
-              descKey: "landing.featureClipboardDesc",
-            },
-            {
-              icon: "\uD83D\uDCAC",
-              titleKey: "landing.featureQaTitle",
-              descKey: "landing.featureQaDesc",
-            },
-            {
-              icon: "\uD83D\uDD13",
-              titleKey: "landing.featureNoSignupTitle",
-              descKey: "landing.featureNoSignupDesc",
-            },
-          ].map((feature) => (
+      {/* Features */}
+      <section className="border-t border-border px-6 py-20 lg:py-24">
+        <ul className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
+          {FEATURES.map((feature) => (
             <li
               key={feature.titleKey}
-              className="flex flex-col items-center gap-4 rounded-2xl border border-emerald-500/20 bg-card p-8 text-center shadow-sm"
+              className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-8 text-center transition-all duration-200 hover:border-emerald-500/30 hover:shadow-md"
             >
-              <span className="text-4xl text-emerald-500" aria-hidden="true">
-                {feature.icon}
-              </span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
+                <feature.icon className="h-6 w-6 text-emerald-500" strokeWidth={2} />
+              </div>
               <h2 className="text-base font-bold text-foreground">{t(feature.titleKey)}</h2>
               <p className="text-sm leading-relaxed text-muted-foreground">{t(feature.descKey)}</p>
             </li>

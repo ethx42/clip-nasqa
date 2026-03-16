@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -45,7 +44,6 @@ export function SessionLivePage({
   initialReplies,
 }: SessionLivePageProps) {
   const { name: authorName } = useIdentity();
-  const tCommon = useTranslations("common");
   const [joinModalOpen, setJoinModalOpen] = useState(false);
 
   // Show JoinModal once per session (sessionStorage flag)
@@ -86,18 +84,20 @@ export function SessionLivePage({
       remove,
     });
 
-    if (!result.ok) {
-      // Rollback optimistic update
-      dispatch({
-        type: "QUESTION_UPDATED",
-        payload: { questionId, upvoteDelta: remove ? 1 : -1 },
-      });
-      if (remove) {
-        addVote(questionId);
-      } else {
-        removeVote(questionId);
+    if (!result.success) {
+      // VOTE_CONFLICT is a dedup signal — handle silently (not a user error)
+      if (!("error" in result) || result.error !== "VOTE_CONFLICT") {
+        dispatch({
+          type: "QUESTION_UPDATED",
+          payload: { questionId, upvoteDelta: remove ? 1 : -1 },
+        });
+        if (remove) {
+          addVote(questionId);
+        } else {
+          removeVote(questionId);
+        }
+        toast.error(result.error, { duration: 5000 });
       }
-      toast.error(tCommon("error"));
     }
   }
 
@@ -123,9 +123,9 @@ export function SessionLivePage({
 
     const result = await addQuestionAction({ sessionSlug, text, fingerprint, authorName });
 
-    if (!result.ok) {
+    if (!result.success) {
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
     // On success: subscription event will arrive and replace the optimistic item
   }
@@ -155,10 +155,10 @@ export function SessionLivePage({
       authorName,
     });
 
-    if (!result.ok) {
+    if (!result.success) {
       // Rollback: remove optimistic reply
       dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
@@ -192,7 +192,7 @@ export function SessionLivePage({
 
     const result = await downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove });
 
-    if (!result.ok) {
+    if (!result.success) {
       // Rollback optimistic update
       dispatch({
         type: "QUESTION_UPDATED",
@@ -210,7 +210,7 @@ export function SessionLivePage({
       } else {
         removeDownvote(questionId);
       }
-      toast.error(tCommon("error"));
+      toast.error(result.error, { duration: 5000 });
     }
   }
 
