@@ -29,7 +29,7 @@
 - [x] **ERR-01**: `global-error.tsx` catches root layout crashes with a recovery UI
 - [x] **ERR-02**: `error.tsx` in session route segments provides graceful fallbacks
 - [x] **ERR-03**: `not-found.tsx` renders a branded 404 page
-- [ ] **ERR-04**: Server Actions (createSession, Q&A) return structured errors instead of throwing
+- [x] **ERR-04**: Server Actions (createSession, Q&A) return structured errors instead of throwing
 
 ### Observability
 
@@ -148,7 +148,7 @@
 | ERR-01      | Phase 7  | Complete |
 | ERR-02      | Phase 7  | Complete |
 | ERR-03      | Phase 7  | Complete |
-| ERR-04      | Phase 7  | Pending  |
+| ERR-04      | Phase 7  | Complete |
 | OBS-01      | Phase 7  | Complete |
 | SEO-01      | Phase 8  | Pending  |
 | SEO-02      | Phase 8  | Pending  |
