@@ -74,6 +74,34 @@
 - [ ] **RXN-13**: Reaction buttons have ARIA labels and meet 44px minimum touch target for mobile
 - [ ] **RXN-14**: Emoji palette is defined as a shared constant in `@nasqa/core` validated by Zod schema
 
+## v1.3 Requirements
+
+### Structural Refactor
+
+- [ ] **STRUC-01**: Shared `formatRelativeTime(epochSeconds, t)` utility replaces all inline duplicates (clipboard-panel, question-card, reply-list) with no behavior change
+- [ ] **STRUC-02**: `useSessionMutations` hook extracts all optimistic-update-with-rollback logic from `SessionLivePage` and `SessionLiveHostPage`, reducing each to a ~40-line composition root
+- [ ] **STRUC-03**: `SnippetCard` is extracted from `ClipboardPanel` into its own file and is independently importable and testable
+- [ ] **STRUC-04**: `QuestionCard` is decomposed into state-specific variants (Normal, Banned, Hidden) with a discriminator wrapper; AnimatePresence keys remain on the parent `motion.div`
+- [ ] **STRUC-05**: Duplicate sort logic is removed from `QAPanel`; the panel accepts pre-sorted questions and owns only the debounced visual stability
+- [ ] **STRUC-06**: `repliesByQuestion` grouping in `QAPanel` is memoized with `useMemo` instead of recomputed on every render
+
+### Interaction Improvements
+
+- [ ] **UXINT-01**: Vote buttons display a filled background state when active (upvote: emerald fill, downvote: rose fill) with smooth transition for mutual-exclusion swap
+- [ ] **UXINT-02**: Vote buttons have `active:scale-95` press micro-animation on both upvote and downvote
+- [ ] **UXINT-03**: Own questions display a left-border accent strip for spatial recognition in the feed
+- [ ] **UXINT-04**: `QAInput` displays an identity chip (pixel avatar + truncated name or "Anonymous") inline; clicking the chip opens the `IdentityEditor` popover
+- [ ] **UXINT-05**: `QAPanel` and `ClipboardPanel` empty states are connection-aware with contextual copy for participant and host views
+- [ ] **UXINT-06**: Focused questions auto-expand their reply section via `useEffect` sync of `showReplies` to `isFocused` prop changes (fixes stale-state bug)
+- [ ] **UXINT-07**: Reply button is visible inline when replies are expanded (no separate click to show input)
+
+### Accessibility
+
+- [ ] **A11Y-04**: Mobile tab bar uses ARIA tablist pattern (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `role="tabpanel"`, `aria-labelledby`)
+- [ ] **A11Y-05**: Mobile tab panels use CSS `hidden` attribute instead of conditional rendering, preserving scroll position and subscription state
+- [ ] **A11Y-06**: `NewContentBanner` uses a permanently-mounted `aria-live="polite"` region with content-swapping (not conditional render)
+- [ ] **A11Y-07**: Vote buttons carry `aria-pressed` attribute reflecting toggle state
+
 ## Future Requirements
 
 - **TEST-06**: E2E tests with Playwright for multi-tab real-time scenarios
@@ -85,19 +113,23 @@
 
 ## Out of Scope
 
-| Feature                            | Reason                                                   |
-| ---------------------------------- | -------------------------------------------------------- |
-| Integration tests against live AWS | Cost, speed, test pollution — use mocked SDK             |
-| Jest                               | ESM-first codebase; Vitest is faster and ESM-native      |
-| 100% code coverage                 | Tiered targets instead (core 90%, resolvers 80%, UI 70%) |
-| E2E on every PR                    | 5-15 min per PR; run on main only                        |
-| Storybook                          | No design team; components coupled to real-time state    |
-| WCAG AAA                           | Level AA is realistic; AAA conflicts with real-time UI   |
-| Datadog/New Relic                  | Overkill at 50-500 users                                 |
-| Emoji picker library               | Bundle budget (80kB); fixed palette prevents abuse       |
-| Flying/floating emoji animations   | Accessibility conflicts, bundle cost, CPU overhead       |
-| "Who reacted" tooltip              | Privacy concern for anonymous sessions; 24h TTL          |
-| Reactions affecting sort order     | Upvotes handle ranking; reactions are sentiment only     |
+| Feature                             | Reason                                                   |
+| ----------------------------------- | -------------------------------------------------------- |
+| Integration tests against live AWS  | Cost, speed, test pollution — use mocked SDK             |
+| Jest                                | ESM-first codebase; Vitest is faster and ESM-native      |
+| 100% code coverage                  | Tiered targets instead (core 90%, resolvers 80%, UI 70%) |
+| E2E on every PR                     | 5-15 min per PR; run on main only                        |
+| Storybook                           | No design team; components coupled to real-time state    |
+| WCAG AAA                            | Level AA is realistic; AAA conflicts with real-time UI   |
+| Datadog/New Relic                   | Overkill at 50-500 users                                 |
+| Emoji picker library                | Bundle budget (80kB); fixed palette prevents abuse       |
+| Flying/floating emoji animations    | Accessibility conflicts, bundle cost, CPU overhead       |
+| "Who reacted" tooltip               | Privacy concern for anonymous sessions; 24h TTL          |
+| Reactions affecting sort order      | Upvotes handle ranking; reactions are sentiment only     |
+| Multi-level reply threading         | DynamoDB schema complexity; kills live context momentum  |
+| Real-time card reorder on each vote | Layout thrash; 1-second debounce is the correct pattern  |
+| Dedicated "My Questions" tab        | Left-border + "You" label solves at zero nav cost        |
+| Focused question pulse animation    | Static glow is functional; low priority deferred         |
 
 ## Traceability
 
@@ -141,14 +173,33 @@
 | RXN-12      | Phase 10 | Pending  |
 | RXN-13      | Phase 10 | Pending  |
 
+| STRUC-01 | TBD | Pending |
+| STRUC-02 | TBD | Pending |
+| STRUC-03 | TBD | Pending |
+| STRUC-04 | TBD | Pending |
+| STRUC-05 | TBD | Pending |
+| STRUC-06 | TBD | Pending |
+| UXINT-01 | TBD | Pending |
+| UXINT-02 | TBD | Pending |
+| UXINT-03 | TBD | Pending |
+| UXINT-04 | TBD | Pending |
+| UXINT-05 | TBD | Pending |
+| UXINT-06 | TBD | Pending |
+| UXINT-07 | TBD | Pending |
+| A11Y-04 | TBD | Pending |
+| A11Y-05 | TBD | Pending |
+| A11Y-06 | TBD | Pending |
+| A11Y-07 | TBD | Pending |
+
 **Coverage:**
 
-- v1.1 requirements: 23 total (3 complete, 20 pending)
+- v1.1 requirements: 23 total (10 complete, 13 pending)
 - v1.2 requirements: 14 total (0 complete, 14 pending)
+- v1.3 requirements: 17 total (0 complete, 17 pending)
 - Mapped to phases: 23 (v1.1) + 14 (v1.2) = 37 total
-- Unmapped: 0
+- Unmapped: 17 (v1.3 — awaiting roadmap)
 
 ---
 
 _Requirements defined: 2026-03-15_
-_Last updated: 2026-03-15 after v1.2 roadmap creation_
+_Last updated: 2026-03-16 after v1.3 requirements definition_
