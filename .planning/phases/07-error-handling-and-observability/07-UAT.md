@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 07-error-handling-and-observability
 source: 07-01-SUMMARY.md, 07-02-SUMMARY.md
 started: 2026-03-16T12:00:00Z
-updated: 2026-03-16T12:15:00Z
+updated: 2026-03-16T18:00:00Z
 ---
 
 ## Current Test
@@ -68,21 +68,34 @@ skipped: 1
 ## Gaps
 
 - truth: "Submitting empty session title shows a toast error notification"
-  status: failed
+  status: resolved
   reason: "User reported: no toast appeared. just this generic HTML warning — browser native 'Please fill out this field' validation"
   severity: minor
   test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "The <input required> attribute on page.tsx line 73 causes browser native validation to intercept before React's formAction fires, so the server action toast path is never reached"
+  artifacts:
+  - path: "packages/frontend/src/app/[locale]/page.tsx"
+    issue: "required attribute on title input bypasses useActionState → toast.error path"
+    missing:
+  - "Remove required attribute from input so form submits to server action"
+  - "Optionally add noValidate to form element to suppress all browser constraint validation"
+    debug_session: ""
 
 - truth: "Server action network failures display as toast notifications instead of unhandled promise rejections"
-  status: failed
+  status: resolved
   reason: "User reported: no toast, console shows Uncaught (in promise) TypeError: Failed to fetch at fetchServerAction when network disconnected"
   severity: major
   test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "All async handler functions in session-live-page.tsx, session-live-host-page.tsx, and host-input.tsx call server actions with bare await without try/catch, so network-level failures thrown by fetchServerAction escape as unhandled promise rejections"
+  artifacts:
+  - path: "packages/frontend/src/components/session/session-live-page.tsx"
+    issue: "5 handler functions await server actions without try/catch"
+  - path: "packages/frontend/src/components/session/session-live-host-page.tsx"
+    issue: "9 handler functions await server actions without try/catch"
+  - path: "packages/frontend/src/components/session/host-input.tsx"
+    issue: "handlePush awaits pushSnippetAction without try/catch"
+    missing:
+  - "Create a shared safeAction wrapper that catches thrown errors and returns { success: false, error: localizedMessage }"
+  - "Add actionErrors.networkError i18n key to en/es/pt translation files"
+  - "Wrap all bare await action calls in the 3 affected components with safeAction"
+    debug_session: ""
