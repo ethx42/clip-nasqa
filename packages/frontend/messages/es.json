@@ -109,6 +109,28 @@
     "serverErrorDesc": "Ocurrió un error inesperado en esta sesión.",
     "tryAgain": "Intentar de nuevo"
   },
+  "actionErrors": {
+    "titleRequired": "El título de la sesión es obligatorio",
+    "slugGenerationFailed": "No se pudo crear la sesión. Por favor, inténtalo de nuevo.",
+    "questionTooLong": "La pregunta no puede superar los 500 caracteres",
+    "questionEmpty": "La pregunta no puede estar vacía",
+    "replyTooLong": "La respuesta no puede superar los 500 caracteres",
+    "replyEmpty": "La respuesta no puede estar vacía",
+    "failedSubmitQuestion": "No se pudo enviar la pregunta",
+    "failedUpvote": "No se pudo votar la pregunta",
+    "failedSubmitReply": "No se pudo enviar la respuesta",
+    "failedFocusQuestion": "No se pudo enfocar la pregunta",
+    "failedBanQuestion": "No se pudo eliminar la pregunta",
+    "failedBanParticipant": "No se pudo bloquear al participante",
+    "failedDownvote": "No se pudo votar negativamente la pregunta",
+    "failedRestore": "No se pudo restaurar la pregunta",
+    "failedPushSnippet": "No se pudo enviar el fragmento",
+    "failedDeleteSnippet": "No se pudo eliminar el fragmento",
+    "failedClearClipboard": "No se pudo limpiar el portapapeles",
+    "rateLimited": "Demasiadas solicitudes. Inténtalo de nuevo en {seconds}s",
+    "banned": "Has sido bloqueado para publicar en esta sesión.",
+    "unexpectedError": "Algo salió mal. Por favor, inténtalo de nuevo."
+  },
   "identity": {
     "whatsYourName": "¿Cuál es tu nombre?",
     "displayName": "Nombre para mostrar (opcional)",

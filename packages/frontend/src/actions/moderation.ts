@@ -1,5 +1,8 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
+import type { ActionResult } from "@/lib/action-result";
 import { appsyncMutation } from "@/lib/appsync-server";
 import {
   BAN_PARTICIPANT,
@@ -7,18 +10,43 @@ import {
   DOWNVOTE_QUESTION,
   RESTORE_QUESTION,
 } from "@/lib/graphql/mutations";
+import { reportError } from "@/lib/report-error";
+
+function parseRateLimitOrBan(
+  err: unknown,
+  t: Awaited<ReturnType<typeof getTranslations<"actionErrors">>>,
+  fallbackKey: keyof {
+    failedBanQuestion: string;
+    failedBanParticipant: string;
+    failedDownvote: string;
+    failedRestore: string;
+  },
+): { success: false; error: string } {
+  const message = err instanceof Error ? err.message : String(err);
+  const rateLimitMatch = message.match(/RATE_LIMIT_EXCEEDED:(\d+)/);
+  if (rateLimitMatch) {
+    const seconds = rateLimitMatch[1];
+    return { success: false, error: t("rateLimited", { seconds }) };
+  }
+  if (message.includes("PARTICIPANT_BANNED")) {
+    return { success: false, error: t("banned") };
+  }
+  return { success: false, error: t(fallbackKey) };
+}
 
 export async function banQuestionAction(args: {
   sessionSlug: string;
   hostSecretHash: string;
   questionId: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<ActionResult> {
+  const t = await getTranslations("actionErrors");
+
   try {
     await appsyncMutation(BAN_QUESTION, args);
-    return { ok: true };
+    return { success: true };
   } catch (err) {
-    console.error("banQuestionAction error:", err);
-    return { ok: false, error: "Failed to ban question" };
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedBanQuestion");
   }
 }
 
@@ -26,13 +54,15 @@ export async function banParticipantAction(args: {
   sessionSlug: string;
   hostSecretHash: string;
   fingerprint: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<ActionResult> {
+  const t = await getTranslations("actionErrors");
+
   try {
     await appsyncMutation(BAN_PARTICIPANT, args);
-    return { ok: true };
+    return { success: true };
   } catch (err) {
-    console.error("banParticipantAction error:", err);
-    return { ok: false, error: "Failed to ban participant" };
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedBanParticipant");
   }
 }
 
@@ -41,13 +71,15 @@ export async function downvoteQuestionAction(args: {
   questionId: string;
   fingerprint: string;
   remove?: boolean;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<ActionResult> {
+  const t = await getTranslations("actionErrors");
+
   try {
     await appsyncMutation(DOWNVOTE_QUESTION, args);
-    return { ok: true };
+    return { success: true };
   } catch (err) {
-    console.error("downvoteQuestionAction error:", err);
-    return { ok: false, error: "Failed to downvote question" };
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedDownvote");
   }
 }
 
@@ -55,12 +87,14 @@ export async function restoreQuestionAction(args: {
   sessionSlug: string;
   hostSecretHash: string;
   questionId: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<ActionResult> {
+  const t = await getTranslations("actionErrors");
+
   try {
     await appsyncMutation(RESTORE_QUESTION, args);
-    return { ok: true };
+    return { success: true };
   } catch (err) {
-    console.error("restoreQuestionAction error:", err);
-    return { ok: false, error: "Failed to restore question" };
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedRestore");
   }
 }

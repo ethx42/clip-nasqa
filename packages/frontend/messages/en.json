@@ -109,6 +109,28 @@
     "serverErrorDesc": "An unexpected error occurred in this session.",
     "tryAgain": "Try again"
   },
+  "actionErrors": {
+    "titleRequired": "Session title is required",
+    "slugGenerationFailed": "Failed to create session. Please try again.",
+    "questionTooLong": "Question must be 500 characters or fewer",
+    "questionEmpty": "Question cannot be empty",
+    "replyTooLong": "Reply must be 500 characters or fewer",
+    "replyEmpty": "Reply cannot be empty",
+    "failedSubmitQuestion": "Failed to submit question",
+    "failedUpvote": "Failed to upvote question",
+    "failedSubmitReply": "Failed to submit reply",
+    "failedFocusQuestion": "Failed to focus question",
+    "failedBanQuestion": "Failed to remove question",
+    "failedBanParticipant": "Failed to ban participant",
+    "failedDownvote": "Failed to downvote question",
+    "failedRestore": "Failed to restore question",
+    "failedPushSnippet": "Failed to push snippet",
+    "failedDeleteSnippet": "Failed to delete snippet",
+    "failedClearClipboard": "Failed to clear clipboard",
+    "rateLimited": "Too many requests. Try again in {seconds}s",
+    "banned": "You've been blocked from posting in this session.",
+    "unexpectedError": "Something went wrong. Please try again."
+  },
   "identity": {
     "whatsYourName": "What's your name?",
     "displayName": "Display name (optional)",

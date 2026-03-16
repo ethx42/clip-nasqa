@@ -4,19 +4,23 @@ import { createHash, randomUUID } from "node:crypto";
 
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 
+import type { ActionResult } from "@/lib/action-result";
 import { docClient, tableName } from "@/lib/dynamo";
 
 const MAX_SLUG_RETRIES = 3;
 
-export async function createSession(formData: FormData): Promise<never> {
-  const title = (formData.get("title") as string | null)?.trim().slice(0, 50);
+export async function createSession(formData: FormData): Promise<ActionResult | never> {
+  const t = await getTranslations("actionErrors");
+
+  const raw = (formData.get("title") as string | null)?.trim().slice(0, 50);
+  const title = raw?.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1));
   const locale = await getLocale();
 
   if (!title) {
-    throw new Error("Session title is required");
+    return { success: false, error: t("titleRequired") };
   }
 
   const { generateSlug } = await import("random-word-slugs");
@@ -47,19 +51,19 @@ export async function createSession(formData: FormData): Promise<never> {
         }),
       );
 
-      // PutCommand succeeded — set redirect target outside try block
-      redirectUrl = `/${locale}/session/${slug}/success?raw=${rawSecret}`;
+      // PutCommand succeeded — redirect to host view with raw secret
+      redirectUrl = `/${locale}/session/${slug}/host?raw=${rawSecret}`;
       break;
     } catch (err) {
       if (err instanceof ConditionalCheckFailedException) {
         continue;
       }
-      throw err;
+      return { success: false, error: t("unexpectedError") };
     }
   }
 
   if (!redirectUrl) {
-    throw new Error("Failed to generate unique slug after maximum retries");
+    return { success: false, error: t("slugGenerationFailed") };
   }
 
   // redirect() throws NEXT_REDIRECT internally — must be called outside try/catch
