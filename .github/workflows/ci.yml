@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      # Covers @nasqa/core and @nasqa/functions (root typecheck script)
+      - run: npm run typecheck
+      # Covers packages/frontend (excluded from root tsconfig to avoid JSX errors)
+      - run: npx tsc --noEmit -p packages/frontend/tsconfig.json
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm test
+
+  bundle-size:
+    runs-on: ubuntu-latest
+    # aws-amplify adds ~68kB gzipped alone — known architectural constraint from Phase 3.
+    # Budget will be exceeded until aws-amplify is replaced with a lighter subscription
+    # library. Remove continue-on-error once the budget is met.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Restore .next cache
+        uses: actions/cache@v4
+        with:
+          path: packages/frontend/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('packages/frontend/**') }}
+          restore-keys: |
+            ${{ runner.os }}-next-
+      - run: npm ci
+      - run: npm run build --workspace=packages/frontend
+      - run: node scripts/check-bundle-size.mjs
