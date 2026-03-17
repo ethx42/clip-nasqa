@@ -77,7 +77,7 @@ Plans:
 3. `QuestionCard` renders a distinct host variant (with moderation controls) and a distinct participant variant (without them) based on the caller context — the two variants are independently importable
 4. State transitions between question states (normal, hidden, banned) animate correctly — a question moving from visible to hidden plays its exit animation without a layout pop
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 
@@ -116,5 +116,5 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete    | 2026-03-17 |
 | 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
 | 11. Shared Utilities and Hook Extraction | 2/2       | Complete       | 2026-03-17  | -          |
-| 12. Component Decomposition              | 1/3       | In Progress    |             | -          |
+| 12. Component Decomposition              | 2/3       | In Progress    |             | -          |
 | 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |

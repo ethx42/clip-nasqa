@@ -24,7 +24,7 @@ v1.3: [##########] 1/3 phases complete (phase 12 in progress: 2/3 plans)
 
 **Velocity:**
 
-- Total plans completed: 33 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 2)
+- Total plans completed: 34 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 3)
 - Average duration: 5 min
 - Total execution time: ~2.5 hours
 
@@ -41,6 +41,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 11]: Single formatRelativeTime utility with two overloads: short-token for Server Components, i18n-aware for Client Components; week bucket added at >=7d per user decision
 - [Phase 12-02]: SnippetCard extracted as standalone 'use client' component with hero/compact variant prop; replaces both inline definition and legacy server component
 - [Phase 12-02]: snippet-hero.tsx deleted — had zero importers; hero rendering now handled by SnippetCard variant='hero'
+- [12-01]: Debounce stays in QAPanel — sortQuestions receives synthetic Question objects with debounced upvoteCount/isFocused merged in by the consumer; utility remains a pure function with zero React dependency
 
 ### Pending Todos
 
@@ -53,5 +54,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 12-02-PLAN.md (SnippetCard extraction + snippet-hero.tsx deletion)
+Stopped at: Completed 12-01-PLAN.md (sortQuestions pure utility extraction + TDD + QAPanel refactor)
 Resume at: `/gsd:execute-phase 12-03`
