@@ -8,9 +8,9 @@ import { QAInput } from "@/components/session/qa-input";
 import messages from "../../messages/en.json";
 
 function renderInput(
-  props: { onSubmit?: ReturnType<typeof vi.fn>; disabled?: boolean; isBanned?: boolean } = {},
+  props: { onSubmit?: (text: string) => void; disabled?: boolean; isBanned?: boolean } = {},
 ) {
-  const onSubmit = props.onSubmit ?? vi.fn();
+  const onSubmit = props.onSubmit ?? vi.fn<(text: string) => void>();
 
   const result = render(
     <NextIntlClientProvider locale="en" messages={messages}>
