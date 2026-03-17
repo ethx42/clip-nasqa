@@ -30,7 +30,6 @@ export async function generateMetadata({
     openGraph: {
       title: `${session.title} by clip`,
       description: status,
-      images: ["/opengraph-image"],
       type: "website",
     },
     twitter: {
