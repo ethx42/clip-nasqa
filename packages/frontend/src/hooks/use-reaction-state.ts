@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { EMOJI_KEYS } from "@nasqa/core";
 import type { EmojiKey, ReactionCounts } from "@nasqa/core";
@@ -69,11 +69,15 @@ interface UseReactionStateResult {
 /**
  * Per-item optimistic reaction state with localStorage persistence and 300ms debounce.
  *
- * - Active emojis are tracked locally in localStorage and in component state.
- * - Tapping an emoji immediately updates displayCounts (optimistic).
- * - After 300ms of inactivity, calls reactAction on the server.
- * - On server failure, silently reverts to pre-toggle state (no toast).
- * - When serverCounts changes (subscription event), optimistic override is cleared.
+ * Architecture: server counts are always the base. Pending toggles are tracked as
+ * per-emoji deltas (+1 or -1) applied on top. This means subscription events can
+ * update the base freely without destroying the optimistic state for unrelated emojis.
+ *
+ * - Active emojis are tracked in localStorage and component state.
+ * - Tapping an emoji immediately shows the delta (optimistic).
+ * - After 300ms, calls reactAction on the server.
+ * - On server failure, silently reverts (no toast).
+ * - On success, clears the delta — server counts are now authoritative.
  */
 export function useReactionState({
   sessionSlug,
@@ -86,80 +90,72 @@ export function useReactionState({
   const [activeEmojis, setActiveEmojis] = useState<Set<EmojiKey>>(() => new Set());
 
   useEffect(() => {
-    // Safe to read localStorage on client only
     setActiveEmojis(readActiveEmojis(sessionSlug, targetId));
   }, [sessionSlug, targetId]);
 
-  // localOverrideCounts is set during optimistic update and cleared on server response
-  const [localOverrideCounts, setLocalOverrideCounts] = useState<ReactionCounts | null>(null);
-
-  // When server authoritative counts arrive, clear optimistic override
-  useEffect(() => {
-    setLocalOverrideCounts(null);
-  }, [serverCounts]);
+  // Pending optimistic delta — per-emoji, not a full snapshot.
+  // When set, displayCounts = serverCounts + pending.delta for pending.emoji.
+  // Other emojis always show the latest server value.
+  const [pending, setPending] = useState<{ emoji: EmojiKey; delta: number } | null>(null);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Track pre-toggle snapshot for rollback
   const preToggleRef = useRef<{ activeEmojis: Set<EmojiKey> } | null>(null);
 
-  function toggle(emoji: EmojiKey): void {
-    setActiveEmojis((prev) => {
-      const next = new Set(prev);
-      const isAdding = !next.has(emoji);
+  const toggle = useCallback(
+    (emoji: EmojiKey): void => {
+      setActiveEmojis((prev) => {
+        const next = new Set(prev);
+        const isAdding = !next.has(emoji);
 
-      // Save pre-toggle state for potential rollback
-      preToggleRef.current = { activeEmojis: new Set(prev) };
+        // Save pre-toggle state for rollback
+        preToggleRef.current = { activeEmojis: new Set(prev) };
 
-      if (isAdding) {
-        next.add(emoji);
-      } else {
-        next.delete(emoji);
-      }
+        if (isAdding) {
+          next.add(emoji);
+        } else {
+          next.delete(emoji);
+        }
 
-      writeActiveEmojis(sessionSlug, targetId, next);
+        writeActiveEmojis(sessionSlug, targetId, next);
 
-      // Compute optimistic counts: take current display, increment/decrement
-      setLocalOverrideCounts((currentOverride) => {
-        const base = currentOverride ?? parseReactionCounts(serverCounts);
-        const updated = { ...base };
-        updated[emoji] = Math.max(0, base[emoji] + (isAdding ? 1 : -1));
-        return updated;
+        // Set per-emoji optimistic delta
+        setPending({ emoji, delta: isAdding ? 1 : -1 });
+
+        return next;
       });
 
-      return next;
-    });
+      // 300ms debounce
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+      }
 
-    // 300ms debounce — clear existing timer and schedule new mutation
-    if (debounceTimerRef.current !== null) {
-      clearTimeout(debounceTimerRef.current);
-    }
+      debounceTimerRef.current = setTimeout(() => {
+        void (async () => {
+          const result = await reactAction({
+            sessionSlug,
+            targetId,
+            targetType,
+            emoji,
+            fingerprint,
+          });
 
-    debounceTimerRef.current = setTimeout(() => {
-      void (async () => {
-        const result = await reactAction({
-          sessionSlug,
-          targetId,
-          targetType,
-          emoji,
-          fingerprint,
-        });
+          if (!result.success && preToggleRef.current) {
+            // Silent rollback
+            const { activeEmojis: prevActiveEmojis } = preToggleRef.current;
+            setActiveEmojis(prevActiveEmojis);
+            writeActiveEmojis(sessionSlug, targetId, prevActiveEmojis);
+          }
 
-        if (!result.success && preToggleRef.current) {
-          // Silent rollback — restore pre-toggle state
-          const { activeEmojis: prevActiveEmojis } = preToggleRef.current;
-          setActiveEmojis(prevActiveEmojis);
-          writeActiveEmojis(sessionSlug, targetId, prevActiveEmojis);
-          setLocalOverrideCounts(null);
-        }
-        // On success: do NOT clear localOverrideCounts here.
-        // The subscription event will update serverCounts, which triggers the
-        // useEffect([serverCounts]) that clears the override. Clearing here
-        // causes a visible flash (reverts to stale serverCounts before the
-        // subscription arrives with the authoritative value).
-        preToggleRef.current = null;
-      })();
-    }, 300);
-  }
+          // Clear pending delta — server has processed (or rejected) the action.
+          // If subscription already arrived, serverCounts is authoritative.
+          // If not yet, a brief flash is possible but the subscription follows shortly.
+          setPending(null);
+          preToggleRef.current = null;
+        })();
+      }, 300);
+    },
+    [sessionSlug, targetId, targetType, fingerprint],
+  );
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -170,7 +166,16 @@ export function useReactionState({
     };
   }, []);
 
-  const displayCounts = localOverrideCounts ?? parseReactionCounts(serverCounts);
+  // Compute display: server counts as base, apply pending delta for one emoji
+  const serverParsed = useMemo(() => parseReactionCounts(serverCounts), [serverCounts]);
+
+  const displayCounts = useMemo(() => {
+    if (!pending) return serverParsed;
+    return {
+      ...serverParsed,
+      [pending.emoji]: Math.max(0, serverParsed[pending.emoji] + pending.delta),
+    };
+  }, [serverParsed, pending]);
 
   return { displayCounts, activeEmojis, toggle };
 }
