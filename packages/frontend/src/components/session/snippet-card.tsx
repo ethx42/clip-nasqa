@@ -1,57 +1,112 @@
+"use client";
+
+import { Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+
 import type { Snippet } from "@nasqa/core";
 
+import { renderHighlight } from "@/actions/snippet";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 
 import { CopyButton } from "./copy-button";
-import { ShikiBlock } from "./shiki-block";
 
-interface SnippetCardProps {
-  snippet: Snippet;
-  snippetNumber: number;
-  expanded?: boolean;
+export interface SnippetWithHtml extends Snippet {
+  highlightedHtml?: string;
 }
 
-/**
- * Server Component — displays a collapsed history snippet card.
- * Shows first 3 lines when not expanded; full ShikiBlock when expanded.
- * Click-to-expand toggle will be added in Plan 04 (client-side state).
- */
-export async function SnippetCard({ snippet, snippetNumber, expanded = false }: SnippetCardProps) {
+interface SnippetCardProps {
+  snippet: SnippetWithHtml;
+  variant: "hero" | "compact";
+  isHost: boolean;
+  onDelete?: () => void;
+}
+
+export function SnippetCard({ snippet, variant, isHost, onDelete }: SnippetCardProps) {
+  const t = useTranslations("session");
+  const [html, setHtml] = useState(snippet.highlightedHtml ?? null);
+  const [expanded, setExpanded] = useState(variant === "hero");
   const lang = snippet.language ?? "text";
   const isCode = lang !== "text";
-  const relativeTime = formatRelativeTime(snippet.createdAt);
+  const relativeTime = formatRelativeTime(snippet.createdAt, t);
+  const lineCount = snippet.content.split("\n").length;
+  const isLong = variant === "compact" && lineCount > 3;
+
+  useEffect(() => {
+    if (!html && isCode && (variant === "hero" || expanded)) {
+      renderHighlight(snippet.content, lang).then((result) => {
+        if (result) setHtml(result);
+      });
+    }
+  }, [snippet.content, lang, isCode, html, variant, expanded]);
+
+  const isHero = variant === "hero";
+  const padding = isHero ? "p-5" : "px-4 py-3";
+  const textSize = isHero ? "text-[15px]" : "text-sm";
 
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
-      {/* Header row */}
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <div
+      className={`rounded-2xl border border-border bg-card ${padding} transition-all duration-200 hover:border-indigo-500/20`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <span className="rounded-md px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground">
-            {isCode ? lang : "Text"}
+          <span
+            className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${isHero ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-muted text-muted-foreground"}`}
+          >
+            {isCode ? lang : t("text")}
           </span>
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-            #{snippetNumber}
-          </span>
+          <span className="text-xs text-muted-foreground">{relativeTime}</span>
         </div>
-        <div className="flex items-center gap-2.5">
-          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
-          <CopyButton value={snippet.content} label="Copy" />
+        <div className="flex items-center gap-1.5">
+          <CopyButton value={snippet.content} label={t("copy")} />
+          {isHost && onDelete && (
+            <button
+              type="button"
+              title={t("deleteSnippet")}
+              onClick={onDelete}
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              aria-label={t("deleteSnippet")}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      {expanded ? (
-        <div className="overflow-x-auto rounded-lg bg-muted/30 text-sm">
-          <ShikiBlock code={snippet.content} lang={lang} showLineNumbers={false} />
-        </div>
-      ) : (
-        <div className="line-clamp-3 overflow-hidden rounded-lg bg-muted/30 text-sm">
+      <div
+        className={`overflow-hidden rounded-xl bg-muted/30 ${isLong && !expanded ? "cursor-pointer" : ""}`}
+        onClick={isLong && !expanded ? () => setExpanded(true) : undefined}
+      >
+        {expanded || !isLong ? (
+          html ? (
+            <div
+              className={`shiki-wrapper overflow-x-auto ${textSize} leading-relaxed`}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <pre
+              className={`whitespace-pre-wrap break-words p-4 ${textSize} leading-relaxed ${isCode ? "font-mono" : "font-sans"} text-foreground`}
+            >
+              {snippet.content}
+            </pre>
+          )
+        ) : (
           <pre
-            className={`whitespace-pre-wrap break-words ${isCode ? "font-mono" : "font-sans"} p-3`}
+            className={`line-clamp-3 whitespace-pre-wrap break-words p-3 ${textSize} ${isCode ? "font-mono" : "font-sans"} text-foreground/80`}
           >
             {snippet.content}
           </pre>
-        </div>
+        )}
+      </div>
+
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+        >
+          {expanded ? t("collapse") : t("showAllLines", { count: lineCount })}
+        </button>
       )}
     </div>
   );
