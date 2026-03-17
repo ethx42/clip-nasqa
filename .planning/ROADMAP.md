@@ -41,52 +41,48 @@
 
 **Milestone Goal:** Decompose monolithic session components, eliminate code duplication, and implement interaction improvements across both participant and host views — making the interface honest, accessible, and structurally sound.
 
-- [ ] **Phase 11: Shared Utilities and Hook Extraction** — `formatRelativeTime` utility replaces 5 duplicated implementations; `useSessionMutations` hook extracts all mutation handlers from both page orchestrators; `repliesByQuestion` memoized as Map
-- [ ] **Phase 12: Component Decomposition and QAPanel Cleanup** — `SnippetCard` extracted to its own file; `QAPanel` accepts pre-sorted questions and drops its duplicate sort; `QuestionCard` decomposed into Normal, Banned, and Hidden variants with compound AnimatePresence keys
-- [ ] **Phase 13: Accessibility and UX Polish** — ARIA tablist semantics on mobile tab bar with both panels permanently mounted; `aria-live` on `NewContentBanner`; vote button fill states and press animation; identity chip in `QAInput`; own-question left-border indicator; contextual empty states; focused-question auto-expand and reply UX improvements
+- [ ] **Phase 11: Shared Utilities and Hook Extraction** — `formatRelativeTime` extracted to a single canonical module; `useSessionMutations` hook consolidates all mutation handlers from both page orchestrators
+- [ ] **Phase 12: Component Decomposition** — `SnippetCard` extracted as a standalone component; `QAPanel` sort logic deduplicated into one shared utility; `QuestionCard` split into host and participant variants
+- [ ] **Phase 13: UX Polish and Accessibility** — Vote buttons show filled state with `aria-pressed`; identity chip surfaces device identity inline in QAInput; own questions visually distinguished in the feed
 
 ## Phase Details
 
 ### Phase 11: Shared Utilities and Hook Extraction
 
-**Goal**: All mutation handler duplication is eliminated at the source — a shared `useSessionMutations` hook replaces anonymous closures in both page orchestrators, `formatRelativeTime` has a single canonical implementation, and `repliesByQuestion` is memoized
+**Goal**: All shared logic lives in canonical locations — `formatRelativeTime` has one implementation consumed everywhere it is used, and `useSessionMutations` is a single hook that gives both page orchestrators their mutation handlers
 **Depends on**: Phase 10
-**Requirements**: STRUC-01, STRUC-02, STRUC-06
+**Requirements**: STRUC-01, STRUC-02
 **Success Criteria** (what must be TRUE):
 
-1. A single `lib/format-relative-time.ts` file is the only implementation of relative time formatting; `clipboard-panel`, `question-card`, and `reply-list` all import from it with no behavior change visible to users
-2. `SessionLivePage` and `SessionLiveHostPage` each shrink to approximately 40-50 lines of composition-only code — all optimistic-update-with-rollback handlers live in `useSessionMutations`
-3. Mutation rollback handlers in `useSessionMutations` use `useEffectEvent` so they read current state without stale closure bugs under concurrent vote events
-4. `repliesByQuestion` in `QAPanel` is computed once per `replies` array change via `useMemo` — profiler confirms no O(n) recompute on unrelated renders
+1. Relative timestamps throughout the session view (clipboard items, questions, replies) all format identically — changing the rounding rule in one file updates every timestamp with no visible behavior difference
+2. `SessionLivePage` and `SessionLiveHostPage` each contain no inline mutation handlers — all submit, vote, reply, and moderation callbacks are imported from `useSessionMutations`
+3. Stale closure bugs under concurrent vote events are eliminated — rollback handlers in `useSessionMutations` read current state without capturing a snapshot from the render they were created in
    **Plans**: TBD
 
-### Phase 12: Component Decomposition and QAPanel Cleanup
+### Phase 12: Component Decomposition
 
-**Goal**: The three monolithic display components are decomposed into independently testable units — `SnippetCard` lives in its own file, `QAPanel` owns a single canonical sort, and `QuestionCard` is a discriminator that routes to `Normal`, `Banned`, and `Hidden` variants
+**Goal**: Three monolithic display concerns are split at clean boundaries — `SnippetCard` is independently importable, sort logic for the Q&A feed exists in exactly one place, and `QuestionCard` routes to distinct host and participant variants
 **Depends on**: Phase 11
 **Requirements**: STRUC-03, STRUC-04, STRUC-05
 **Success Criteria** (what must be TRUE):
 
-1. `SnippetCard` can be imported from its own file and rendered in a Vitest component test without importing `ClipboardPanel`
-2. Sort logic exists in exactly one location in `QAPanel`; removing the duplicate means questions cannot display in different orders between the panel and any derived view
-3. `QuestionCard` renders one of three clearly-separated variant components (`QuestionCardNormal`, `QuestionCardBanned`, `QuestionCardHidden`) based on question state; each variant is independently importable and testable
-4. Framer Motion `AnimatePresence` exit animations still play when a question transitions between states (normal -> banned, normal -> hidden) — compound key `${question.id}-${variant}` forces clean remount without layout pop
-5. `isFocused` prop changes on an already-mounted `QuestionCardNormal` auto-expand the reply section via `useEffect` sync — the stale-state bug where already-mounted cards ignore host focus is fixed
+1. `SnippetCard` can be imported and rendered in a Vitest component test without pulling in `ClipboardPanel`
+2. Questions cannot appear in different orders between the Q&A panel and any derived view — sort logic exists in exactly one location and both consumers call it
+3. `QuestionCard` renders a distinct host variant (with moderation controls) and a distinct participant variant (without them) based on the caller context — the two variants are independently importable
+4. State transitions between question states (normal, hidden, banned) animate correctly — a question moving from visible to hidden plays its exit animation without a layout pop
    **Plans**: TBD
 
-### Phase 13: Accessibility and UX Polish
+### Phase 13: UX Polish and Accessibility
 
-**Goal**: The session interface is accessible by keyboard and screen reader, and every interactive element communicates its state honestly — vote buttons show fill on voted state, participants see their identity before posting, and own questions are spatially recognizable
+**Goal**: Every interactive element in the session view communicates its state honestly — votes show fill when active, participants see their identity before posting, and own questions are spatially recognizable in the feed
 **Depends on**: Phase 12
-**Requirements**: UXINT-01, UXINT-02, UXINT-03, UXINT-04, UXINT-05, UXINT-06, UXINT-07, A11Y-04, A11Y-05, A11Y-06, A11Y-07
+**Requirements**: UXINT-01, UXINT-02, UXINT-03, A11Y-01
 **Success Criteria** (what must be TRUE):
 
-1. Both clipboard and Q&A panels remain mounted simultaneously on mobile — switching tabs via the tab bar does not reset scroll position or lose subscription state; `hidden` attribute controls visibility
-2. The mobile tab bar is navigable with keyboard arrow keys and screen readers announce the selected tab; `role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `role="tabpanel"`, and `aria-labelledby` are all present
-3. Tapping the upvote button on a question shows a filled emerald background; tapping downvote shows a filled rose background; tapping the active vote again returns both to their unvoted appearance — mutual exclusion is visually immediate with a smooth transition and `active:scale-95` press feedback; `aria-pressed` reflects the live toggle state
-4. Participant sees their pixel avatar and truncated name (or "Anonymous") inline inside `QAInput` before submitting; clicking the chip opens the `IdentityEditor` popover without leaving the input flow
-5. New content arriving via subscription is announced to screen readers via a permanently-mounted `aria-live="polite"` region with debounced content-swapping — no announcement storm during rapid question submission
-6. Own questions display a left-border accent strip distinguishing them spatially from other questions in the feed; `QAPanel` and `ClipboardPanel` empty states show connection-aware copy for participant vs host context
+1. Tapping the upvote button on a question fills it visually when the user has voted; tapping again returns it to the unvoted appearance — mutual exclusion with downvote is immediate and smooth
+2. `aria-pressed="true"` is present on the upvote button when the user has voted and `aria-pressed="false"` when they have not — screen readers announce the toggle state on every change
+3. A participant sees their pixel avatar and name (or "Anonymous") inline inside the question input before submitting — the identity is visible without opening any additional panel
+4. A participant's own questions display a visually distinct left-border accent in the feed — they can immediately locate their own contributions among other questions
    **Plans**: TBD
 
 ## Progress
@@ -94,18 +90,18 @@
 **Execution Order:**
 Phases execute in numeric order: 11 -> 12 -> 13
 
-| Phase                                           | Milestone | Plans Complete | Status      | Completed  |
-| ----------------------------------------------- | --------- | -------------- | ----------- | ---------- |
-| 1. Infrastructure                               | v1.0      | 3/3            | Complete    | 2026-03-14 |
-| 2. Session and View Shell                       | v1.0      | 3/3            | Complete    | 2026-03-14 |
-| 3. Real-Time Core                               | v1.0      | 6/6            | Complete    | 2026-03-14 |
-| 4. Moderation, Identity, and Polish             | v1.0      | 4/4            | Complete    | 2026-03-14 |
-| 5. Code Quality Gates                           | v1.1      | 2/2            | Complete    | 2026-03-15 |
-| 6. Testing and CI                               | v1.1      | 3/3            | Complete    | 2026-03-16 |
-| 7. Error Handling and Observability             | v1.1      | 3/3            | Complete    | 2026-03-16 |
-| 8. SEO and Accessibility                        | v1.1      | 2/2            | Complete    | 2026-03-17 |
-| 9. Reactions Data Model and Backend             | v1.2      | 3/3            | Complete    | 2026-03-17 |
-| 10. Reactions Frontend State and UI             | v1.2      | 2/2            | Complete    | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction        | v1.3      | 0/TBD          | Not started | -          |
-| 12. Component Decomposition and QAPanel Cleanup | v1.3      | 0/TBD          | Not started | -          |
-| 13. Accessibility and UX Polish                 | v1.3      | 0/TBD          | Not started | -          |
+| Phase                                    | Milestone | Plans Complete | Status      | Completed  |
+| ---------------------------------------- | --------- | -------------- | ----------- | ---------- |
+| 1. Infrastructure                        | v1.0      | 3/3            | Complete    | 2026-03-14 |
+| 2. Session and View Shell                | v1.0      | 3/3            | Complete    | 2026-03-14 |
+| 3. Real-Time Core                        | v1.0      | 6/6            | Complete    | 2026-03-14 |
+| 4. Moderation, Identity, and Polish      | v1.0      | 4/4            | Complete    | 2026-03-14 |
+| 5. Code Quality Gates                    | v1.1      | 2/2            | Complete    | 2026-03-15 |
+| 6. Testing and CI                        | v1.1      | 3/3            | Complete    | 2026-03-16 |
+| 7. Error Handling and Observability      | v1.1      | 3/3            | Complete    | 2026-03-16 |
+| 8. SEO and Accessibility                 | v1.1      | 2/2            | Complete    | 2026-03-17 |
+| 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete    | 2026-03-17 |
+| 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
+| 11. Shared Utilities and Hook Extraction | v1.3      | 0/TBD          | Not started | -          |
+| 12. Component Decomposition              | v1.3      | 0/TBD          | Not started | -          |
+| 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |

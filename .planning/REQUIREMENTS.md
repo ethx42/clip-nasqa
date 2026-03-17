@@ -47,25 +47,25 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
-| STRUC-01    | —     | Pending |
-| STRUC-02    | —     | Pending |
-| STRUC-03    | —     | Pending |
-| STRUC-04    | —     | Pending |
-| STRUC-05    | —     | Pending |
-| UXINT-01    | —     | Pending |
-| UXINT-02    | —     | Pending |
-| UXINT-03    | —     | Pending |
-| A11Y-01     | —     | Pending |
+| Requirement | Phase    | Status  |
+| ----------- | -------- | ------- |
+| STRUC-01    | Phase 11 | Pending |
+| STRUC-02    | Phase 11 | Pending |
+| STRUC-03    | Phase 12 | Pending |
+| STRUC-04    | Phase 12 | Pending |
+| STRUC-05    | Phase 12 | Pending |
+| UXINT-01    | Phase 13 | Pending |
+| UXINT-02    | Phase 13 | Pending |
+| UXINT-03    | Phase 13 | Pending |
+| A11Y-01     | Phase 13 | Pending |
 
 **Coverage:**
 
 - v1.3 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9
+- Mapped to phases: 9
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-03-17_
-_Last updated: 2026-03-17 after initial definition_
+_Last updated: 2026-03-17 after roadmap creation_
