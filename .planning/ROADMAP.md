@@ -34,7 +34,7 @@
 **Milestone Goal:** Add emoji reactions to Questions and Replies as a lightweight sentiment layer — fixed 6-emoji palette, per-device dedup, real-time propagation via existing subscription channel, and optimistic UI consistent with the existing vote system.
 
 - [x] **Phase 9: Reactions Data Model and Backend** - Core types, GraphQL schema, Lambda resolver, rate limiting, ban enforcement, and real-time subscription broadcast for the `react` mutation (completed 2026-03-17)
-- [ ] **Phase 10: Reactions Frontend State and UI** - Session state reducer extension, `useReactions` hook, `ReactionBar` component with optimistic toggle, ARIA labels, and 44px touch targets integrated into QuestionCard and ReplyCard
+- [x] **Phase 10: Reactions Frontend State and UI** - Session state reducer extension, `useReactions` hook, `ReactionBar` component with optimistic toggle, ARIA labels, and 44px touch targets integrated into QuestionCard and ReplyCard (completed 2026-03-17)
 
 ### ⏳ v1.3 Participant & Host UX Refactor (Queued)
 
@@ -142,7 +142,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13
 | 7. Error Handling and Observability             | v1.1      | 3/3            | Complete    | 2026-03-16 |
 | 8. SEO and Accessibility                        | v1.1      | 2/2            | Complete    | 2026-03-17 |
 | 9. Reactions Data Model and Backend             | v1.2      | 3/3            | Complete    | 2026-03-17 |
-| 10. Reactions Frontend State and UI             | 1/2       | In Progress    |             | -          |
+| 10. Reactions Frontend State and UI             | 2/2       | Complete       | 2026-03-17  | -          |
 | 11. Shared Utilities and Hook Extraction        | v1.3      | 0/TBD          | Not started | -          |
 | 12. Component Decomposition and QAPanel Cleanup | v1.3      | 0/TBD          | Not started | -          |
 | 13. Accessibility and UX Polish                 | v1.3      | 0/TBD          | Not started | -          |
