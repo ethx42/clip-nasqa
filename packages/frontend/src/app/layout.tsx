@@ -18,8 +18,19 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nasqa Live",
-  description: "Real-time clipboard and Q&A for live sessions",
+  metadataBase: new URL("https://clip.nasqa.io"),
+  title: {
+    default: "clip — real-time clipboard and Q&A",
+    template: "%s — clip",
+  },
+  description: "Share code snippets and collect audience questions in real time.",
+  openGraph: {
+    siteName: "clip",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
