@@ -70,7 +70,7 @@ export function ReactionBar({
   }
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+    <div className={cn("flex flex-wrap items-center gap-1", className)}>
       {/* Active reaction pills */}
       {activePills.map(({ key, emoji }) => {
         const emojiKey = key as EmojiKey;
@@ -88,14 +88,16 @@ export function ReactionBar({
             })}
             aria-pressed={isActive}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm min-h-11 min-w-11 transition-colors select-none",
+              "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-sm transition-colors select-none",
               isActive
-                ? "bg-muted text-foreground"
-                : "bg-transparent text-muted-foreground hover:bg-muted/40",
+                ? "border-foreground/15 bg-muted text-foreground"
+                : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
             )}
           >
-            <span aria-hidden="true">{emoji}</span>
-            <span className="tabular-nums text-xs font-semibold">{formatCount(count)}</span>
+            <span className="text-base leading-none" aria-hidden="true">
+              {emoji}
+            </span>
+            <span className="tabular-nums text-xs font-medium">{formatCount(count)}</span>
           </button>
         );
       })}
@@ -106,7 +108,7 @@ export function ReactionBar({
         onClick={() => setPickerOpen((v) => !v)}
         aria-label={t("addReaction")}
         aria-expanded={pickerOpen}
-        className="min-h-11 min-w-11 rounded-full p-2 text-muted-foreground hover:bg-muted/40 transition-colors"
+        className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/40 transition-colors"
       >
         <SmilePlus className="h-4 w-4" aria-hidden="true" />
       </button>
@@ -122,7 +124,7 @@ export function ReactionBar({
                 type="button"
                 onClick={() => handlePickerSelect(emojiKey)}
                 aria-label={t(emojiKey)}
-                className="min-h-11 min-w-11 rounded-full p-2 text-base hover:bg-muted/40 transition-colors"
+                className="rounded-full p-1.5 text-base hover:bg-muted/40 transition-colors"
               >
                 <span aria-hidden="true">{emoji}</span>
               </button>

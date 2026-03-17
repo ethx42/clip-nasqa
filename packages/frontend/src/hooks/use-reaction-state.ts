@@ -150,10 +150,12 @@ export function useReactionState({
           setActiveEmojis(prevActiveEmojis);
           writeActiveEmojis(sessionSlug, targetId, prevActiveEmojis);
           setLocalOverrideCounts(null);
-        } else if (result.success) {
-          // Clear optimistic override — subscription event will provide authoritative counts
-          setLocalOverrideCounts(null);
         }
+        // On success: do NOT clear localOverrideCounts here.
+        // The subscription event will update serverCounts, which triggers the
+        // useEffect([serverCounts]) that clears the override. Clearing here
+        // causes a visible flash (reverts to stale serverCounts before the
+        // subscription arrives with the authoritative value).
         preToggleRef.current = null;
       })();
     }, 300);
