@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 11 — Shared Utilities and Hook Extraction
-Plan: 02 of 02 complete
-Status: Phase 11 complete
-Last activity: 2026-03-17 — Phase 11 plans 01 and 02 executed (formatRelativeTime + mutation hook extraction)
+Plan: 01 of 02 complete
+Status: Phase 11 in progress
+Last activity: 2026-03-17 — Phase 11 plan 01 executed (formatRelativeTime canonical utility + TDD)
 
 **Progress bar:** Phase 11 of 13 total (phases 11-13 are v1.3 scope)
 
