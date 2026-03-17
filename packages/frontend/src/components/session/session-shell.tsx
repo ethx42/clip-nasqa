@@ -62,9 +62,9 @@ export function SessionShell({
   const qaBadge = activeTab !== "qa" && questionCount > lastSeenQuestions;
 
   return (
-    <div className="flex h-[calc(100dvh-53px)] flex-col">
+    <div className="flex h-[calc(100dvh-73px)] flex-col">
       {/* Header */}
-      <header className="border-b border-border px-5 py-3.5 lg:px-6">
+      <header className="border-b border-border px-5 py-2 lg:px-6">
         <div className="flex items-center gap-3">
           <h1 className="truncate text-lg font-bold tracking-tight text-foreground">{title}</h1>
           {liveIndicator}
@@ -82,17 +82,14 @@ export function SessionShell({
           aria-label={t("clipboard")}
           className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
             activeTab === "clipboard"
-              ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <ClipboardList className="h-4 w-4" aria-hidden="true" />
           {t("clipboard")}
           {clipboardBadge && (
-            <span
-              className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
-              aria-hidden="true"
-            />
+            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true" />
           )}
         </button>
         <button
@@ -100,17 +97,14 @@ export function SessionShell({
           aria-label={t("qa")}
           className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
             activeTab === "qa"
-              ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <MessageCircleQuestion className="h-4 w-4" aria-hidden="true" />
           {t("qa")}
           {qaBadge && (
-            <span
-              className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
-              aria-hidden="true"
-            />
+            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true" />
           )}
         </button>
       </nav>
