@@ -4,7 +4,7 @@ import { CONNECTION_STATE_CHANGE, ConnectionState } from "aws-amplify/api";
 import { Hub } from "aws-amplify/utils";
 import { useCallback, useEffect, useState } from "react";
 
-import type { Question, Reply, Snippet } from "@nasqa/core";
+import type { Question, ReactionCounts, Reply, Snippet } from "@nasqa/core";
 
 import { appsyncClient } from "@/lib/appsync-client";
 import { ON_SESSION_UPDATE } from "@/lib/graphql/subscriptions";
@@ -160,6 +160,18 @@ export function useSessionUpdates(
             }
             case "REPLY_ADDED": {
               stableDispatch({ type: "REPLY_ADDED", payload: parsed as Reply });
+              break;
+            }
+            case "REACTION_UPDATED": {
+              const { targetId, targetType, counts } = parsed as {
+                targetId: string;
+                targetType: "QUESTION" | "REPLY";
+                counts: ReactionCounts;
+              };
+              stableDispatch({
+                type: "REACTION_UPDATED",
+                payload: { targetId, targetType, counts },
+              });
               break;
             }
             default:

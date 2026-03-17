@@ -144,5 +144,16 @@
     "anonymous": "Anónimo",
     "save": "Guardar",
     "clear": "Borrar identidad"
+  },
+  "reactions": {
+    "addReaction": "Reaccionar",
+    "emojiLabel": "{emoji}: {count, plural, one {# reacción} other {# reacciones}}",
+    "emojiLabelActive": "{emoji} (activa): {count, plural, one {# reacción} other {# reacciones}}",
+    "thumbsup": "Pulgar arriba",
+    "heart": "Corazón",
+    "party": "Fiesta",
+    "laugh": "Risa",
+    "thinking": "Pensando",
+    "eyes": "Ojos"
   }
 }

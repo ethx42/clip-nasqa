@@ -2,7 +2,7 @@
 
 import { useCallback, useReducer } from "react";
 
-import type { Question, Reply, Snippet } from "@nasqa/core";
+import type { Question, ReactionCounts, Reply, Snippet } from "@nasqa/core";
 
 // ── Action types ──────────────────────────────────────────────────────────────
 
@@ -27,7 +27,15 @@ export type SessionAction =
   | { type: "REPLY_ADDED"; payload: Reply }
   | { type: "ADD_SNIPPET_OPTIMISTIC"; payload: Snippet }
   | { type: "ADD_QUESTION_OPTIMISTIC"; payload: Question }
-  | { type: "REMOVE_OPTIMISTIC"; payload: { id: string } };
+  | { type: "REMOVE_OPTIMISTIC"; payload: { id: string } }
+  | {
+      type: "REACTION_UPDATED";
+      payload: {
+        targetId: string;
+        targetType: "QUESTION" | "REPLY";
+        counts: ReactionCounts;
+      };
+    };
 
 // ── State shape ───────────────────────────────────────────────────────────────
 
@@ -184,6 +192,22 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
         ...state,
         snippets: state.snippets.filter((s) => s.id !== action.payload.id),
         questions: state.questions.filter((q) => q.id !== action.payload.id),
+      };
+    }
+
+    case "REACTION_UPDATED": {
+      const { targetId, targetType, counts } = action.payload;
+      const reactionCounts = JSON.stringify(counts);
+      if (targetType === "QUESTION") {
+        return {
+          ...state,
+          questions: state.questions.map((q) => (q.id === targetId ? { ...q, reactionCounts } : q)),
+        };
+      }
+      // targetType === "REPLY"
+      return {
+        ...state,
+        replies: state.replies.map((r) => (r.id === targetId ? { ...r, reactionCounts } : r)),
       };
     }
 
