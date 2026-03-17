@@ -133,4 +133,17 @@ describe("QuestionCard", () => {
     });
     expect(screen.getByText("Anonymous")).toBeInTheDocument();
   });
+
+  it("shows moderation controls when isHost is true", () => {
+    renderCard({ isHost: true });
+    // Host toolbar: "Remove question" (banQuestion key) and "Ban participant"
+    expect(screen.getByRole("button", { name: /remove question/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ban participant/i })).toBeInTheDocument();
+  });
+
+  it("does not show moderation controls when isHost is false", () => {
+    renderCard({ isHost: false });
+    expect(screen.queryByRole("button", { name: /remove question/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /ban participant/i })).not.toBeInTheDocument();
+  });
 });
