@@ -45,9 +45,9 @@
 
 ### Accessibility
 
-- [ ] **A11Y-01**: Semantic HTML audit — replace div wrappers with main/nav/section/article
-- [ ] **A11Y-02**: ARIA labels on all icon-only buttons and live regions for real-time updates
-- [ ] **A11Y-03**: Keyboard navigation — logical tab order, visible focus rings, modal focus traps
+- [x] **A11Y-01**: Semantic HTML audit — replace div wrappers with main/nav/section/article
+- [x] **A11Y-02**: ARIA labels on all icon-only buttons and live regions for real-time updates
+- [x] **A11Y-03**: Keyboard navigation — logical tab order, visible focus rings, modal focus traps
 
 ## v1.2 Requirements
 
@@ -155,9 +155,9 @@
 | SEO-03      | Phase 8  | Complete |
 | SEO-04      | Phase 8  | Complete |
 | SEO-05      | Phase 8  | Complete |
-| A11Y-01     | Phase 8  | Pending  |
-| A11Y-02     | Phase 8  | Pending  |
-| A11Y-03     | Phase 8  | Pending  |
+| A11Y-01     | Phase 8  | Complete |
+| A11Y-02     | Phase 8  | Complete |
+| A11Y-03     | Phase 8  | Complete |
 | RXN-01      | Phase 9  | Pending  |
 | RXN-02      | Phase 9  | Pending  |
 | RXN-03      | Phase 9  | Pending  |

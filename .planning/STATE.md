@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 6 complete, Phase 7 next)
+**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 8 complete, Phase 9 next)
 
 ## Current Position
 
-Phase: 8 of 13 (SEO and Accessibility — in progress)
-Plan: 1 of 2 complete
-Status: Phase 8 Plan 01 complete (SEO metadata infrastructure); Phase 8 Plan 02 next
-Last activity: 2026-03-17 — Phase 8 Plan 01 complete (robots.txt, sitemap.xml, OG image, generateMetadata, JSON-LD)
+Phase: 8 of 13 (SEO and Accessibility — complete)
+Plan: 2 of 2 complete
+Status: Phase 8 complete (SEO + accessibility); Phase 9 next
+Last activity: 2026-03-16 — Phase 8 Plan 02 complete (semantic HTML landmarks, ARIA labels, skip link, aria-live region)
 
-Progress: [███████████░░░░░░░░░] 50% (v1.0+v1.1 Phases 5-8 in progress; Phase 8 Plan 01 complete)
+Progress: [████████████░░░░░░░░] 55% (v1.0+v1.1 Phases 5-8 complete; Phase 9 next)
 
 ## Performance Metrics
 
@@ -34,10 +34,11 @@ Progress: [███████████░░░░░░░░░] 50% (v1
 | 04-moderation-identity-and-polish   | 4     | 20 min | 5 min    |
 | 05-code-quality-gates               | 2     | 18 min | 9 min    |
 | 07-error-handling-and-observability | 3     | 17 min | 5.7 min  |
+| 08-seo-and-accessibility            | 2     | 8 min  | 4 min    |
 
 **Recent Trend:**
 
-- Last 5 plans: 04-03 (12 min), 04-04 (paused), 07-01 (5 min), 07-02 (8 min), 07-03 (4 min)
+- Last 5 plans: 07-01 (5 min), 07-02 (8 min), 07-03 (4 min), 08-01 (5 min), 08-02 (3 min)
 - Trend: stable
 
 _Updated after each plan completion_
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [08-01]: product name is "clip" in all metadata and UI header — not "nasqa"
 - [08-01]: session pages carry noindex robots (belt-and-suspenders) — sessions are ephemeral and audience-scoped
 - [08-01]: JSON-LD injected in locale layout (server component) — landing page is client component; structured data always in static HTML shell
+- [Phase 08-02]: NewContentBanner uses aria-hidden=true — screen reader announcements delegated exclusively to QAPanel aria-live region to avoid duplicate reads
+- [Phase 08-02]: SessionShell uses header landmark (not main) — layout.tsx already wraps children in main; no duplicate landmark
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17
-Stopped at: Completed 08-01-PLAN.md (SEO infrastructure: robots.ts, sitemap.ts, OG image, generateMetadata, JSON-LD); Phase 8 Plan 01 complete
+Last session: 2026-03-16
+Stopped at: Completed 08-02-PLAN.md (accessibility: semantic HTML landmarks, ARIA labels, skip-to-content link, aria-live region, focus ring audit); Phase 8 complete
 Resume file: None
