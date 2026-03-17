@@ -33,6 +33,7 @@ type Question {
   isHidden: Boolean!
   isFocused: Boolean!
   isBanned: Boolean!
+  reactionCounts: AWSJSON
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
 }
@@ -44,8 +45,14 @@ type Reply {
   text: String!
   isHostReply: Boolean!
   fingerprint: String!
+  reactionCounts: AWSJSON
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
+}
+
+enum ReactionTargetType {
+  QUESTION
+  REPLY
 }
 
 enum SessionEventType {
@@ -56,6 +63,7 @@ enum SessionEventType {
   QUESTION_UPDATED
   REPLY_ADDED
   PARTICIPANT_BANNED
+  REACTION_UPDATED
 }
 
 type SessionUpdate {
@@ -88,9 +96,10 @@ type Mutation {
   banParticipant(sessionSlug: String!, hostSecretHash: String!, fingerprint: String!): SessionUpdate!
   downvoteQuestion(sessionSlug: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
   restoreQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
+  react(sessionSlug: String!, targetId: String!, targetType: ReactionTargetType!, emoji: String!, fingerprint: String!): SessionUpdate!
 }
 
 type Subscription {
   onSessionUpdate(sessionSlug: String!): SessionUpdate
-    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion"])
+    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion", "react"])
 }

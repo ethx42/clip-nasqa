@@ -4,6 +4,9 @@ import {
   createQuestionInputSchema,
   createSessionInputSchema,
   createSnippetInputSchema,
+  EMOJI_KEYS,
+  EMOJI_PALETTE,
+  emojiKeySchema,
 } from "../schemas";
 
 describe("createSessionInputSchema", () => {
@@ -149,5 +152,68 @@ describe("createQuestionInputSchema", () => {
   it("rejects missing required sessionSlug", () => {
     const { sessionSlug: _removed, ...rest } = validQuestion;
     expect(() => createQuestionInputSchema.parse(rest)).toThrow();
+  });
+});
+
+describe("EMOJI_PALETTE", () => {
+  it("has exactly 6 entries", () => {
+    expect(EMOJI_PALETTE).toHaveLength(6);
+  });
+
+  it("each entry has key, emoji, and label string properties", () => {
+    for (const entry of EMOJI_PALETTE) {
+      expect(typeof entry.key).toBe("string");
+      expect(typeof entry.emoji).toBe("string");
+      expect(typeof entry.label).toBe("string");
+    }
+  });
+
+  it("keys are in canonical order: thumbsup, heart, party, laugh, thinking, eyes", () => {
+    const keys = EMOJI_PALETTE.map((e) => e.key);
+    expect(keys).toEqual(["thumbsup", "heart", "party", "laugh", "thinking", "eyes"]);
+  });
+
+  it("all emoji strings are non-empty", () => {
+    for (const entry of EMOJI_PALETTE) {
+      expect(entry.emoji.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("emojiKeySchema", () => {
+  it("accepts all 6 valid keys", () => {
+    const validKeys = ["thumbsup", "heart", "party", "laugh", "thinking", "eyes"];
+    for (const key of validKeys) {
+      expect(emojiKeySchema.safeParse(key).success).toBe(true);
+    }
+  });
+
+  it("rejects invalid string keys", () => {
+    const invalidKeys = ["fire", "sad", "", "THUMBSUP"];
+    for (const key of invalidKeys) {
+      expect(emojiKeySchema.safeParse(key).success).toBe(false);
+    }
+  });
+
+  it("rejects non-string values", () => {
+    expect(emojiKeySchema.safeParse(null).success).toBe(false);
+    expect(emojiKeySchema.safeParse(undefined).success).toBe(false);
+    expect(emojiKeySchema.safeParse(42).success).toBe(false);
+  });
+
+  it("is case-sensitive — rejects uppercase variants", () => {
+    expect(emojiKeySchema.safeParse("THUMBSUP").success).toBe(false);
+    expect(emojiKeySchema.safeParse("Heart").success).toBe(false);
+  });
+});
+
+describe("EMOJI_KEYS", () => {
+  it("is an array of length 6", () => {
+    expect(Array.isArray(EMOJI_KEYS)).toBe(true);
+    expect(EMOJI_KEYS).toHaveLength(6);
+  });
+
+  it("contains all palette keys in canonical order", () => {
+    expect(EMOJI_KEYS).toEqual(["thumbsup", "heart", "party", "laugh", "thinking", "eyes"]);
   });
 });
