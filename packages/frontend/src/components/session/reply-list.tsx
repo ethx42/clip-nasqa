@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import type { Reply } from "@nasqa/core";
 
+import { formatRelativeTime } from "@/lib/format-relative-time";
 import { linkifyText } from "@/lib/linkify";
 
 import { ReactionBar } from "./reaction-bar";
@@ -13,19 +14,6 @@ interface ReplyListProps {
   isHost: boolean;
   sessionSlug: string;
   fingerprint: string;
-}
-
-function formatRelativeTime(
-  createdAt: number,
-  t: (key: string, values?: Record<string, number>) => string,
-): string {
-  const now = Math.floor(Date.now() / 1000);
-  const diffSeconds = now - createdAt;
-
-  if (diffSeconds < 60) return t("timeJustNow");
-  if (diffSeconds < 3600) return t("timeMinutesAgo", { count: Math.floor(diffSeconds / 60) });
-  if (diffSeconds < 86400) return t("timeHoursAgo", { count: Math.floor(diffSeconds / 3600) });
-  return t("timeDaysAgo", { count: Math.floor(diffSeconds / 86400) });
 }
 
 export function ReplyList({ replies, sessionSlug, fingerprint }: ReplyListProps) {

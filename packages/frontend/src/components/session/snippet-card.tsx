@@ -1,5 +1,7 @@
 import type { Snippet } from "@nasqa/core";
 
+import { formatRelativeTime } from "@/lib/format-relative-time";
+
 import { CopyButton } from "./copy-button";
 import { ShikiBlock } from "./shiki-block";
 
@@ -7,19 +9,6 @@ interface SnippetCardProps {
   snippet: Snippet;
   snippetNumber: number;
   expanded?: boolean;
-}
-
-function formatRelativeTime(createdAt: number): string {
-  const now = Date.now();
-  const diffMs = now - createdAt * 1000;
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return "just now";
-  if (diffMin === 1) return "1m ago";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr === 1) return "1h ago";
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${Math.floor(diffHr / 24)}d ago`;
 }
 
 /**

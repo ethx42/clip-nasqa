@@ -62,6 +62,7 @@
     "timeMinutesAgo": "hace {count}m",
     "timeHoursAgo": "hace {count}h",
     "timeDaysAgo": "hace {count}d",
+    "timeWeeksAgo": "hace {count}sem",
     "noQuestions": "Aún no hay preguntas. ¡Sé el primero en preguntar!",
     "clipboardEmpty": "Esperando a que el presentador comparta fragmentos de código.",
     "clipboardCleared": "El portapapeles fue vaciado.",

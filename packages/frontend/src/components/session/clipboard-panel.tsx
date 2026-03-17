@@ -2,6 +2,7 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { AnimatePresence, motion } from "framer-motion";
+import { ClipboardList, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import type { Snippet } from "@nasqa/core";
 
 import { renderHighlight } from "@/actions/snippet";
+import { formatRelativeTime } from "@/lib/format-relative-time";
 
 import { CopyButton } from "./copy-button";
 import { HostInput } from "./host-input";
@@ -22,198 +24,107 @@ interface ClipboardPanelProps {
   isHost?: boolean;
   sessionSlug: string;
   hostSecretHash?: string;
-  /** Snippets passed from parent — initially from SSR, later updated by subscription. */
   snippets: SnippetWithHtml[];
-  /** AppSync connection status — used to differentiate empty state messaging. */
   connectionStatus?: "connected" | "connecting" | "disconnected";
-  /** Called by host to delete a single snippet. */
   onDeleteSnippet?: (snippetId: string) => void;
-  /** Called by host to clear all snippets. */
   onClearClipboard?: () => void;
 }
 
 const HISTORY_PAGE_SIZE = 10;
-const SCROLL_THRESHOLD = 80; // px scrolled down before showing the banner
+const SCROLL_THRESHOLD = 80;
 
-function formatRelativeTime(
-  createdAt: number,
-  t: (key: string, values?: Record<string, number>) => string,
-): string {
-  const now = Date.now();
-  const diffMs = now - createdAt * 1000;
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return t("timeJustNow");
-  if (diffMin < 60) return t("timeMinutesAgo", { count: diffMin });
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return t("timeHoursAgo", { count: diffHr });
-  return t("timeDaysAgo", { count: Math.floor(diffHr / 24) });
-}
-
-/** Inline hero card rendered client-side using pre-rendered HTML or plain text. */
-function HeroCard({
+function SnippetCard({
   snippet,
-  snippetNumber,
+  variant,
   isHost,
   onDelete,
 }: {
   snippet: SnippetWithHtml;
-  snippetNumber: number;
+  variant: "hero" | "compact";
   isHost: boolean;
   onDelete?: () => void;
 }) {
   const t = useTranslations("session");
   const [html, setHtml] = useState(snippet.highlightedHtml ?? null);
-  const lang = snippet.language ?? "text";
-  const isCode = lang !== "text";
-  const relativeTime = formatRelativeTime(snippet.createdAt, t);
-
-  // If no pre-rendered HTML, fetch via Server Action
-  useEffect(() => {
-    if (!html && isCode) {
-      renderHighlight(snippet.content, lang).then((result) => {
-        if (result) setHtml(result);
-      });
-    }
-  }, [snippet.content, lang, isCode, html]);
-
-  return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="rounded-lg bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
-            {isCode ? lang : t("text")}
-          </span>
-          <span className="text-base font-bold tabular-nums text-muted-foreground">
-            #{snippetNumber}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
-          <CopyButton value={snippet.content} label={t("copy")} />
-          {isHost && onDelete && (
-            <button
-              type="button"
-              title={t("deleteSnippet")}
-              onClick={onDelete}
-              className="text-sm text-muted-foreground hover:text-destructive transition"
-              aria-label={t("deleteSnippet")}
-            >
-              ···
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="max-h-[30rem] overflow-y-auto rounded-xl bg-muted/30">
-        {html ? (
-          <div
-            className="shiki-wrapper overflow-x-auto text-[15px] leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        ) : (
-          <pre
-            className={`whitespace-pre-wrap break-words p-4 text-[15px] leading-relaxed ${
-              isCode ? "font-mono" : "font-sans"
-            } text-foreground`}
-          >
-            {snippet.content}
-          </pre>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Inline history card rendered client-side with expand/collapse. */
-function HistoryCard({
-  snippet,
-  snippetNumber,
-  isHost,
-  onDelete,
-}: {
-  snippet: SnippetWithHtml;
-  snippetNumber: number;
-  isHost: boolean;
-  onDelete?: () => void;
-}) {
-  const t = useTranslations("session");
-  const [expanded, setExpanded] = useState(false);
-  const [html, setHtml] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(variant === "hero");
   const lang = snippet.language ?? "text";
   const isCode = lang !== "text";
   const relativeTime = formatRelativeTime(snippet.createdAt, t);
   const lineCount = snippet.content.split("\n").length;
-  const isLong = lineCount > 3;
+  const isLong = variant === "compact" && lineCount > 3;
 
-  // Fetch highlighted HTML when expanded (code only)
   useEffect(() => {
-    if (expanded && isCode && !html) {
+    if (!html && isCode && (variant === "hero" || expanded)) {
       renderHighlight(snippet.content, lang).then((result) => {
         if (result) setHtml(result);
       });
     }
-  }, [expanded, isCode, html, snippet.content, lang]);
+  }, [snippet.content, lang, isCode, html, variant, expanded]);
+
+  const isHero = variant === "hero";
+  const padding = isHero ? "p-5" : "px-4 py-3";
+  const textSize = isHero ? "text-[15px]" : "text-sm";
 
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <div
+      className={`rounded-2xl border border-border bg-card ${padding} transition-all duration-200 hover:border-indigo-500/20`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <span className="rounded-md px-2 py-0.5 text-xs font-semibold bg-muted text-muted-foreground">
+          <span
+            className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${isHero ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-muted text-muted-foreground"}`}
+          >
             {isCode ? lang : t("text")}
           </span>
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-            #{snippetNumber}
-          </span>
+          <span className="text-xs text-muted-foreground">{relativeTime}</span>
         </div>
-        <div className="flex items-center gap-2.5">
-          <span className="text-[13px] text-muted-foreground">{relativeTime}</span>
+        <div className="flex items-center gap-1.5">
           <CopyButton value={snippet.content} label={t("copy")} />
           {isHost && onDelete && (
             <button
               type="button"
               title={t("deleteSnippet")}
               onClick={onDelete}
-              className="text-sm text-muted-foreground hover:text-destructive transition"
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               aria-label={t("deleteSnippet")}
             >
-              ···
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
       </div>
+
       <div
-        className={`overflow-hidden rounded-lg bg-muted/30 ${isLong ? "cursor-pointer" : ""}`}
-        onClick={isLong ? () => setExpanded((v) => !v) : undefined}
+        className={`overflow-hidden rounded-xl bg-muted/30 ${isLong && !expanded ? "cursor-pointer" : ""}`}
+        onClick={isLong && !expanded ? () => setExpanded(true) : undefined}
       >
-        {expanded ? (
+        {expanded || !isLong ? (
           html ? (
             <div
-              className="shiki-wrapper overflow-x-auto text-sm leading-relaxed"
+              className={`shiki-wrapper overflow-x-auto ${textSize} leading-relaxed`}
               dangerouslySetInnerHTML={{ __html: html }}
             />
           ) : (
             <pre
-              className={`whitespace-pre-wrap break-words p-3 text-sm ${
-                isCode ? "font-mono" : "font-sans"
-              } text-foreground`}
+              className={`whitespace-pre-wrap break-words p-4 ${textSize} leading-relaxed ${isCode ? "font-mono" : "font-sans"} text-foreground`}
             >
               {snippet.content}
             </pre>
           )
         ) : (
           <pre
-            className={`line-clamp-3 whitespace-pre-wrap break-words p-3 text-sm ${
-              isCode ? "font-mono" : "font-sans"
-            } text-foreground/80`}
+            className={`line-clamp-3 whitespace-pre-wrap break-words p-3 ${textSize} ${isCode ? "font-mono" : "font-sans"} text-foreground/80`}
           >
             {snippet.content}
           </pre>
         )}
       </div>
+
       {isLong && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+          className="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
         >
           {expanded ? t("collapse") : t("showAllLines", { count: lineCount })}
         </button>
@@ -222,17 +133,6 @@ function HistoryCard({
   );
 }
 
-/**
- * Client Component — clipboard panel displaying:
- * - HostInput (if isHost) at the top
- * - Empty state with pulse animation when no snippets
- * - HeroCard for latest snippet with Framer Motion entrance + hero-to-history layout animation
- * - Lazy-loaded HistoryCard list with IntersectionObserver sentinel
- * - Clear All button (host only) with confirmation
- * - Delete button (host only) on each snippet card
- * - Scroll-aware "New snippet" banner
- * - Toast notification when clipboard is cleared
- */
 export function ClipboardPanel({
   isHost = false,
   sessionSlug,
@@ -254,7 +154,6 @@ export function ClipboardPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevSnippetCount = useRef(snippets.length);
 
-  // Lazy-load more history items via IntersectionObserver
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -270,7 +169,6 @@ export function ClipboardPanel({
     return () => observer.disconnect();
   }, []);
 
-  // Show new content banner when a snippet arrives and user is scrolled down
   useEffect(() => {
     const newCount = snippets.length;
     const oldCount = prevSnippetCount.current;
@@ -285,7 +183,6 @@ export function ClipboardPanel({
     }
   }, [snippets.length]);
 
-  // Show toast when CLIPBOARD_CLEARED event arrives (snippet count drops to 0 from >0)
   const prevSnippetsRef = useRef(snippets);
   useEffect(() => {
     const prev = prevSnippetsRef.current;
@@ -300,7 +197,6 @@ export function ClipboardPanel({
     setShowNewBanner(false);
   }, []);
 
-  // Hide banner when user scrolls back to top
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (container && container.scrollTop <= SCROLL_THRESHOLD) {
@@ -308,86 +204,70 @@ export function ClipboardPanel({
     }
   }, []);
 
-  // snippets are reverse-chronological (newest first)
   const heroSnippet = snippets[0];
   const historySnippets = snippets.slice(1, visibleCount + 1);
   const hasMore = snippets.length > visibleCount + 1;
 
   return (
-    <div
-      ref={scrollContainerRef}
-      onScroll={handleScroll}
-      className="flex flex-1 flex-col gap-4 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm"
-    >
-      {/* New snippet banner — sticky at top */}
-      <NewContentBanner message={t("newSnippet")} visible={showNewBanner} onTap={scrollToTop} />
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Scrollable content */}
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+        <NewContentBanner message={t("newSnippet")} visible={showNewBanner} onTap={scrollToTop} />
 
-      {/* Host input zone */}
-      {isHost && (
-        <div className="shrink-0">
-          <HostInput sessionSlug={sessionSlug} hostSecretHash={hostSecretHash} />
-        </div>
-      )}
+        {/* Host controls */}
+        {isHost && snippets.length > 0 && (
+          <div className="flex items-center justify-end px-1 pb-3">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setConfirmAction({ type: "clear" })}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t("clearAll")}
+            </button>
+          </div>
+        )}
 
-      {/* Host controls */}
-      {isHost && snippets.length > 0 && (
-        <div className="flex items-center justify-end">
-          <button
-            type="button"
-            className="text-sm font-medium text-muted-foreground hover:text-destructive transition"
-            onClick={() => setConfirmAction({ type: "clear" })}
-          >
-            {t("clearAll")}
-          </button>
-        </div>
-      )}
-
-      {/* Content area */}
-      {snippets.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center p-10 text-center">
-          {connectionStatus === "connected" ? (
-            <p className="text-base text-muted-foreground">{t("speakerLive")}</p>
-          ) : (
-            <p className="animate-pulse text-base text-muted-foreground">
-              {t("waitingForSpeaker")}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {/* Hero (latest snippet) — animated entrance */}
-          <AnimatePresence mode="popLayout">
-            {heroSnippet && (
-              <motion.div
-                key={heroSnippet.id}
-                layout
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                <HeroCard
-                  snippet={heroSnippet}
-                  snippetNumber={snippets.length}
-                  isHost={isHost}
-                  onDelete={
-                    onDeleteSnippet
-                      ? () => setConfirmAction({ type: "delete", snippetId: heroSnippet.id })
-                      : undefined
-                  }
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* History list */}
-          {historySnippets.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <p className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/50">
-                {t("history")}
+        {snippets.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10 text-center">
+            <ClipboardList className="h-10 w-10 text-muted-foreground/30" />
+            {connectionStatus === "connected" ? (
+              <p className="text-base text-muted-foreground">{t("speakerLive")}</p>
+            ) : (
+              <p className="animate-pulse text-base text-muted-foreground">
+                {t("waitingForSpeaker")}
               </p>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 px-1">
+            <AnimatePresence mode="popLayout">
+              {heroSnippet && (
+                <motion.div
+                  key={heroSnippet.id}
+                  layout
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <SnippetCard
+                    snippet={heroSnippet}
+                    variant="hero"
+                    isHost={isHost}
+                    onDelete={
+                      onDeleteSnippet
+                        ? () => setConfirmAction({ type: "delete", snippetId: heroSnippet.id })
+                        : undefined
+                    }
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {historySnippets.length > 0 && (
               <AnimatePresence initial={false}>
-                {historySnippets.map((snippet, idx) => (
+                {historySnippets.map((snippet) => (
                   <motion.div
                     key={snippet.id}
                     layout
@@ -396,9 +276,9 @@ export function ClipboardPanel({
                     exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <HistoryCard
+                    <SnippetCard
                       snippet={snippet}
-                      snippetNumber={snippets.length - 1 - idx}
+                      variant="compact"
                       isHost={isHost}
                       onDelete={
                         onDeleteSnippet
@@ -409,15 +289,21 @@ export function ClipboardPanel({
                   </motion.div>
                 ))}
               </AnimatePresence>
-            </div>
-          )}
+            )}
 
-          {/* Lazy-load sentinel */}
-          {hasMore && <div ref={sentinelRef} className="h-4 w-full" aria-hidden="true" />}
+            {hasMore && <div ref={sentinelRef} className="h-4 w-full" aria-hidden="true" />}
+          </div>
+        )}
+      </div>
+
+      {/* Host input — sticky at bottom */}
+      {isHost && (
+        <div className="shrink-0 border-t border-border p-3">
+          <HostInput sessionSlug={sessionSlug} hostSecretHash={hostSecretHash} />
         </div>
       )}
 
-      {/* Confirmation dialog for delete/clear */}
+      {/* Confirmation dialog */}
       <Dialog.Root
         open={!!confirmAction}
         onOpenChange={(open) => {
@@ -437,7 +323,7 @@ export function ClipboardPanel({
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setConfirmAction(null)}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                  className="rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
                 >
                   {tCommon("cancel")}
                 </button>
@@ -450,7 +336,7 @@ export function ClipboardPanel({
                     }
                     setConfirmAction(null);
                   }}
-                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                  className="rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
                 >
                   {confirmAction?.type === "clear" ? t("clearAll") : t("delete")}
                 </button>

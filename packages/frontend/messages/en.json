@@ -62,6 +62,7 @@
     "timeMinutesAgo": "{count}m ago",
     "timeHoursAgo": "{count}h ago",
     "timeDaysAgo": "{count}d ago",
+    "timeWeeksAgo": "{count}w ago",
     "noQuestions": "No questions yet. Be the first to ask!",
     "clipboardEmpty": "Waiting for the speaker to share code snippets.",
     "clipboardCleared": "The clipboard was cleared.",

@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import type { Question, Reply } from "@nasqa/core";
 
+import { formatRelativeTime } from "@/lib/format-relative-time";
 import { linkifyText } from "@/lib/linkify";
 import { cn } from "@/lib/utils";
 
@@ -39,21 +40,6 @@ function formatDisplayName(name: string): string {
   const first = parts[0];
   const lastInitial = parts[parts.length - 1]![0]!.toUpperCase();
   return `${first} ${lastInitial}.`;
-}
-
-function formatRelativeTime(
-  createdAt: number,
-  tSession: (key: string, values?: Record<string, number>) => string,
-): string {
-  const now = Math.floor(Date.now() / 1000);
-  const diffSeconds = now - createdAt;
-
-  if (diffSeconds < 60) return tSession("timeJustNow");
-  if (diffSeconds < 3600)
-    return tSession("timeMinutesAgo", { count: Math.floor(diffSeconds / 60) });
-  if (diffSeconds < 86400)
-    return tSession("timeHoursAgo", { count: Math.floor(diffSeconds / 3600) });
-  return tSession("timeDaysAgo", { count: Math.floor(diffSeconds / 86400) });
 }
 
 export function QuestionCard({

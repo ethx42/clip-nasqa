@@ -62,6 +62,7 @@
     "timeMinutesAgo": "há {count}m",
     "timeHoursAgo": "há {count}h",
     "timeDaysAgo": "há {count}d",
+    "timeWeeksAgo": "há {count}sem",
     "noQuestions": "Sem perguntas ainda. Seja o primeiro a perguntar!",
     "clipboardEmpty": "Aguardando o apresentador compartilhar trechos de código.",
     "clipboardCleared": "A área de transferência foi limpa.",
