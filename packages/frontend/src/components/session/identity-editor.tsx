@@ -3,11 +3,12 @@
 import { Popover } from "@base-ui/react/popover";
 import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { useIdentity } from "@/hooks/use-identity";
 
 export function IdentityEditor() {
+  const popoverId = useId();
   const t = useTranslations("identity");
   const { name: savedName, email: savedEmail, setIdentity, clearIdentity } = useIdentity();
 
@@ -59,7 +60,7 @@ export function IdentityEditor() {
                 onChange={(e) => setName(e.target.value.slice(0, 50))}
                 placeholder={t("displayName")}
                 maxLength={50}
-                className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
               <input
                 type="email"
@@ -67,14 +68,14 @@ export function IdentityEditor() {
                 onChange={(e) => setEmail(e.target.value.slice(0, 100))}
                 placeholder={t("email")}
                 maxLength={100}
-                className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
             </div>
 
             <div className="mt-3 flex gap-2">
               <button
                 onClick={handleSave}
-                className="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-500"
+                className="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
                 {t("save")}
               </button>

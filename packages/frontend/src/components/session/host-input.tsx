@@ -165,7 +165,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           placeholder={t("pasteOrType")}
           rows={3}
           spellCheck={false}
-          className={`relative z-10 w-full resize-none rounded-xl border border-input bg-transparent px-4 py-3 font-mono text-[15px] leading-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 transition caret-foreground ${
+          className={`relative z-10 w-full resize-none rounded-xl border border-input bg-transparent px-4 py-3 font-mono text-[15px] leading-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 transition caret-foreground ${
             hasHighlight ? "text-transparent" : "text-foreground"
           }`}
           style={{ minHeight: "80px", maxHeight: "300px" }}
@@ -176,7 +176,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       <div className="flex items-center justify-between gap-3">
         {value.trim() ? (
           <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-indigo-500" />
             {activeLang === "text"
               ? t("text")
               : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang)}
@@ -189,7 +189,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
           type="button"
           onClick={() => void handlePush()}
           disabled={!value.trim() || isPushing}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           {isPushing ? t("pushing") : t("pushSnippet")}
           <kbd className="ml-1 hidden rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-medium sm:inline">

@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     template: "%s — clip",
   },
   description: "Share code snippets and collect audience questions in real time.",
+  icons: {
+    icon: "/icon.svg",
+  },
   openGraph: {
     siteName: "clip",
     type: "website",

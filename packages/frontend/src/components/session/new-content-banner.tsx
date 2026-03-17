@@ -29,7 +29,7 @@ export function NewContentBanner({ message, visible, onTap }: NewContentBannerPr
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onTap();
       }}
-      className="sticky top-0 z-10 cursor-pointer select-none bg-emerald-500 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
+      className="sticky top-0 z-10 cursor-pointer select-none bg-indigo-500 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
     >
       {message} · {t("tapToScroll")}
     </div>

@@ -77,7 +77,7 @@ export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInpu
             rows={1}
             style={{ resize: "none", overflow: "hidden" }}
             className={cn(
-              "block w-full rounded-xl border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed",
+              "block w-full rounded-xl border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed",
               isOverLimit && "border-destructive focus:ring-destructive/50",
             )}
           />
@@ -86,7 +86,7 @@ export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInpu
           onClick={handleSubmit}
           disabled={!canSubmit}
           aria-label={tSession("sendQuestion")}
-          className="flex-shrink-0 rounded-xl bg-emerald-600 p-3 text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="h-5 w-5" />
         </button>

@@ -46,10 +46,8 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
   if (connectionStatus === "connected") {
     return (
       <div className="flex items-center gap-2">
-        <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-          {t("live")}
-        </span>
+        <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+        <span className="text-sm font-bold text-green-600 dark:text-green-400">{t("live")}</span>
         {isStale && lastHostActivity && (
           <span className="text-[13px] text-muted-foreground">
             · {t("lastSnippet", { time: formatMinutesAgo(lastHostActivity, t) })}
@@ -62,10 +60,8 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
   if (connectionStatus === "connecting") {
     return (
       <div className="flex items-center gap-2">
-        <span className="inline-block h-2.5 w-2.5 rounded-full bg-yellow-400" />
-        <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
-          {t("reconnecting")}
-        </span>
+        <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
+        <span className="text-sm font-medium text-warning-foreground">{t("reconnecting")}</span>
       </div>
     );
   }

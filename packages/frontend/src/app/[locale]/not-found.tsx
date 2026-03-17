@@ -10,7 +10,7 @@ export default async function NotFound() {
       <p className="mb-6 text-sm text-muted-foreground">{t("sessionNotFoundDesc")}</p>
       <Link
         href="/"
-        className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+        className="rounded-xl bg-indigo-500 px-6 py-3 font-semibold text-white transition hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         style={{ minHeight: "44px", display: "inline-flex", alignItems: "center" }}
       >
         {t("createNewSession")}

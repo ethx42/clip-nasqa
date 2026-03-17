@@ -43,7 +43,7 @@ export default function SessionError({
       </p>
       <button
         onClick={reset}
-        className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+        className="rounded-xl bg-indigo-500 px-6 py-3 font-semibold text-white transition hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         style={{ minHeight: "44px" }}
       >
         {t("tryAgain")}
