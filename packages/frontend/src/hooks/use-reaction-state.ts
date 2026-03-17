@@ -77,7 +77,7 @@ interface UseReactionStateResult {
  * - Tapping an emoji immediately shows the delta (optimistic).
  * - After 300ms, calls reactAction on the server.
  * - On server failure, silently reverts (no toast).
- * - On success, clears the delta — server counts are now authoritative.
+ * - On success, pending stays until the subscription updates serverCounts — no flash.
  */
 export function useReactionState({
   sessionSlug,
@@ -99,10 +99,42 @@ export function useReactionState({
   const [pending, setPending] = useState<{ emoji: EmojiKey; delta: number } | null>(null);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preToggleRef = useRef<{ activeEmojis: Set<EmojiKey> } | null>(null);
+  // The server count for the pending emoji at the moment of toggle — used to detect
+  // when the subscription has delivered the updated value so we can safely clear pending.
+  const pendingBaseCountRef = useRef<number | null>(null);
+
+  // Compute display: server counts as base, apply pending delta for one emoji
+  const serverParsed = useMemo(() => parseReactionCounts(serverCounts), [serverCounts]);
+
+  // Keep a ref so toggle callback can read the latest value without stale closures
+  const serverParsedRef = useRef(serverParsed);
+  useEffect(() => {
+    serverParsedRef.current = serverParsed;
+  }, [serverParsed]);
+
+  // Auto-clear pending when the subscription delivers an updated count for the pending emoji.
+  // This bridges the gap between "server action resolved" and "subscription arrived" — the
+  // optimistic delta stays applied until the real data lands, so there is never a flash.
+  useEffect(() => {
+    if (pending && pendingBaseCountRef.current !== null) {
+      if (serverParsed[pending.emoji] !== pendingBaseCountRef.current) {
+        setPending(null);
+        pendingBaseCountRef.current = null;
+        if (safetyTimerRef.current !== null) {
+          clearTimeout(safetyTimerRef.current);
+          safetyTimerRef.current = null;
+        }
+      }
+    }
+  }, [serverParsed, pending]);
 
   const toggle = useCallback(
     (emoji: EmojiKey): void => {
+      // Snapshot the current server count so the effect knows when the subscription arrives
+      pendingBaseCountRef.current = serverParsedRef.current[emoji];
+
       setActiveEmojis((prev) => {
         const next = new Set(prev);
         const isAdding = !next.has(emoji);
@@ -140,34 +172,43 @@ export function useReactionState({
           });
 
           if (!result.success && preToggleRef.current) {
-            // Silent rollback
+            // Silent rollback — revert activeEmojis and clear pending immediately
             const { activeEmojis: prevActiveEmojis } = preToggleRef.current;
             setActiveEmojis(prevActiveEmojis);
             writeActiveEmojis(sessionSlug, targetId, prevActiveEmojis);
+            setPending(null);
+            pendingBaseCountRef.current = null;
           }
 
-          // Clear pending delta — server has processed (or rejected) the action.
-          // If subscription already arrived, serverCounts is authoritative.
-          // If not yet, a brief flash is possible but the subscription follows shortly.
-          setPending(null);
           preToggleRef.current = null;
+
+          // Safety net: if the subscription never arrives, clear pending after 5s
+          // to avoid a permanently stale optimistic delta.
+          if (safetyTimerRef.current !== null) {
+            clearTimeout(safetyTimerRef.current);
+          }
+          safetyTimerRef.current = setTimeout(() => {
+            setPending(null);
+            pendingBaseCountRef.current = null;
+            safetyTimerRef.current = null;
+          }, 5000);
         })();
       }, 300);
     },
     [sessionSlug, targetId, targetType, fingerprint],
   );
 
-  // Cleanup debounce timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current !== null) {
         clearTimeout(debounceTimerRef.current);
       }
+      if (safetyTimerRef.current !== null) {
+        clearTimeout(safetyTimerRef.current);
+      }
     };
   }, []);
-
-  // Compute display: server counts as base, apply pending delta for one emoji
-  const serverParsed = useMemo(() => parseReactionCounts(serverCounts), [serverCounts]);
 
   const displayCounts = useMemo(() => {
     if (!pending) return serverParsed;
