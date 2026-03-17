@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { ImageResponse } from "next/og";
 
 import { getSession, getSessionData } from "@/lib/session";
@@ -10,11 +13,8 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const session = await getSession(slug);
 
-  const logoData = await fetch(
-    new URL("../../../../../public/images/clip-logo-og.png", import.meta.url),
-  ).then((res) => res.arrayBuffer());
-
-  const logoSrc = `data:image/png;base64,${Buffer.from(logoData).toString("base64")}`;
+  const logoPath = path.join(process.cwd(), "public/images/clip-logo-og.png");
+  const logoSrc = `data:image/png;base64,${fs.readFileSync(logoPath).toString("base64")}`;
 
   if (!session) {
     return new ImageResponse(
