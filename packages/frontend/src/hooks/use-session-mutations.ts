@@ -14,7 +14,7 @@ import { safeAction } from "@/lib/safe-action";
 interface UseSessionMutationsParams {
   sessionSlug: string;
   fingerprint: string;
-  authorName: string;
+  authorName: string | undefined;
   dispatch: React.Dispatch<SessionAction>;
   /** For reading current questions without stale closures. */
   questionsRef: React.RefObject<Question[]>;

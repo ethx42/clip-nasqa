@@ -1,13 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 
 import type { Question, Reply, Snippet } from "@nasqa/core";
 
-import { downvoteQuestionAction } from "@/actions/moderation";
-import { addQuestionAction, addReplyAction, upvoteQuestionAction } from "@/actions/qa";
 import { ClipboardPanel } from "@/components/session/clipboard-panel";
 import { JoinModal, shouldShowJoinModal } from "@/components/session/join-modal";
 import { LiveIndicator } from "@/components/session/live-indicator";
@@ -15,9 +11,9 @@ import { QAPanel } from "@/components/session/qa-panel";
 import { SessionShell } from "@/components/session/session-shell";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useIdentity } from "@/hooks/use-identity";
+import { useSessionMutations } from "@/hooks/use-session-mutations";
 import { useSessionState } from "@/hooks/use-session-state";
 import { useSessionUpdates } from "@/hooks/use-session-updates";
-import { safeAction } from "@/lib/safe-action";
 import type { Session } from "@/lib/session";
 
 interface SessionLivePageProps {
@@ -35,7 +31,7 @@ interface SessionLivePageProps {
  * - Mount useSessionState with SSR-loaded initial data
  * - Connect AppSync subscription via useSessionUpdates
  * - Provide fingerprint and vote tracking via useFingerprint
- * - Handle optimistic mutations with rollback on error
+ * - Delegate mutation logic to useSessionMutations
  * - Pass live state down to ClipboardPanel and QAPanel
  */
 export function SessionLivePage({
@@ -45,7 +41,6 @@ export function SessionLivePage({
   initialQuestions,
   initialReplies,
 }: SessionLivePageProps) {
-  const tErrors = useTranslations("actionErrors");
   const { name: authorName } = useIdentity();
   const [joinModalOpen, setJoinModalOpen] = useState(false);
 
@@ -66,168 +61,28 @@ export function SessionLivePage({
     replies: initialReplies,
   });
 
+  // Keep a ref to the current questions array to avoid stale closures in mutation rollbacks
+  const questionsRef = useRef(state.questions);
+  useEffect(() => {
+    questionsRef.current = state.questions;
+  }, [state.questions]);
+
   const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionSlug, dispatch);
 
-  async function handleUpvote(questionId: string, remove: boolean) {
-    // Optimistic update
-    dispatch({
-      type: "QUESTION_UPDATED",
-      payload: { questionId, upvoteDelta: remove ? -1 : 1 },
-    });
-    if (remove) {
-      removeVote(questionId);
-    } else {
-      addVote(questionId);
-    }
-
-    const result = await safeAction(
-      upvoteQuestionAction({
-        sessionSlug,
-        questionId,
-        fingerprint,
-        remove,
-      }),
-      tErrors("networkError"),
-    );
-
-    if (!result.success) {
-      // VOTE_CONFLICT is a dedup signal — handle silently (not a user error)
-      if (!("error" in result) || result.error !== "VOTE_CONFLICT") {
-        dispatch({
-          type: "QUESTION_UPDATED",
-          payload: { questionId, upvoteDelta: remove ? 1 : -1 },
-        });
-        if (remove) {
-          addVote(questionId);
-        } else {
-          removeVote(questionId);
-        }
-        toast.error(result.error, { duration: 5000 });
-      }
-    }
-  }
-
-  async function handleAddQuestion(text: string) {
-    // Optimistic question with temp id
-    const tempId = `_opt_${Date.now()}`;
-    const optimisticQuestion: Question = {
-      id: tempId,
-      sessionSlug,
-      text,
-      fingerprint,
-      authorName,
-      upvoteCount: 0,
-      downvoteCount: 0,
-      isHidden: false,
-      isFocused: false,
-      isBanned: false,
-      createdAt: Math.floor(Date.now() / 1000),
-      TTL: 0,
-    };
-
-    dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
-
-    const result = await safeAction(
-      addQuestionAction({ sessionSlug, text, fingerprint, authorName }),
-      tErrors("networkError"),
-    );
-
-    if (!result.success) {
-      dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-      toast.error(result.error, { duration: 5000 });
-    }
-    // On success: subscription event will arrive and replace the optimistic item
-  }
-
-  async function handleReply(questionId: string, text: string) {
-    // Optimistic reply with temp id
-    const tempId = `_opt_${Date.now()}`;
-    const optimisticReply: Reply = {
-      id: tempId,
-      questionId,
-      sessionSlug,
-      text,
-      isHostReply: false,
-      fingerprint,
-      createdAt: Math.floor(Date.now() / 1000),
-      TTL: 0,
-    };
-
-    dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
-
-    const result = await safeAction(
-      addReplyAction({
-        sessionSlug,
-        questionId,
-        text,
-        fingerprint,
-        isHostReply: false,
-        authorName,
-      }),
-      tErrors("networkError"),
-    );
-
-    if (!result.success) {
-      // Rollback: remove optimistic reply
-      dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-      toast.error(result.error, { duration: 5000 });
-    }
-  }
-
-  async function handleDownvote(questionId: string, remove: boolean) {
-    // Optimistic update
-    dispatch({
-      type: "QUESTION_UPDATED",
-      payload: {
-        questionId,
-        downvoteCount: (() => {
-          const q = state.questions.find((q) => q.id === questionId);
-          if (!q) return undefined;
-          return remove ? Math.max(0, q.downvoteCount - 1) : q.downvoteCount + 1;
-        })(),
-      },
-    });
-
-    if (remove) {
-      removeDownvote(questionId);
-    } else {
-      addDownvote(questionId);
-      // Mutually exclusive: remove upvote state client-side if downvoting
-      if (votedIds.has(questionId)) {
-        removeVote(questionId);
-        dispatch({
-          type: "QUESTION_UPDATED",
-          payload: { questionId, upvoteDelta: -1 },
-        });
-      }
-    }
-
-    const result = await safeAction(
-      downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove }),
-      tErrors("networkError"),
-    );
-
-    if (!result.success) {
-      // Rollback optimistic update
-      dispatch({
-        type: "QUESTION_UPDATED",
-        payload: {
-          questionId,
-          downvoteCount: (() => {
-            const q = state.questions.find((q) => q.id === questionId);
-            if (!q) return undefined;
-            return remove ? q.downvoteCount + 1 : Math.max(0, q.downvoteCount - 1);
-          })(),
-        },
-      });
-      if (remove) {
-        addDownvote(questionId);
-      } else {
-        removeDownvote(questionId);
-      }
-      toast.error(result.error, { duration: 5000 });
-    }
-  }
+  const { handleUpvote, handleDownvote, handleAddQuestion, handleReply } = useSessionMutations({
+    sessionSlug,
+    fingerprint,
+    authorName,
+    dispatch,
+    questionsRef,
+    votedIds,
+    downvotedIds,
+    addVote,
+    removeVote,
+    addDownvote,
+    removeDownvote,
+    isHostReply: false,
+  });
 
   const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
 
