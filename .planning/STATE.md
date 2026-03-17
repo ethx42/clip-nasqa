@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** Planning next milestone (v1.3 Participant & Host UX Refactor)
+**Current focus:** v1.3 Participant & Host UX Refactor
 
 ## Current Position
 
-Phase: 10 of 13 (v1.2 Reactions milestone complete)
-Plan: -
-Status: v1.2 shipped — ready for v1.3 planning
-Last activity: 2026-03-17 — v1.2 Reactions milestone archived
-
-Progress: [████████████████░░░░] 77% (v1.0+v1.1+v1.2 complete)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-17 — Milestone v1.3 started
 
 ## Performance Metrics
 

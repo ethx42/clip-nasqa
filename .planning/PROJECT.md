@@ -60,9 +60,16 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - E2E tests on every PR — 5-15 min; run on main only
 - WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Next Milestone: v1.3 Participant & Host UX Refactor
+## Current Milestone: v1.3 Participant & Host UX Refactor
 
 **Goal:** Decompose monolithic components, eliminate duplication, improve accessibility and interaction design.
+
+**Target features:**
+
+- Component decomposition (SnippetCard, QuestionCard variants, QAPanel sort dedup)
+- Shared hooks extraction (formatRelativeTime, useSessionMutations)
+- UX interaction polish (vote fill states, identity chip, own-question indicator)
+- Accessibility gaps (ARIA tablist on mobile tabs, aria-live on NewContentBanner, aria-pressed on votes)
 
 ## Context
 
@@ -108,4 +115,4 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ---
 
-_Last updated: 2026-03-17 after v1.2 Reactions milestone_
+_Last updated: 2026-03-17 after v1.3 milestone started_
