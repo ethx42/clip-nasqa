@@ -11,7 +11,7 @@ Requirements for v1.3 Participant & Host UX Refactor. Each maps to roadmap phase
 
 - [x] **STRUC-01**: Shared `formatRelativeTime` utility extracted to common module
 - [x] **STRUC-02**: `useSessionMutations` hook extracted from session-shell
-- [ ] **STRUC-03**: SnippetCard extracted as standalone component from clipboard panel
+- [x] **STRUC-03**: SnippetCard extracted as standalone component from clipboard panel
 - [ ] **STRUC-04**: QAPanel sort logic deduplicated into shared utility
 - [ ] **STRUC-05**: QuestionCard split into host and participant variants
 
@@ -51,7 +51,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ----------- | -------- | -------- |
 | STRUC-01    | Phase 11 | Complete |
 | STRUC-02    | Phase 11 | Complete |
-| STRUC-03    | Phase 12 | Pending  |
+| STRUC-03    | Phase 12 | Complete |
 | STRUC-04    | Phase 12 | Pending  |
 | STRUC-05    | Phase 12 | Pending  |
 | UXINT-01    | Phase 13 | Pending  |

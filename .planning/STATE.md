@@ -9,22 +9,22 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 
 ## Current Position
 
-Phase: 11 — Shared Utilities and Hook Extraction
-Plan: 01 of 02 complete
-Status: Phase 11 in progress
-Last activity: 2026-03-17 — Phase 11 plan 01 executed (formatRelativeTime canonical utility + TDD)
+Phase: 12 — Component Decomposition
+Plan: 02 of 03 complete
+Status: Phase 12 in progress
+Last activity: 2026-03-17 — Phase 12 plan 02 executed (SnippetCard extraction + snippet-hero.tsx deletion)
 
-**Progress bar:** Phase 11 of 13 total (phases 11-13 are v1.3 scope)
+**Progress bar:** Phase 12 of 13 total (phases 11-13 are v1.3 scope)
 
 ```
-v1.3: [###       ] 1/3 phases complete
+v1.3: [##########] 1/3 phases complete (phase 12 in progress: 2/3 plans)
 ```
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 31 (v1.0: 16, v1.1: 10, v1.2: 5)
+- Total plans completed: 33 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 2)
 - Average duration: 5 min
 - Total execution time: ~2.5 hours
 
@@ -39,6 +39,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [11-02] Used `useRef + useEffect` for questionsRef (not experimental `useEffectEvent`) — compatible with current React version, same correctness for async rollbacks
 - [11-02] `authorName` typed as `string | undefined` in UseSessionMutationsParams to match `useIdentity` return type without forced non-null assertions at call sites
 - [Phase 11]: Single formatRelativeTime utility with two overloads: short-token for Server Components, i18n-aware for Client Components; week bucket added at >=7d per user decision
+- [Phase 12-02]: SnippetCard extracted as standalone 'use client' component with hero/compact variant prop; replaces both inline definition and legacy server component
+- [Phase 12-02]: snippet-hero.tsx deleted — had zero importers; hero rendering now handled by SnippetCard variant='hero'
 
 ### Pending Todos
 
@@ -51,5 +53,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 11-02-PLAN.md (mutation hook extraction — useSessionMutations + useHostMutations)
-Resume at: `/gsd:plan-phase 12`
+Stopped at: Completed 12-02-PLAN.md (SnippetCard extraction + snippet-hero.tsx deletion)
+Resume at: `/gsd:execute-phase 12-03`
