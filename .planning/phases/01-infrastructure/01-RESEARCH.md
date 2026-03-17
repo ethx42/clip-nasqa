@@ -7,6 +7,7 @@
 ---
 
 <user_constraints>
+
 ## User Constraints (from CONTEXT.md)
 
 ### Locked Decisions
@@ -46,15 +47,17 @@ None — discussion stayed within phase scope
 ---
 
 <phase_requirements>
+
 ## Phase Requirements
 
-| ID | Description | Research Support |
-|----|-------------|-----------------|
-| INFRA-01 | DynamoDB single-table design (PK: SESSION#slug, SK: METADATA \| SNIPPET# \| QUESTION# \| REPLY#) | Table key schema, TTL config, On-demand billing via SST Dynamo component |
-| INFRA-02 | AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session | AppSync schema design, @aws_subscribe directive, enhanced filter resolver |
-| INFRA-03 | AppSync subscription validates non-null sessionSlug to prevent cross-session leakage | extensions.setSubscriptionFilter with eq operator in JavaScript resolver response handler |
-| INFRA-04 | SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention | sst.config.ts run() function, sst.aws.AppSync + sst.aws.Dynamo + sst.aws.Function |
-| INFRA-09 | ULID for sortable DynamoDB sort keys (reverse-chronological feeds) | ulid npm package (v2.3.0+), monotonicFactory for same-millisecond ordering |
+| ID       | Description                                                                                      | Research Support                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| INFRA-01 | DynamoDB single-table design (PK: SESSION#slug, SK: METADATA \| SNIPPET# \| QUESTION# \| REPLY#) | Table key schema, TTL config, On-demand billing via SST Dynamo component                  |
+| INFRA-02 | AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session          | AppSync schema design, @aws_subscribe directive, enhanced filter resolver                 |
+| INFRA-03 | AppSync subscription validates non-null sessionSlug to prevent cross-session leakage             | extensions.setSubscriptionFilter with eq operator in JavaScript resolver response handler |
+| INFRA-04 | SST Ion IaC: `sst deploy` provisions all AWS resources without manual intervention               | sst.config.ts run() function, sst.aws.AppSync + sst.aws.Dynamo + sst.aws.Function         |
+| INFRA-09 | ULID for sortable DynamoDB sort keys (reverse-chronological feeds)                               | ulid npm package (v2.3.0+), monotonicFactory for same-millisecond ordering                |
+
 </phase_requirements>
 
 ---
@@ -75,32 +78,33 @@ The user decision to use JavaScript resolvers (not VTL) is directly supported by
 
 ### Core
 
-| Library | Version | Purpose | Why Standard |
-|---------|---------|---------|--------------|
-| sst | 4.2.7 (installed) | IaC — provisions AppSync, DynamoDB, Lambda | Ion v4 uses Pulumi backend, eliminates CloudFormation drift; already in root package.json |
-| @aws-sdk/client-dynamodb | 3.1009.0 (installed in @nasqa/functions) | Low-level DynamoDB client | Modular v3 SDK; tree-shaken |
-| @aws-sdk/lib-dynamodb | 3.1009.0 (installed in @nasqa/functions) | DynamoDB Document client | Auto-converts JS objects to DynamoDB AttributeValue format |
-| ulid | ^2.3.0 (NOT YET INSTALLED) | Lexicographically sortable IDs for SK ordering | Time-ordered, monotonic, no GSI needed for chron queries |
-| zod | 4.3.6 (installed in @nasqa/core) | Input validation in resolvers | Single schema source shared between frontend and backend |
+| Library                  | Version                                  | Purpose                                        | Why Standard                                                                              |
+| ------------------------ | ---------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| sst                      | 4.2.7 (installed)                        | IaC — provisions AppSync, DynamoDB, Lambda     | Ion v4 uses Pulumi backend, eliminates CloudFormation drift; already in root package.json |
+| @aws-sdk/client-dynamodb | 3.1009.0 (installed in @nasqa/functions) | Low-level DynamoDB client                      | Modular v3 SDK; tree-shaken                                                               |
+| @aws-sdk/lib-dynamodb    | 3.1009.0 (installed in @nasqa/functions) | DynamoDB Document client                       | Auto-converts JS objects to DynamoDB AttributeValue format                                |
+| ulid                     | ^2.3.0 (NOT YET INSTALLED)               | Lexicographically sortable IDs for SK ordering | Time-ordered, monotonic, no GSI needed for chron queries                                  |
+| zod                      | 4.3.6 (installed in @nasqa/core)         | Input validation in resolvers                  | Single schema source shared between frontend and backend                                  |
 
 ### Supporting
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| @aws-amplify/api-graphql | ^6.x (NOT YET INSTALLED) | AppSync WebSocket subscription client (frontend) | Phase 1 installs package only; used in Phase 3 for SubscriptionProvider |
-| qrcode | ^1.5.4 (NOT YET INSTALLED) | QR code SVG generation | Phase 1 installs package only; used in Phase 2 for session creation page |
-| @types/qrcode | ^1.5.5 (NOT YET INSTALLED) | TypeScript types for qrcode | Dev dependency in packages/frontend |
+| Library                  | Version                    | Purpose                                          | When to Use                                                              |
+| ------------------------ | -------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| @aws-amplify/api-graphql | ^6.x (NOT YET INSTALLED)   | AppSync WebSocket subscription client (frontend) | Phase 1 installs package only; used in Phase 3 for SubscriptionProvider  |
+| qrcode                   | ^1.5.4 (NOT YET INSTALLED) | QR code SVG generation                           | Phase 1 installs package only; used in Phase 2 for session creation page |
+| @types/qrcode            | ^1.5.5 (NOT YET INSTALLED) | TypeScript types for qrcode                      | Dev dependency in packages/frontend                                      |
 
 ### Alternatives Considered
 
-| Instead of | Could Use | Tradeoff |
-|------------|-----------|----------|
-| Tagged union `{ type, payload: AWSJSON }` | True GraphQL union type | Native union inconsistently supported by AppSync subscriptions — tagged union is pragmatic and always works |
-| JavaScript resolvers (APPSYNC_JS runtime) | VTL templates | Locked by user decision; JS is more readable/testable |
-| On-demand billing | Provisioned capacity | On-demand handles bursts without pre-planning; locked by user decision |
-| Schema-first (`infra/schema.graphql`) | Code-first (construct API) | Schema-first is standard for AppSync; enables IDE tooling and codegen |
+| Instead of                                | Could Use                  | Tradeoff                                                                                                    |
+| ----------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Tagged union `{ type, payload: AWSJSON }` | True GraphQL union type    | Native union inconsistently supported by AppSync subscriptions — tagged union is pragmatic and always works |
+| JavaScript resolvers (APPSYNC_JS runtime) | VTL templates              | Locked by user decision; JS is more readable/testable                                                       |
+| On-demand billing                         | Provisioned capacity       | On-demand handles bursts without pre-planning; locked by user decision                                      |
+| Schema-first (`infra/schema.graphql`)     | Code-first (construct API) | Schema-first is standard for AppSync; enables IDE tooling and codegen                                       |
 
 **Installation:**
+
 ```bash
 # In packages/functions — ULID for resolver SK generation
 npm install ulid --workspace=packages/functions
@@ -117,7 +121,7 @@ npm install -D @types/qrcode --workspace=packages/frontend
 ### Recommended Project Structure
 
 ```
-nasqa-live/
+nasqa-clip/
 ├── sst.config.ts              # IaC entry point — run() wires all resources
 ├── infra/
 │   ├── schema.graphql         # GraphQL schema — source of truth (ALREADY EXISTS, needs expansion)
@@ -144,7 +148,7 @@ nasqa-live/
 export default $config({
   app(input) {
     return {
-      name: "nasqa-live",
+      name: "nasqa-clip",
       removal: input?.stage === "production" ? "retain" : "remove",
       protect: ["production"].includes(input?.stage),
       home: "aws",
@@ -188,7 +192,7 @@ export default $config({
 
     // 4. Subscription resolver (JavaScript — enhanced filter)
     api.addResolver("Subscription onSessionUpdate", {
-      dataSource: "NONE",  // Subscriptions use NONE data source
+      dataSource: "NONE", // Subscriptions use NONE data source
       code: `
         import { util, extensions } from '@aws-appsync/utils';
         export function request(ctx) { return { payload: null }; }
@@ -222,7 +226,7 @@ export default $config({
 ```javascript
 // infra/resolvers/subscription-onSessionUpdate.js
 // Source: https://docs.aws.amazon.com/appsync/latest/devguide/extensions.html
-import { util, extensions } from '@aws-appsync/utils';
+import { extensions, util } from "@aws-appsync/utils";
 
 export function request(ctx) {
   // Subscriptions always return { payload: null }
@@ -238,8 +242,8 @@ export function response(ctx) {
   // Server-side filter: only deliver events for the subscriber's session
   extensions.setSubscriptionFilter(
     util.transform.toSubscriptionFilter({
-      sessionSlug: { eq: ctx.args.sessionSlug }
-    })
+      sessionSlug: { eq: ctx.args.sessionSlug },
+    }),
   );
 
   return null;
@@ -267,7 +271,8 @@ export function response(ctx) {
 
 // ULID generation in Lambda resolvers:
 import { ulid } from "ulid";
-const sk = `SNIPPET#${ulid()}`;  // e.g., "SNIPPET#01HN7MFQZ3KTBCTP9J8QX4Y6WS"
+
+const sk = `SNIPPET#${ulid()}`; // e.g., "SNIPPET#01HN7MFQZ3KTBCTP9J8QX4Y6WS"
 ```
 
 **Note on `monotonicFactory`:** For normal usage (one write per request), `ulid()` alone is sufficient. `monotonicFactory` is only needed when generating multiple ULIDs within the same millisecond in a tight loop — not needed for this phase.
@@ -297,16 +302,16 @@ type Session {
 }
 
 type Snippet {
-  id: String!          # ULID
+  id: String! # ULID
   sessionSlug: String!
-  type: String!        # "text" | "code"
+  type: String! # "text" | "code"
   content: String!
-  language: String     # null for text snippets
+  language: String # null for text snippets
   createdAt: AWSTimestamp!
 }
 
 type Question {
-  id: String!          # ULID
+  id: String! # ULID
   sessionSlug: String!
   text: String!
   fingerprint: String!
@@ -320,7 +325,7 @@ type Question {
 }
 
 type Reply {
-  id: String!          # ULID
+  id: String! # ULID
   questionId: String!
   sessionSlug: String!
   text: String!
@@ -359,8 +364,7 @@ type Mutation {
 }
 
 type Subscription {
-  onSessionUpdate(sessionSlug: String!): SessionUpdate
-    @aws_subscribe(mutations: ["_stub"])
+  onSessionUpdate(sessionSlug: String!): SessionUpdate @aws_subscribe(mutations: ["_stub"])
 }
 ```
 
@@ -378,13 +382,13 @@ type Subscription {
 
 ## Don't Hand-Roll
 
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| Sortable time-ordered IDs | Custom timestamp+random string | `ulid` package | ULID spec handles monotonicity, collision avoidance, and correct lexicographic ordering — edge cases in custom implementations cause silent sort failures |
-| DynamoDB attribute marshaling | Manual `{ S: "value" }` construction | `DynamoDBDocumentClient` from `@aws-sdk/lib-dynamodb` | Raw client requires every attribute to be typed; Document client auto-marshals JS objects |
-| AppSync subscription session isolation | Custom topic-per-session architecture | `extensions.setSubscriptionFilter` in subscription JS resolver | Server-side enhanced filtering is built-in AppSync; custom topic management requires connection tracking Lambda and external state |
-| IaC resource provisioning | Manual AWS Console clicks | `sst deploy` via `sst.config.ts` | Locked user requirement; all resources reproducible and version-controlled |
-| QR code SVG generation | Canvas drawing code | `qrcode` npm package (server-side `toString('svg')`) | QR encoding spec is complex; `qrcode` handles error correction levels, version selection, and SVG output |
+| Problem                                | Don't Build                           | Use Instead                                                    | Why                                                                                                                                                       |
+| -------------------------------------- | ------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sortable time-ordered IDs              | Custom timestamp+random string        | `ulid` package                                                 | ULID spec handles monotonicity, collision avoidance, and correct lexicographic ordering — edge cases in custom implementations cause silent sort failures |
+| DynamoDB attribute marshaling          | Manual `{ S: "value" }` construction  | `DynamoDBDocumentClient` from `@aws-sdk/lib-dynamodb`          | Raw client requires every attribute to be typed; Document client auto-marshals JS objects                                                                 |
+| AppSync subscription session isolation | Custom topic-per-session architecture | `extensions.setSubscriptionFilter` in subscription JS resolver | Server-side enhanced filtering is built-in AppSync; custom topic management requires connection tracking Lambda and external state                        |
+| IaC resource provisioning              | Manual AWS Console clicks             | `sst deploy` via `sst.config.ts`                               | Locked user requirement; all resources reproducible and version-controlled                                                                                |
+| QR code SVG generation                 | Canvas drawing code                   | `qrcode` npm package (server-side `toString('svg')`)           | QR encoding spec is complex; `qrcode` handles error correction levels, version selection, and SVG output                                                  |
 
 **Key insight:** AppSync subscription filtering is the most commonly hand-rolled in error. The enhanced filter approach was explicitly chosen to avoid the argument-null-semantics trap — don't implement custom session isolation logic.
 
@@ -474,7 +478,7 @@ const lambdaDS = api.addDataSource({
     environment: {
       TABLE_NAME: table.name,
     },
-    link: [table],  // Grants Lambda IAM permissions to the table
+    link: [table], // Grants Lambda IAM permissions to the table
   },
 });
 ```
@@ -484,7 +488,7 @@ const lambdaDS = api.addDataSource({
 ```javascript
 // Source: https://docs.aws.amazon.com/appsync/latest/devguide/extensions.html (HIGH confidence)
 // File: infra/resolvers/subscription-onSessionUpdate.js
-import { util, extensions } from '@aws-appsync/utils';
+import { extensions, util } from "@aws-appsync/utils";
 
 export function request(ctx) {
   return { payload: null };
@@ -496,8 +500,8 @@ export function response(ctx) {
   }
   extensions.setSubscriptionFilter(
     util.transform.toSubscriptionFilter({
-      sessionSlug: { eq: ctx.args.sessionSlug }
-    })
+      sessionSlug: { eq: ctx.args.sessionSlug },
+    }),
   );
   return null;
 }
@@ -514,18 +518,20 @@ const client = new DynamoDBClient({ region: "us-east-1" });
 const docClient = DynamoDBDocumentClient.from(client);
 
 // Write a session metadata item
-await docClient.send(new PutCommand({
-  TableName: process.env.TABLE_NAME!,
-  Item: {
-    PK: `SESSION#${slug}`,
-    SK: "METADATA",
-    title,
-    hostSecretHash,
-    isActive: true,
-    createdAt: Math.floor(Date.now() / 1000),
-    TTL: Math.floor(Date.now() / 1000) + 86400,
-  },
-}));
+await docClient.send(
+  new PutCommand({
+    TableName: process.env.TABLE_NAME!,
+    Item: {
+      PK: `SESSION#${slug}`,
+      SK: "METADATA",
+      title,
+      hostSecretHash,
+      isActive: true,
+      createdAt: Math.floor(Date.now() / 1000),
+      TTL: Math.floor(Date.now() / 1000) + 86400,
+    },
+  }),
+);
 ```
 
 ### ULID Generation
@@ -534,7 +540,7 @@ await docClient.send(new PutCommand({
 // Source: https://www.npmjs.com/package/ulid (HIGH confidence — official npm)
 import { ulid } from "ulid";
 
-const snippetId = ulid();  // "01HN7MFQZ3KTBCTP9J8QX4Y6WS"
+const snippetId = ulid(); // "01HN7MFQZ3KTBCTP9J8QX4Y6WS"
 const sk = `SNIPPET#${snippetId}`;
 
 // Sorting: ULIDs with the same timestamp prefix sort lexicographically
@@ -560,14 +566,15 @@ const sk = `SNIPPET#${snippetId}`;
 
 ## State of the Art
 
-| Old Approach | Current Approach | When Changed | Impact |
-|--------------|------------------|--------------|--------|
-| SST v2 (CDK-based) | SST Ion v4 (Pulumi-based) | 2024 | `sst.aws.*` component API replaces CDK constructs; no more CloudFormation drift |
-| VTL mapping templates | JavaScript resolvers (APPSYNC_JS runtime) | 2022 (GA 2023) | Full JS/TS logic in resolvers; testable and readable; eliminates VTL's arcane syntax |
-| `aws-appsync` npm package | `@aws-amplify/api-graphql` | 2023 | `aws-appsync` is unmaintained; Amplify v6 is the current supported subscription client |
-| AppSync argument-based subscription filtering | Enhanced subscription filtering with `extensions.setSubscriptionFilter` | 2021 | Server-enforced filtering; argument-null bypass impossible |
+| Old Approach                                  | Current Approach                                                        | When Changed   | Impact                                                                                 |
+| --------------------------------------------- | ----------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| SST v2 (CDK-based)                            | SST Ion v4 (Pulumi-based)                                               | 2024           | `sst.aws.*` component API replaces CDK constructs; no more CloudFormation drift        |
+| VTL mapping templates                         | JavaScript resolvers (APPSYNC_JS runtime)                               | 2022 (GA 2023) | Full JS/TS logic in resolvers; testable and readable; eliminates VTL's arcane syntax   |
+| `aws-appsync` npm package                     | `@aws-amplify/api-graphql`                                              | 2023           | `aws-appsync` is unmaintained; Amplify v6 is the current supported subscription client |
+| AppSync argument-based subscription filtering | Enhanced subscription filtering with `extensions.setSubscriptionFilter` | 2021           | Server-enforced filtering; argument-null bypass impossible                             |
 
 **Deprecated/outdated:**
+
 - `aws-appsync` npm package: unmaintained, do not use — use `@aws-amplify/api-graphql`
 - VTL (Velocity Template Language) resolvers: still supported but superseded by JavaScript resolvers — locked out by user decision anyway
 - SST v2 CDK `AppSyncApi` construct: different API surface — do not reference v2 docs
@@ -607,8 +614,8 @@ const sk = `SNIPPET#${snippetId}`;
 - https://docs.aws.amazon.com/appsync/latest/devguide/extensions.html — extensions.setSubscriptionFilter API, filter object shape, operators
 - https://docs.aws.amazon.com/appsync/latest/devguide/resolver-reference-overview-js.html — JavaScript resolver request/response signature, ctx shape, @aws-appsync/utils imports
 - https://docs.aws.amazon.com/appsync/latest/devguide/aws-appsync-real-time-enhanced-filtering.html — Enhanced subscription filtering mechanics
-- `/Users/santiago.torres/codebases/personal/nasqa-live/packages/functions/package.json` — confirmed @aws-sdk versions 3.1009.0
-- `/Users/santiago.torres/codebases/personal/nasqa-live/package.json` — confirmed sst 4.2.7, zod 4.3.6
+- `/Users/santiago.torres/codebases/personal/nasqa-clip/packages/functions/package.json` — confirmed @aws-sdk versions 3.1009.0
+- `/Users/santiago.torres/codebases/personal/nasqa-clip/package.json` — confirmed sst 4.2.7, zod 4.3.6
 - `.planning/research/STACK.md` — stack decisions, alternatives considered (researched 2026-03-13)
 - `.planning/research/ARCHITECTURE.md` — DynamoDB key design, subscription architecture, build order (researched 2026-03-13)
 - `.planning/research/PITFALLS.md` — known pitfalls by phase (researched 2026-03-13)
@@ -629,6 +636,7 @@ const sk = `SNIPPET#${snippetId}`;
 ## Metadata
 
 **Confidence breakdown:**
+
 - Standard stack (libraries/versions): HIGH — verified from installed package.json files
 - DynamoDB table design: HIGH — confirmed in ARCHITECTURE.md + official AWS docs
 - SST Ion resource API (Dynamo, AppSync): HIGH for core APIs; MEDIUM for edge cases (billingMode transform, NONE data source, apiKey output)
