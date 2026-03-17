@@ -57,7 +57,13 @@
 1. Relative timestamps throughout the session view (clipboard items, questions, replies) all format identically — changing the rounding rule in one file updates every timestamp with no visible behavior difference
 2. `SessionLivePage` and `SessionLiveHostPage` each contain no inline mutation handlers — all submit, vote, reply, and moderation callbacks are imported from `useSessionMutations`
 3. Stale closure bugs under concurrent vote events are eliminated — rollback handlers in `useSessionMutations` read current state without capturing a snapshot from the render they were created in
-   **Plans**: TBD
+
+**Plans:** 2 plans
+
+Plans:
+
+- [ ] 11-01-PLAN.md — Canonical formatRelativeTime utility with TDD and replacement of all 5 duplicates
+- [ ] 11-02-PLAN.md — useSessionMutations and useHostMutations hooks, page orchestrator refactor
 
 ### Phase 12: Component Decomposition
 
@@ -102,6 +108,6 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 8. SEO and Accessibility                 | v1.1      | 2/2            | Complete    | 2026-03-17 |
 | 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete    | 2026-03-17 |
 | 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction | v1.3      | 0/TBD          | Not started | -          |
+| 11. Shared Utilities and Hook Extraction | v1.3      | 0/2            | Not started | -          |
 | 12. Component Decomposition              | v1.3      | 0/TBD          | Not started | -          |
 | 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |
