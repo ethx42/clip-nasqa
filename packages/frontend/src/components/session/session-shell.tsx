@@ -1,5 +1,6 @@
 "use client";
 
+import { ClipboardList, MessageCircleQuestion } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -13,9 +14,7 @@ interface SessionShellProps {
   qaSlot: React.ReactNode;
   hostToolbar?: React.ReactNode;
   liveIndicator?: React.ReactNode;
-  /** Current snippet count — used for mobile tab badge. */
   snippetCount?: number;
-  /** Current question count — used for mobile tab badge. */
   questionCount?: number;
 }
 
@@ -23,7 +22,6 @@ type Tab = "clipboard" | "qa";
 
 export function SessionShell({
   title,
-  isHost = false,
   clipboardSlot,
   qaSlot,
   hostToolbar,
@@ -31,15 +29,12 @@ export function SessionShell({
   snippetCount = 0,
   questionCount = 0,
 }: SessionShellProps) {
-  void isHost;
   const t = useTranslations("session");
   const [activeTab, setActiveTab] = useState<Tab>("clipboard");
 
-  // Track the count each tab last "saw" when it was active (useState so render can read it)
   const [lastSeenSnippets, setLastSeenSnippets] = useState(snippetCount);
   const [lastSeenQuestions, setLastSeenQuestions] = useState(questionCount);
 
-  // When switching tabs, mark the newly active tab as "seen"
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
     if (tab === "clipboard") {
@@ -49,7 +44,6 @@ export function SessionShell({
     }
   }
 
-  // Keep the active tab's "seen" count up to date
   useEffect(() => {
     if (activeTab === "clipboard") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -69,68 +63,77 @@ export function SessionShell({
 
   return (
     <div className="flex h-[calc(100dvh-53px)] flex-col">
-      {/* Session header */}
-      <div className="border-b border-border px-6 py-5">
+      {/* Header */}
+      <header className="border-b border-border px-5 py-3.5 lg:px-6">
         <div className="flex items-center gap-3">
-          <h1 className="truncate text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+          <h1 className="truncate text-lg font-bold tracking-tight text-foreground">{title}</h1>
           {liveIndicator}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            {hostToolbar}
             <IdentityEditor />
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Optional host toolbar */}
-      {hostToolbar && <div className="border-b border-border px-6 py-3">{hostToolbar}</div>}
-
-      {/* Mobile tab bar (hidden on lg+) */}
-      <div className="flex border-b border-border lg:hidden">
+      {/* Mobile tab bar */}
+      <nav aria-label={t("sessionPanels")} className="flex border-b border-border lg:hidden">
         <button
           onClick={() => handleTabChange("clipboard")}
-          className={`flex flex-1 items-center justify-center gap-1.5 py-3 text-sm font-semibold transition-colors ${
+          aria-label={t("clipboard")}
+          className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
             activeTab === "clipboard"
               ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
+          <ClipboardList className="h-4 w-4" aria-hidden="true" />
           {t("clipboard")}
-          {clipboardBadge && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />}
+          {clipboardBadge && (
+            <span
+              className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
+              aria-hidden="true"
+            />
+          )}
         </button>
         <button
           onClick={() => handleTabChange("qa")}
-          className={`flex flex-1 items-center justify-center gap-1.5 py-3 text-sm font-semibold transition-colors ${
+          aria-label={t("qa")}
+          className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
             activeTab === "qa"
               ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
+          <MessageCircleQuestion className="h-4 w-4" aria-hidden="true" />
           {t("qa")}
-          {qaBadge && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />}
+          {qaBadge && (
+            <span
+              className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
+              aria-hidden="true"
+            />
+          )}
         </button>
-      </div>
+      </nav>
 
-      {/* Content area */}
-      <div className="flex min-h-0 flex-1 p-5 lg:p-6">
-        {/* Desktop: two-column grid */}
-        <div className="hidden w-full gap-5 lg:grid lg:grid-cols-2 lg:gap-6">
-          <div className="flex min-h-0 flex-col gap-3">
-            <h2 className="text-[13px] font-bold uppercase tracking-widest text-muted-foreground/70">
-              {t("clipboard")}
-            </h2>
+      {/* Content */}
+      <div className="min-h-0 flex-1 p-4 lg:p-5">
+        {/* Desktop: two columns */}
+        <div className="hidden h-full gap-5 lg:grid lg:grid-cols-2">
+          <section aria-label={t("clipboard")} className="flex min-h-0 flex-col">
             {clipboardSlot}
-          </div>
-          <div className="flex min-h-0 flex-col gap-3">
-            <h2 className="text-[13px] font-bold uppercase tracking-widest text-muted-foreground/70">
-              {t("qa")}
-            </h2>
+          </section>
+          <section aria-label={t("qa")} className="flex min-h-0 flex-col">
             {qaSlot}
-          </div>
+          </section>
         </div>
 
-        {/* Mobile: single panel based on active tab */}
-        <div className="flex w-full lg:hidden">
+        {/* Mobile: single panel */}
+        <section
+          aria-label={activeTab === "clipboard" ? t("clipboard") : t("qa")}
+          className="flex h-full w-full lg:hidden"
+        >
           {activeTab === "clipboard" ? clipboardSlot : qaSlot}
-        </div>
+        </section>
       </div>
     </div>
   );

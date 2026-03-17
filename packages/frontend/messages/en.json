@@ -81,7 +81,9 @@
     "pushing": "Pushing...",
     "pasteOrType": "Paste or type code/text...",
     "manual": "(manual)",
-    "share": "Share"
+    "share": "Share",
+    "sessionPanels": "Session panels",
+    "skipToQaFeed": "Skip to Q&A feed"
   },
   "pages": {
     "sessionNotFound": "Session not found or expired",

@@ -81,7 +81,9 @@
     "pushing": "Enviando...",
     "pasteOrType": "Cole ou digite código/texto...",
     "manual": "(manual)",
-    "share": "Compartilhar"
+    "share": "Compartilhar",
+    "sessionPanels": "Painéis da sessão",
+    "skipToQaFeed": "Pular para perguntas"
   },
   "pages": {
     "sessionNotFound": "Sessão não encontrada ou expirada",
