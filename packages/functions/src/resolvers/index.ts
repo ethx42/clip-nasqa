@@ -2,6 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 import type { AppSyncResolverContext, GetSessionDataArgs } from "@nasqa/core";
+import { EMOJI_KEYS } from "@nasqa/core";
 
 import { clearClipboard, deleteSnippet, pushSnippet } from "./clipboard";
 import { logger } from "./logger";
@@ -12,6 +13,7 @@ import {
   handleRestoreQuestion,
 } from "./moderation";
 import { addQuestion, addReply, focusQuestion, upvoteQuestion } from "./qa";
+import { handleReact } from "./reactions";
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION ?? "us-east-1" });
 export const docClient = DynamoDBDocumentClient.from(client);
@@ -63,6 +65,11 @@ async function getSessionData(args: GetSessionDataArgs) {
       isHidden: item.isHidden ?? false,
       isFocused: item.isFocused ?? false,
       isBanned: item.isBanned ?? false,
+      reactionCounts: JSON.stringify(
+        Object.fromEntries(
+          EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+        ),
+      ),
       createdAt: item.createdAt,
       TTL: item.TTL,
     }));
@@ -76,6 +83,11 @@ async function getSessionData(args: GetSessionDataArgs) {
       text: item.text,
       isHostReply: item.isHostReply ?? false,
       fingerprint: item.fingerprint,
+      reactionCounts: JSON.stringify(
+        Object.fromEntries(
+          EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+        ),
+      ),
       createdAt: item.createdAt,
       TTL: item.TTL,
     }));
@@ -134,6 +146,9 @@ export const handler = async (event: AppSyncResolverContext): Promise<unknown> =
         break;
       case "restoreQuestion":
         result = await handleRestoreQuestion(args);
+        break;
+      case "react":
+        result = await handleReact(args);
         break;
       case "getSessionData":
         result = await getSessionData(args);

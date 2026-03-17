@@ -3,7 +3,7 @@
 export default $config({
   app(input) {
     return {
-      name: "nasqa-live",
+      name: "nasqa-clip",
       removal: input?.stage === "production" ? "retain" : "remove",
       protect: ["production"].includes(input?.stage),
       home: "aws",
@@ -89,6 +89,7 @@ export default $config({
     api.addResolver("Mutation banParticipant", { dataSource: lambdaDS.name });
     api.addResolver("Mutation downvoteQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Mutation restoreQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation react", { dataSource: lambdaDS.name });
     api.addResolver("Query getSessionData", { dataSource: lambdaDS.name });
 
     return {
