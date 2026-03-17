@@ -76,7 +76,14 @@ Plans:
 2. Questions cannot appear in different orders between the Q&A panel and any derived view — sort logic exists in exactly one location and both consumers call it
 3. `QuestionCard` renders a distinct host variant (with moderation controls) and a distinct participant variant (without them) based on the caller context — the two variants are independently importable
 4. State transitions between question states (normal, hidden, banned) animate correctly — a question moving from visible to hidden plays its exit animation without a layout pop
-   **Plans**: TBD
+
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] 12-01-PLAN.md — TDD sortQuestions pure utility extraction from QAPanel
+- [ ] 12-02-PLAN.md — SnippetCard consolidation into standalone component
+- [ ] 12-03-PLAN.md — QuestionCard variant split (host/participant) with shared base and state animations
 
 ### Phase 13: UX Polish and Accessibility
 
@@ -109,5 +116,5 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete    | 2026-03-17 |
 | 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
 | 11. Shared Utilities and Hook Extraction | 2/2       | Complete       | 2026-03-17  | -          |
-| 12. Component Decomposition              | v1.3      | 0/TBD          | Not started | -          |
+| 12. Component Decomposition              | v1.3      | 0/3            | Not started | -          |
 | 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |
