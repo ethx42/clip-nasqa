@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - [09-01]: Array.from() over Set.has() for reactors inspection — DynamoDB DocumentClient may return StringSet as custom object; Array.from().includes() is safe regardless of marshaling
 - [09-01]: reactedByMe toggled emoji overridden with isNowReacted flag — avoids re-reading the just-modified Set; eliminates DocumentClient StringSet ambiguity for the key that matters most
 - [09-01]: Second CCF on toggle-off = no-op — race condition where two concurrent toggle-off requests arrive simultaneously is handled as idempotent; client reconciles via subscription
+- [09-02]: reactionCounts included in initial getSessionData load (not lazy-fetched) — single scan already fetches all SESSION# items; counts add negligible payload and avoid extra round-trips
+- [09-02]: reactionCounts uses AWSJSON scalar — consistent with SessionUpdate.payload pattern; Phase 10 client JSON.parse()s it; avoids adding 6 Int fields to Question/Reply schema types
 - [09-03]: Rate-limit UpdateCommand fires before reaction UpdateCommand — mock sequences must provide rate-limit resolve as call #1 when testing toggle-off path
 - [09-03]: SESSION# PK filter distinguishes reaction UpdateCommand from RATELIMIT# UpdateCommand in mock call inspection — cleaner than parsing UpdateExpression
 
@@ -92,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17
-Stopped at: Completed 09-03-PLAN.md (unit tests for handleReact resolver, EMOJI_PALETTE, emojiKeySchema — 98 tests passing across all packages)
+Last session: 2026-03-16
+Stopped at: Completed 09-02-PLAN.md (react mutation GraphQL wiring, SST resolver registration, getSessionData reaction counts)
 Resume file: None
