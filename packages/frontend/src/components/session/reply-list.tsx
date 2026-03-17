@@ -59,6 +59,7 @@ export function ReplyList({ replies, sessionSlug, fingerprint }: ReplyListProps)
             targetId={reply.id}
             targetType="REPLY"
             reactionCounts={reply.reactionCounts}
+            reactionOrder={reply.reactionOrder}
             fingerprint={fingerprint}
             className="mt-1.5"
           />

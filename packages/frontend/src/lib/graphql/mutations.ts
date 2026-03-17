@@ -142,6 +142,7 @@ export const GET_SESSION_DATA = `
         isFocused
         isBanned
         reactionCounts
+        reactionOrder
         createdAt
         TTL
       }
@@ -153,6 +154,7 @@ export const GET_SESSION_DATA = `
         isHostReply
         fingerprint
         reactionCounts
+        reactionOrder
         createdAt
         TTL
       }

@@ -343,6 +343,7 @@ export function QuestionCard({
             targetId={question.id}
             targetType="QUESTION"
             reactionCounts={question.reactionCounts}
+            reactionOrder={question.reactionOrder}
             fingerprint={fingerprint}
             className="mt-2"
           />

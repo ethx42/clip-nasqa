@@ -34,6 +34,7 @@ export type SessionAction =
         targetId: string;
         targetType: "QUESTION" | "REPLY";
         counts: ReactionCounts;
+        reactionOrder: string[];
       };
     };
 
@@ -196,18 +197,23 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     }
 
     case "REACTION_UPDATED": {
-      const { targetId, targetType, counts } = action.payload;
+      const { targetId, targetType, counts, reactionOrder } = action.payload;
       const reactionCounts = JSON.stringify(counts);
+      const reactionOrderStr = JSON.stringify(reactionOrder);
       if (targetType === "QUESTION") {
         return {
           ...state,
-          questions: state.questions.map((q) => (q.id === targetId ? { ...q, reactionCounts } : q)),
+          questions: state.questions.map((q) =>
+            q.id === targetId ? { ...q, reactionCounts, reactionOrder: reactionOrderStr } : q,
+          ),
         };
       }
       // targetType === "REPLY"
       return {
         ...state,
-        replies: state.replies.map((r) => (r.id === targetId ? { ...r, reactionCounts } : r)),
+        replies: state.replies.map((r) =>
+          r.id === targetId ? { ...r, reactionCounts, reactionOrder: reactionOrderStr } : r,
+        ),
       };
     }
 

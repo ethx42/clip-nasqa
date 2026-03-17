@@ -34,6 +34,7 @@ type Question {
   isFocused: Boolean!
   isBanned: Boolean!
   reactionCounts: AWSJSON
+  reactionOrder: AWSJSON
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
 }
@@ -46,6 +47,7 @@ type Reply {
   isHostReply: Boolean!
   fingerprint: String!
   reactionCounts: AWSJSON
+  reactionOrder: AWSJSON
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
 }

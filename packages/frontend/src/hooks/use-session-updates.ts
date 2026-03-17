@@ -163,14 +163,15 @@ export function useSessionUpdates(
               break;
             }
             case "REACTION_UPDATED": {
-              const { targetId, targetType, counts } = parsed as {
+              const { targetId, targetType, counts, reactionOrder } = parsed as {
                 targetId: string;
                 targetType: "QUESTION" | "REPLY";
                 counts: ReactionCounts;
+                reactionOrder: string[];
               };
               stableDispatch({
                 type: "REACTION_UPDATED",
-                payload: { targetId, targetType, counts },
+                payload: { targetId, targetType, counts, reactionOrder: reactionOrder ?? [] },
               });
               break;
             }

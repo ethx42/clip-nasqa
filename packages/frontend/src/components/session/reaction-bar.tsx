@@ -24,6 +24,7 @@ interface ReactionBarProps {
   targetId: string;
   targetType: "QUESTION" | "REPLY";
   reactionCounts: string | undefined; // raw AWSJSON from question/reply
+  reactionOrder: string | undefined; // raw AWSJSON — EmojiKey[] in insertion order
   fingerprint: string;
   className?: string;
 }
@@ -43,6 +44,7 @@ export function ReactionBar({
   targetId,
   targetType,
   reactionCounts,
+  reactionOrder,
   fingerprint,
   className,
 }: ReactionBarProps) {
@@ -57,8 +59,39 @@ export function ReactionBar({
     fingerprint,
   });
 
-  // Only render pills for emojis that have at least one reaction
-  const activePills = EMOJI_PALETTE.filter(({ key }) => displayCounts[key as EmojiKey] > 0);
+  // Parse insertion order (Slack-style: first-reacted emoji appears first)
+  const orderKeys: EmojiKey[] = (() => {
+    try {
+      return reactionOrder ? (JSON.parse(reactionOrder) as EmojiKey[]) : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  // Build active pills sorted by insertion order.
+  // Emojis with count > 0 but not in reactionOrder (e.g. optimistic new reaction) go at the end.
+  const activePills = (() => {
+    const paletteMap = Object.fromEntries(EMOJI_PALETTE.map((p) => [p.key, p]));
+    const result: (typeof EMOJI_PALETTE)[number][] = [];
+    const seen = new Set<string>();
+
+    // First: emojis in insertion order
+    for (const key of orderKeys) {
+      if (displayCounts[key] > 0 && paletteMap[key] && !seen.has(key)) {
+        result.push(paletteMap[key]);
+        seen.add(key);
+      }
+    }
+
+    // Then: any remaining emojis with count > 0 (optimistic adds not yet in reactionOrder)
+    for (const entry of EMOJI_PALETTE) {
+      if (displayCounts[entry.key as EmojiKey] > 0 && !seen.has(entry.key)) {
+        result.push(entry);
+      }
+    }
+
+    return result;
+  })();
 
   function handlePillClick(key: EmojiKey) {
     toggle(key);

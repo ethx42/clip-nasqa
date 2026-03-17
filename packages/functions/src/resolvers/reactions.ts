@@ -103,6 +103,31 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
   // Override with known result for the toggled emoji (authoritative, avoids SET representation ambiguity)
   reactedByMe[emojiKey] = isNowReacted;
 
+  // Compute clean reactionOrder: dedup, remove emojis with count=0, append newly activated emoji
+  const rawOrder = (attrs.reactionOrder as string[] | undefined) ?? [];
+  const seen = new Set<string>();
+  const reactionOrder = rawOrder.filter((k) => {
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return counts[k as EmojiKey] > 0;
+  });
+  // If this toggle-on activated a new emoji type, append it at the end
+  if (isNowReacted && !reactionOrder.includes(emojiKey)) {
+    reactionOrder.push(emojiKey);
+  }
+
+  // Persist the clean order back to DynamoDB (fire-and-forget)
+  docClient
+    .send(
+      new UpdateCommand({
+        TableName: tableName(),
+        Key: { PK: `SESSION#${sessionSlug}`, SK },
+        UpdateExpression: "SET reactionOrder = :order",
+        ExpressionAttributeValues: { ":order": reactionOrder },
+      }),
+    )
+    .catch((err) => logger.error({ err }, "failed to update reactionOrder"));
+
   logger.info(
     {
       sessionSlug,
@@ -124,6 +149,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
       emoji: emojiKey,
       counts,
       reactedByMe,
+      reactionOrder,
     }),
   };
 }

@@ -1,6 +1,6 @@
 import { GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
-import type { Question, Reply, Snippet } from "@nasqa/core";
+import { EMOJI_KEYS, type Question, type Reply, type Snippet } from "@nasqa/core";
 
 import { docClient, tableName } from "@/lib/dynamo";
 
@@ -57,6 +57,17 @@ export interface SessionData {
  *
  * Filters items whose TTL has already passed (DynamoDB lazy delete).
  */
+/** Deduplicate reactionOrder keeping first occurrence, filter to emojis with count > 0 */
+function buildReactionOrder(rawOrder: string[], counts: Record<string, number>): string {
+  const seen = new Set<string>();
+  const order = rawOrder.filter((k) => {
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return (counts[k] ?? 0) > 0;
+  });
+  return JSON.stringify(order);
+}
+
 export async function getSessionData(slug: string): Promise<SessionData> {
   const now = Math.floor(Date.now() / 1000);
 
@@ -103,6 +114,17 @@ export async function getSessionData(slug: string): Promise<SessionData> {
         isHidden: (item.isHidden as boolean) ?? false,
         isFocused: (item.isFocused as boolean) ?? false,
         isBanned: (item.isBanned as boolean) ?? false,
+        reactionCounts: JSON.stringify(
+          Object.fromEntries(
+            EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+          ),
+        ),
+        reactionOrder: buildReactionOrder(
+          (item.reactionOrder as string[] | undefined) ?? [],
+          Object.fromEntries(
+            EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+          ),
+        ),
         createdAt: item.createdAt as number,
         TTL: item.TTL as number,
       });
@@ -114,6 +136,17 @@ export async function getSessionData(slug: string): Promise<SessionData> {
         text: item.text as string,
         isHostReply: (item.isHostReply as boolean) ?? false,
         fingerprint: item.fingerprint as string,
+        reactionCounts: JSON.stringify(
+          Object.fromEntries(
+            EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+          ),
+        ),
+        reactionOrder: buildReactionOrder(
+          (item.reactionOrder as string[] | undefined) ?? [],
+          Object.fromEntries(
+            EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+          ),
+        ),
         createdAt: item.createdAt as number,
         TTL: item.TTL as number,
       });

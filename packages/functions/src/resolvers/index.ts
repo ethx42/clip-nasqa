@@ -24,6 +24,16 @@ function tableName(): string {
   return name;
 }
 
+/** Deduplicate reactionOrder keeping first occurrence, filter to emojis with count > 0 */
+function deduplicateReactionOrder(rawOrder: string[], counts: Record<string, number>): string[] {
+  const seen = new Set<string>();
+  return rawOrder.filter((k) => {
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return (counts[k] ?? 0) > 0;
+  });
+}
+
 async function getSessionData(args: GetSessionDataArgs) {
   const { sessionSlug } = args;
 
@@ -70,6 +80,18 @@ async function getSessionData(args: GetSessionDataArgs) {
           EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
         ),
       ),
+      reactionOrder: JSON.stringify(
+        deduplicateReactionOrder(
+          (item.reactionOrder as string[] | undefined) ?? [],
+          EMOJI_KEYS.reduce(
+            (acc, key) => {
+              acc[key] = Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0);
+              return acc;
+            },
+            {} as Record<string, number>,
+          ),
+        ),
+      ),
       createdAt: item.createdAt,
       TTL: item.TTL,
     }));
@@ -86,6 +108,18 @@ async function getSessionData(args: GetSessionDataArgs) {
       reactionCounts: JSON.stringify(
         Object.fromEntries(
           EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
+        ),
+      ),
+      reactionOrder: JSON.stringify(
+        deduplicateReactionOrder(
+          (item.reactionOrder as string[] | undefined) ?? [],
+          EMOJI_KEYS.reduce(
+            (acc, key) => {
+              acc[key] = Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0);
+              return acc;
+            },
+            {} as Record<string, number>,
+          ),
         ),
       ),
       createdAt: item.createdAt,

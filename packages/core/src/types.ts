@@ -84,6 +84,7 @@ export interface Question {
   isFocused: boolean;
   isBanned: boolean;
   reactionCounts?: string; // AWSJSON — JSON.stringify of ReactionCounts
+  reactionOrder?: string; // AWSJSON — JSON.stringify of EmojiKey[] (insertion order)
   createdAt: number;
   TTL: number;
 }
@@ -96,6 +97,7 @@ export interface Reply {
   isHostReply: boolean;
   fingerprint: string;
   reactionCounts?: string; // AWSJSON — JSON.stringify of ReactionCounts
+  reactionOrder?: string; // AWSJSON — JSON.stringify of EmojiKey[] (insertion order)
   createdAt: number;
   TTL: number;
 }
