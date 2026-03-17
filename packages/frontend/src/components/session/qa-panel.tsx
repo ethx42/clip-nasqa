@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Question, Reply } from "@nasqa/core";
 
+import { sortQuestions } from "@/lib/sort-questions";
+
 import { NewContentBanner } from "./new-content-banner";
 import { QAInput } from "./qa-input";
 import { QuestionCard } from "./question-card";
@@ -76,22 +78,22 @@ export function QAPanel({
     return () => clearTimeout(timer);
   }, [questions]);
 
-  // Always use latest questions for content, but debounced order for sorting
+  // Always use latest questions for content, but debounced order for sorting.
+  // Build synthetic questions that carry debounced upvoteCount/isFocused values
+  // so cards don't jump on every single vote, then delegate ordering to sortQuestions.
   const sortedQuestions = useMemo(() => {
-    // Build order from debounced snapshot
     const orderMap = new Map<string, { upvoteCount: number; isFocused: boolean }>();
     for (const q of debouncedQuestions) {
       orderMap.set(q.id, { upvoteCount: q.upvoteCount, isFocused: !!q.isFocused });
     }
 
-    return [...questions].sort((a, b) => {
-      const aOrder = orderMap.get(a.id) ?? { upvoteCount: a.upvoteCount, isFocused: !!a.isFocused };
-      const bOrder = orderMap.get(b.id) ?? { upvoteCount: b.upvoteCount, isFocused: !!b.isFocused };
-      if (aOrder.isFocused && !bOrder.isFocused) return -1;
-      if (!aOrder.isFocused && bOrder.isFocused) return 1;
-      if (bOrder.upvoteCount !== aOrder.upvoteCount) return bOrder.upvoteCount - aOrder.upvoteCount;
-      return b.createdAt - a.createdAt;
+    const questionsWithDebouncedOrder = questions.map((q) => {
+      const debounced = orderMap.get(q.id);
+      if (!debounced) return q;
+      return { ...q, upvoteCount: debounced.upvoteCount, isFocused: debounced.isFocused };
     });
+
+    return sortQuestions(questionsWithDebouncedOrder);
   }, [questions, debouncedQuestions]);
 
   // Show new content banner when a question arrives and user is scrolled down
