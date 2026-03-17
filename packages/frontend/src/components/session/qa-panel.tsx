@@ -55,6 +55,7 @@ export function QAPanel({
   const t = useTranslations("session");
   const [showNewBanner, setShowNewBanner] = useState(false);
   const [newQuestionCount, setNewQuestionCount] = useState(0);
+  const [announcement, setAnnouncement] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevQuestionCount = useRef(questions.length);
 
@@ -100,11 +101,14 @@ export function QAPanel({
     prevQuestionCount.current = newCount;
 
     if (newCount > oldCount) {
+      const diff = newCount - oldCount;
+      // Always announce to screen readers, regardless of scroll position
+
+      setAnnouncement(`${diff} new question${diff !== 1 ? "s" : ""}`);
       const container = scrollContainerRef.current;
       if (container && container.scrollTop > SCROLL_THRESHOLD) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- subscription-driven state update based on scroll position
         setShowNewBanner(true);
-        setNewQuestionCount((prev) => prev + (newCount - oldCount));
+        setNewQuestionCount((prev) => prev + diff);
       }
     }
   }, [questions.length]);
@@ -113,21 +117,33 @@ export function QAPanel({
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     setShowNewBanner(false);
     setNewQuestionCount(0);
+    setAnnouncement("");
   }, []);
 
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (container && container.scrollTop <= SCROLL_THRESHOLD) {
       setShowNewBanner(false);
+      setAnnouncement("");
     }
   }, []);
 
   const bannerMessage = t("newQuestionBanner", { count: newQuestionCount });
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Screen-reader-only live region — permanently mounted to avoid announcement gaps */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
+
       {/* Scrollable question list */}
-      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+      <div
+        id="qa-feed"
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto"
+      >
         {/* New question notification banner */}
         <NewContentBanner message={bannerMessage} visible={showNewBanner} onTap={scrollToTop} />
 
