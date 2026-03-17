@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 7 of 13 (Error Handling and Observability — complete)
-Plan: 3 of 3 complete
-Status: Phase 7 complete (including gap closure 07-03); Phase 8 next
-Last activity: 2026-03-16 — Phase 7 Plan 03 complete (gap closure: safeAction wrapper + noValidate form)
+Phase: 8 of 13 (SEO and Accessibility — in progress)
+Plan: 1 of 2 complete
+Status: Phase 8 Plan 01 complete (SEO metadata infrastructure); Phase 8 Plan 02 next
+Last activity: 2026-03-17 — Phase 8 Plan 01 complete (robots.txt, sitemap.xml, OG image, generateMetadata, JSON-LD)
 
-Progress: [██████████░░░░░░░░░░] 46% (v1.0+v1.1 Phases 5-7 complete; Phase 8 next)
+Progress: [███████████░░░░░░░░░] 50% (v1.0+v1.1 Phases 5-8 in progress; Phase 8 Plan 01 complete)
 
 ## Performance Metrics
 
@@ -64,6 +64,10 @@ Recent decisions affecting current work:
 - [07-03]: safeAction uses R extends {success: boolean} type parameter — accommodates upvoteQuestionAction VOTE_CONFLICT union type without ActionResult<unknown> mismatch
 - [07-03]: networkErrorMessage passed as parameter to safeAction — keeps utility free of useTranslations (non-React function, no hook rules)
 - [07-03]: noValidate + remove required on landing form — routes all validation through server action for unified toast UX
+- [08-01]: session pages use static /opengraph-image (not dynamic per-session thumbnail) — brand consistency is the priority
+- [08-01]: product name is "clip" in all metadata and UI header — not "nasqa"
+- [08-01]: session pages carry noindex robots (belt-and-suspenders) — sessions are ephemeral and audience-scoped
+- [08-01]: JSON-LD injected in locale layout (server component) — landing page is client component; structured data always in static HTML shell
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16
-Stopped at: Completed 07-03-PLAN.md (gap closure: safeAction wrapper + noValidate form); Phase 7 fully complete
+Last session: 2026-03-17
+Stopped at: Completed 08-01-PLAN.md (SEO infrastructure: robots.ts, sitemap.ts, OG image, generateMetadata, JSON-LD); Phase 8 Plan 01 complete
 Resume file: None

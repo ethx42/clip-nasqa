@@ -37,11 +37,11 @@
 
 ### SEO
 
-- [ ] **SEO-01**: `generateMetadata` produces dynamic title/description per session page
-- [ ] **SEO-02**: Static Open Graph image for landing page social sharing
-- [ ] **SEO-03**: Dynamic OG image per session showing title and QR code
-- [ ] **SEO-04**: `robots.ts` blocks session pages from indexing, allows landing page
-- [ ] **SEO-05**: `sitemap.ts` with landing page and locale variants
+- [x] **SEO-01**: `generateMetadata` produces dynamic title/description per session page
+- [x] **SEO-02**: Static Open Graph image for landing page social sharing
+- [x] **SEO-03**: Dynamic OG image per session showing title and QR code
+- [x] **SEO-04**: `robots.ts` blocks session pages from indexing, allows landing page
+- [x] **SEO-05**: `sitemap.ts` with landing page and locale variants
 
 ### Accessibility
 
@@ -150,11 +150,11 @@
 | ERR-03      | Phase 7  | Complete |
 | ERR-04      | Phase 7  | Complete |
 | OBS-01      | Phase 7  | Complete |
-| SEO-01      | Phase 8  | Pending  |
-| SEO-02      | Phase 8  | Pending  |
-| SEO-03      | Phase 8  | Pending  |
-| SEO-04      | Phase 8  | Pending  |
-| SEO-05      | Phase 8  | Pending  |
+| SEO-01      | Phase 8  | Complete |
+| SEO-02      | Phase 8  | Complete |
+| SEO-03      | Phase 8  | Complete |
+| SEO-04      | Phase 8  | Complete |
+| SEO-05      | Phase 8  | Complete |
 | A11Y-01     | Phase 8  | Pending  |
 | A11Y-02     | Phase 8  | Pending  |
 | A11Y-03     | Phase 8  | Pending  |
