@@ -53,18 +53,18 @@
 
 ### Reactions Data Model
 
-- [ ] **RXN-01**: Participant can add one reaction per emoji type per Question (6 fixed emojis: 👍 ❤️ 🎉 😂 🤔 👀)
-- [ ] **RXN-02**: Participant can add one reaction per emoji type per Reply (same 6 emojis)
-- [ ] **RXN-03**: Participant can toggle off their own reaction on a Question or Reply
+- [x] **RXN-01**: Participant can add one reaction per emoji type per Question (6 fixed emojis: 👍 ❤️ 🎉 😂 🤔 👀)
+- [x] **RXN-02**: Participant can add one reaction per emoji type per Reply (same 6 emojis)
+- [x] **RXN-03**: Participant can toggle off their own reaction on a Question or Reply
 - [ ] **RXN-04**: Reaction counts per emoji are visible to all connected participants in real-time
-- [ ] **RXN-05**: Reactions are deduplicated per device fingerprint per emoji per item (no double-counting)
+- [x] **RXN-05**: Reactions are deduplicated per device fingerprint per emoji per item (no double-counting)
 
 ### Reactions Backend
 
-- [ ] **RXN-06**: Reaction mutations enforce ban check — banned participants cannot react
-- [ ] **RXN-07**: Reactions are rate-limited at 30/min per fingerprint in a separate namespace from question rate limits
+- [x] **RXN-06**: Reaction mutations enforce ban check — banned participants cannot react
+- [x] **RXN-07**: Reactions are rate-limited at 30/min per fingerprint in a separate namespace from question rate limits
 - [ ] **RXN-08**: Reaction updates propagate via existing AppSync SessionUpdate subscription channel
-- [ ] **RXN-09**: Subscription payloads contain only emoji counts, never reactor fingerprints
+- [x] **RXN-09**: Subscription payloads contain only emoji counts, never reactor fingerprints
 
 ### Reactions UI
 
@@ -72,7 +72,7 @@
 - [ ] **RXN-11**: User's own active reactions are visually highlighted (distinct from unselected state)
 - [ ] **RXN-12**: Toggling a reaction applies optimistic UI update before server confirmation
 - [ ] **RXN-13**: Reaction buttons have ARIA labels and meet 44px minimum touch target for mobile
-- [ ] **RXN-14**: Emoji palette is defined as a shared constant in `@nasqa/core` validated by Zod schema
+- [x] **RXN-14**: Emoji palette is defined as a shared constant in `@nasqa/core` validated by Zod schema
 
 ## v1.3 Requirements
 
@@ -158,16 +158,16 @@
 | A11Y-01     | Phase 8  | Complete |
 | A11Y-02     | Phase 8  | Complete |
 | A11Y-03     | Phase 8  | Complete |
-| RXN-01      | Phase 9  | Pending  |
-| RXN-02      | Phase 9  | Pending  |
-| RXN-03      | Phase 9  | Pending  |
+| RXN-01      | Phase 9  | Complete |
+| RXN-02      | Phase 9  | Complete |
+| RXN-03      | Phase 9  | Complete |
 | RXN-04      | Phase 9  | Pending  |
-| RXN-05      | Phase 9  | Pending  |
-| RXN-06      | Phase 9  | Pending  |
-| RXN-07      | Phase 9  | Pending  |
+| RXN-05      | Phase 9  | Complete |
+| RXN-06      | Phase 9  | Complete |
+| RXN-07      | Phase 9  | Complete |
 | RXN-08      | Phase 9  | Pending  |
-| RXN-09      | Phase 9  | Pending  |
-| RXN-14      | Phase 9  | Pending  |
+| RXN-09      | Phase 9  | Complete |
+| RXN-14      | Phase 9  | Complete |
 | RXN-10      | Phase 10 | Pending  |
 | RXN-11      | Phase 10 | Pending  |
 | RXN-12      | Phase 10 | Pending  |

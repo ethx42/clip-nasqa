@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices — if the audience can't see what the speaker shares instantly, the product fails
-**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 8 complete, Phase 9 next)
+**Current focus:** Milestone v1.1 - Enterprise Hardening (Phase 9 in progress — reactions data model and backend)
 
 ## Current Position
 
-Phase: 8 of 13 (SEO and Accessibility — complete)
-Plan: 2 of 2 complete
-Status: Phase 8 complete (SEO + accessibility); Phase 9 next
-Last activity: 2026-03-16 — Phase 8 Plan 02 complete (semantic HTML landmarks, ARIA labels, skip link, aria-live region)
+Phase: 9 of 13 (Reactions Data Model and Backend — in progress)
+Plan: 1 of 3 complete
+Status: Phase 9 Plan 01 complete; Plan 02 next (schema wiring + resolver registration)
+Last activity: 2026-03-16 — Phase 9 Plan 01 complete (EMOJI_PALETTE, emojiKeySchema, ReactArgs, ReactionCounts, handleReact resolver)
 
-Progress: [████████████░░░░░░░░] 55% (v1.0+v1.1 Phases 5-8 complete; Phase 9 next)
+Progress: [█████████████░░░░░░░] 58% (v1.0+v1.1 Phases 5-9.1 complete; 9.2 next)
 
 ## Performance Metrics
 
@@ -71,6 +71,10 @@ Recent decisions affecting current work:
 - [08-01]: JSON-LD injected in locale layout (server component) — landing page is client component; structured data always in static HTML shell
 - [Phase 08-02]: NewContentBanner uses aria-hidden=true — screen reader announcements delegated exclusively to QAPanel aria-live region to avoid duplicate reads
 - [Phase 08-02]: SessionShell uses header landmark (not main) — layout.tsx already wraps children in main; no duplicate landmark
+- [09-01]: EMOJI_PALETTE is single source of truth — EmojiKey type and emojiKeySchema both derived from palette.map(e => e.key); extending palette automatically updates validation
+- [09-01]: Array.from() over Set.has() for reactors inspection — DynamoDB DocumentClient may return StringSet as custom object; Array.from().includes() is safe regardless of marshaling
+- [09-01]: reactedByMe toggled emoji overridden with isNowReacted flag — avoids re-reading the just-modified Set; eliminates DocumentClient StringSet ambiguity for the key that matters most
+- [09-01]: Second CCF on toggle-off = no-op — race condition where two concurrent toggle-off requests arrive simultaneously is handled as idempotent; client reconciles via subscription
 
 ### Pending Todos
 
@@ -87,5 +91,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Completed 08-02-PLAN.md (accessibility: semantic HTML landmarks, ARIA labels, skip-to-content link, aria-live region, focus ring audit); Phase 8 complete
+Stopped at: Completed 09-01-PLAN.md (EMOJI_PALETTE + emojiKeySchema in @nasqa/core, ReactArgs + ReactionCounts types, REACTION_UPDATED enum, handleReact resolver with atomic DynamoDB toggle)
 Resume file: None
