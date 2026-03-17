@@ -4,7 +4,13 @@ export const alt = "clip — real-time clipboard and Q&A for live sessions";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OGImage() {
+export default async function OGImage() {
+  const logoData = await fetch(
+    new URL("../../public/images/clip-logo-og.png", import.meta.url),
+  ).then((res) => res.arrayBuffer());
+
+  const logoSrc = `data:image/png;base64,${Buffer.from(logoData).toString("base64")}`;
+
   return new ImageResponse(
     <div
       style={{
@@ -17,29 +23,38 @@ export default function OGImage() {
         position: "relative",
       }}
     >
-      {/* Subtle emerald glow behind the wordmark */}
+      {/* Subtle indigo glow behind the logo */}
       <div
         style={{
           position: "absolute",
           width: 400,
           height: 400,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0) 70%)",
+          background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0) 70%)",
         }}
       />
-      {/* "clip" wordmark */}
-      <span
+      {/* Logo mark + wordmark */}
+      <div
         style={{
-          fontFamily: "sans-serif",
-          fontSize: 96,
-          fontWeight: 700,
-          color: "#10b981",
-          letterSpacing: "-0.04em",
+          display: "flex",
+          alignItems: "center",
+          gap: 24,
           position: "relative",
         }}
       >
-        clip
-      </span>
+        <img src={logoSrc} width={80} height={68} alt="" />
+        <span
+          style={{
+            fontFamily: "sans-serif",
+            fontSize: 96,
+            fontWeight: 700,
+            color: "#6366f1",
+            letterSpacing: "-0.04em",
+          }}
+        >
+          clip
+        </span>
+      </div>
     </div>,
     { ...size },
   );

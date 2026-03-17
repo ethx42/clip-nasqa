@@ -10,6 +10,12 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const session = await getSession(slug);
 
+  const logoData = await fetch(
+    new URL("../../../../../public/images/clip-logo-og.png", import.meta.url),
+  ).then((res) => res.arrayBuffer());
+
+  const logoSrc = `data:image/png;base64,${Buffer.from(logoData).toString("base64")}`;
+
   if (!session) {
     return new ImageResponse(
       <div
@@ -22,17 +28,26 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           backgroundColor: "#09090b",
         }}
       >
-        <span
+        <div
           style={{
-            fontFamily: "sans-serif",
-            fontSize: 96,
-            fontWeight: 700,
-            color: "#10b981",
-            letterSpacing: "-0.04em",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
           }}
         >
-          clip
-        </span>
+          <img src={logoSrc} width={64} height={55} alt="" />
+          <span
+            style={{
+              fontFamily: "sans-serif",
+              fontSize: 96,
+              fontWeight: 700,
+              color: "#6366f1",
+              letterSpacing: "-0.04em",
+            }}
+          >
+            clip
+          </span>
+        </div>
       </div>,
       { ...size },
     );
@@ -66,30 +81,31 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           width: 500,
           height: 500,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0) 70%)",
+          background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0) 70%)",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
         }}
       />
 
-      {/* Top bar: "clip" branding */}
+      {/* Top bar: logo mark + "clip" branding */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 10,
           position: "absolute",
           top: 40,
           left: 60,
         }}
       >
+        <img src={logoSrc} width={32} height={27} alt="" />
         <span
           style={{
             fontFamily: "sans-serif",
             fontSize: 32,
             fontWeight: 700,
-            color: "#10b981",
+            color: "#6366f1",
             letterSpacing: "-0.04em",
           }}
         >
@@ -143,7 +159,7 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           </span>
         </div>
 
-        {/* Right: QR code placeholder rendered as a grid pattern */}
+        {/* Right: QR code */}
         <div
           style={{
             display: "flex",
@@ -152,7 +168,6 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
             gap: 12,
           }}
         >
-          {/* QR code via external API */}
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrUrl)}&bgcolor=09090b&color=fafafa&format=png`}
             width={160}
