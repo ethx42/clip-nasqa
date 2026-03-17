@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** Milestone v1.2 - Reactions (Phase 10 complete — both plans done)
+**Current focus:** Planning next milestone (v1.3 Participant & Host UX Refactor)
 
 ## Current Position
 
-Phase: 10 of 13 (Reactions Frontend State and UI — complete)
-Plan: 2 of 2
-Status: Phase 10 complete — data layer + UI components both done
-Last activity: 2026-03-17 — 10-02 reactions UI components complete
+Phase: 10 of 13 (v1.2 Reactions milestone complete)
+Plan: -
+Status: v1.2 shipped — ready for v1.3 planning
+Last activity: 2026-03-17 — v1.2 Reactions milestone archived
 
-Progress: [███████████████░░░░░] 75% (v1.0+v1.1+Phase 9+Phase 10 complete)
+Progress: [████████████████░░░░] 77% (v1.0+v1.1+v1.2 complete)
 
 ## Performance Metrics
 
@@ -31,19 +31,10 @@ _Updated after each plan completion_
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [09-01]: EMOJI_PALETTE is single source of truth — EmojiKey type and emojiKeySchema both derived from palette
-- [09-02]: reactionCounts uses AWSJSON scalar — Phase 10 client JSON.parse()s it
-- [09-02]: reactionCounts included in initial getSessionData load (not lazy-fetched)
-- [10-01]: reactAction has silent failure — no toast, UI components revert optimistically on { success: false }
-- [10-01]: REACTION_UPDATED subscription dispatches counts only, never reactedByMe — prevents cross-client highlight corruption
-- [10-02]: Active reaction pills use bg-muted (neutral gray) not brand indigo — per CONTEXT.md anti-patterns
-- [10-02]: Inline emoji picker renders in flex flow (not popover) — Bret Victor direct manipulation principle
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
@@ -53,5 +44,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 10-02-PLAN.md — reactions UI components complete; Phase 10 milestone done
+Stopped at: v1.2 Reactions milestone archived
 Resume file: None

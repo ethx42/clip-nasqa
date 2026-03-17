@@ -2,87 +2,50 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** - Phases 1-4 (shipped 2026-03-14)
-- ✅ **v1.1 Enterprise Hardening** - Phases 5-8 (shipped 2026-03-17)
-- 🚧 **v1.2 Reactions** - Phases 9-10 (in progress)
-- ⏳ **v1.3 Participant & Host UX Refactor** - Phases 11-13 (queued)
+- ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-03-14)
+- ✅ **v1.1 Enterprise Hardening** — Phases 5-8 (shipped 2026-03-17)
+- ✅ **v1.2 Reactions** — Phases 9-10 (shipped 2026-03-17)
+- ⏳ **v1.3 Participant & Host UX Refactor** — Phases 11-13 (queued)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-4) - SHIPPED 2026-03-14</summary>
+<summary>✅ v1.0 MVP (Phases 1-4) — SHIPPED 2026-03-14</summary>
 
-- [x] **Phase 1: Infrastructure** - Provision DynamoDB, AppSync, Lambda resolvers, and SST Ion IaC (completed 2026-03-14)
-- [x] **Phase 2: Session and View Shell** - Session creation, host auth, QR code, SSR participant view, theme system (completed 2026-03-14)
-- [x] **Phase 3: Real-Time Core** - AppSync subscriptions, live clipboard with Shiki, Q&A with upvoting (completed 2026-03-14)
-- [x] **Phase 4: Moderation, Identity, and Polish** - Community moderation, host ban, identity, i18n, rate limiting (completed 2026-03-14)
+- [x] **Phase 1: Infrastructure** — Provision DynamoDB, AppSync, Lambda resolvers, and SST Ion IaC (completed 2026-03-14)
+- [x] **Phase 2: Session and View Shell** — Session creation, host auth, QR code, SSR participant view, theme system (completed 2026-03-14)
+- [x] **Phase 3: Real-Time Core** — AppSync subscriptions, live clipboard with Shiki, Q&A with upvoting (completed 2026-03-14)
+- [x] **Phase 4: Moderation, Identity, and Polish** — Community moderation, host ban, identity, i18n, rate limiting (completed 2026-03-14)
 
 </details>
 
 <details>
-<summary>✅ v1.1 Enterprise Hardening (Phases 5-8) - SHIPPED 2026-03-17</summary>
+<summary>✅ v1.1 Enterprise Hardening (Phases 5-8) — SHIPPED 2026-03-17</summary>
 
-- [x] **Phase 5: Code Quality Gates** - Pre-commit hooks, Prettier formatting, and TypeScript strict mode (completed 2026-03-15)
-- [x] **Phase 6: Testing and CI** - Vitest test suite (74 tests), GitHub Actions CI with 4 parallel jobs (completed 2026-03-16)
-- [x] **Phase 7: Error Handling and Observability** - Error boundaries, structured ActionResult errors, safeAction, pino logging (completed 2026-03-16)
-- [x] **Phase 8: SEO and Accessibility** - Dynamic OG images, robots/sitemap, semantic HTML, ARIA, skip-to-content (completed 2026-03-17)
+- [x] **Phase 5: Code Quality Gates** — Pre-commit hooks, Prettier formatting, and TypeScript strict mode (completed 2026-03-15)
+- [x] **Phase 6: Testing and CI** — Vitest test suite (74 tests), GitHub Actions CI with 4 parallel jobs (completed 2026-03-16)
+- [x] **Phase 7: Error Handling and Observability** — Error boundaries, structured ActionResult errors, safeAction, pino logging (completed 2026-03-16)
+- [x] **Phase 8: SEO and Accessibility** — Dynamic OG images, robots/sitemap, semantic HTML, ARIA, skip-to-content (completed 2026-03-17)
 
 </details>
 
-### 🚧 v1.2 Reactions (In Progress)
+<details>
+<summary>✅ v1.2 Reactions (Phases 9-10) — SHIPPED 2026-03-17</summary>
 
-**Milestone Goal:** Add emoji reactions to Questions and Replies as a lightweight sentiment layer — fixed 6-emoji palette, per-device dedup, real-time propagation via existing subscription channel, and optimistic UI consistent with the existing vote system.
+- [x] **Phase 9: Reactions Data Model and Backend** — EMOJI_PALETTE, handleReact resolver, rate limiting, ban enforcement, subscription broadcast (completed 2026-03-17)
+- [x] **Phase 10: Reactions Frontend State and UI** — ReactionBar with Slack-style pills, optimistic toggle, ARIA labels, 44px touch targets (completed 2026-03-17)
 
-- [x] **Phase 9: Reactions Data Model and Backend** - Core types, GraphQL schema, Lambda resolver, rate limiting, ban enforcement, and real-time subscription broadcast for the `react` mutation (completed 2026-03-17)
-- [x] **Phase 10: Reactions Frontend State and UI** - Session state reducer extension, `useReactions` hook, `ReactionBar` component with optimistic toggle, ARIA labels, and 44px touch targets integrated into QuestionCard and ReplyCard (completed 2026-03-17)
+</details>
 
 ### ⏳ v1.3 Participant & Host UX Refactor (Queued)
 
 **Milestone Goal:** Decompose monolithic session components, eliminate code duplication, and implement interaction improvements across both participant and host views — making the interface honest, accessible, and structurally sound.
 
-- [ ] **Phase 11: Shared Utilities and Hook Extraction** - `formatRelativeTime` utility replaces 5 duplicated implementations; `useSessionMutations` hook extracts all mutation handlers from both page orchestrators; `repliesByQuestion` memoized as Map
-- [ ] **Phase 12: Component Decomposition and QAPanel Cleanup** - `SnippetCard` extracted to its own file; `QAPanel` accepts pre-sorted questions and drops its duplicate sort; `QuestionCard` decomposed into Normal, Banned, and Hidden variants with compound AnimatePresence keys
-- [ ] **Phase 13: Accessibility and UX Polish** - ARIA tablist semantics on mobile tab bar with both panels permanently mounted; `aria-live` on `NewContentBanner`; vote button fill states and press animation; identity chip in `QAInput`; own-question left-border indicator; contextual empty states; focused-question auto-expand and reply UX improvements
+- [ ] **Phase 11: Shared Utilities and Hook Extraction** — `formatRelativeTime` utility replaces 5 duplicated implementations; `useSessionMutations` hook extracts all mutation handlers from both page orchestrators; `repliesByQuestion` memoized as Map
+- [ ] **Phase 12: Component Decomposition and QAPanel Cleanup** — `SnippetCard` extracted to its own file; `QAPanel` accepts pre-sorted questions and drops its duplicate sort; `QuestionCard` decomposed into Normal, Banned, and Hidden variants with compound AnimatePresence keys
+- [ ] **Phase 13: Accessibility and UX Polish** — ARIA tablist semantics on mobile tab bar with both panels permanently mounted; `aria-live` on `NewContentBanner`; vote button fill states and press animation; identity chip in `QAInput`; own-question left-border indicator; contextual empty states; focused-question auto-expand and reply UX improvements
 
 ## Phase Details
-
-### Phase 9: Reactions Data Model and Backend
-
-**Goal**: The `react` GraphQL mutation is live — participants can add and toggle emoji reactions on Questions and Replies, counts are deduplicated per device fingerprint, rate limiting and ban enforcement are active, and reaction updates broadcast to all connected clients via the existing subscription channel
-**Depends on**: Phase 8
-**Requirements**: RXN-01, RXN-02, RXN-03, RXN-04, RXN-05, RXN-06, RXN-07, RXN-08, RXN-09, RXN-14
-**Success Criteria** (what must be TRUE):
-
-1. Calling the `react` mutation from the AppSync console with a valid emoji and Question/Reply ID updates the flat `rxn_<emoji>_count` attribute on that DynamoDB item and broadcasts a `REACTION_UPDATED` event to all subscribers within 200ms
-2. Calling the `react` mutation twice with the same emoji from the same device fingerprint results in a count of 1 (dedup via `rxn_<emoji>_reactors` Set); calling it a third time toggles the count back to 0
-3. A banned participant's `react` call is rejected; a participant who exceeds 30 reactions/minute receives a rate-limit error without consuming their question-submission budget
-4. The `REACTION_UPDATED` subscription payload contains only emoji counts (`{ targetId, targetType, emoji, counts }`) — no reactor fingerprints are included
-5. The `EMOJI_PALETTE` constant in `@nasqa/core` is the single source of truth for the 6 allowed emoji keys, validated by Zod — the Lambda resolver rejects any emoji argument not in the palette
-   **Plans**: 3 plans
-
-Plans:
-
-- [x] 09-01-PLAN.md — EMOJI_PALETTE constant, Zod schema, reaction types, handleReact resolver with atomic toggle, dedup, rate limiting, ban check
-- [x] 09-02-PLAN.md — GraphQL schema extension (react mutation, REACTION_UPDATED), SST wiring, handler dispatch, reactionCounts in getSessionData
-- [x] 09-03-PLAN.md — Unit tests for emojiKeySchema validation and handleReact resolver
-
-### Phase 10: Reactions Frontend State and UI
-
-**Goal**: The `ReactionBar` component is rendered below every Question and Reply with live emoji counts, optimistic toggle behavior, visual highlight for the user's own active reactions, full ARIA accessibility, and 44px mobile touch targets
-**Depends on**: Phase 9
-**Requirements**: RXN-10, RXN-11, RXN-12, RXN-13
-**Success Criteria** (what must be TRUE):
-
-1. Every QuestionCard and ReplyCard shows a `ReactionBar` with 6 emoji buttons; buttons with zero reactions are hidden; clicking any emoji button immediately toggles its visual state (optimistic) before server confirmation
-2. A participant's own active reactions are visually distinct from inactive ones (highlighted state); toggling an active reaction removes the highlight and decrements the displayed count
-3. When a `REACTION_UPDATED` subscription event arrives for an item, only that item's reaction counts update in place — no full list re-render; count display converges to the authoritative server value
-4. All 6 reaction buttons have `aria-label` strings in en, es, and pt (e.g., "React with thumbs up: 3 reactions") and carry `aria-pressed` to reflect active state; each button's touch target meets the 44px minimum on mobile
-   **Plans**: 2 plans
-
-Plans:
-
-- [ ] 10-01-PLAN.md — Type updates, GraphQL query fix, REACT mutation, server action, reducer + subscription wiring, i18n keys
-- [ ] 10-02-PLAN.md — useReactionState hook, ReactionBar component, integration into QuestionCard and ReplyList
 
 ### Phase 11: Shared Utilities and Hook Extraction
 
@@ -129,7 +92,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13
+Phases execute in numeric order: 11 -> 12 -> 13
 
 | Phase                                           | Milestone | Plans Complete | Status      | Completed  |
 | ----------------------------------------------- | --------- | -------------- | ----------- | ---------- |
@@ -142,7 +105,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13
 | 7. Error Handling and Observability             | v1.1      | 3/3            | Complete    | 2026-03-16 |
 | 8. SEO and Accessibility                        | v1.1      | 2/2            | Complete    | 2026-03-17 |
 | 9. Reactions Data Model and Backend             | v1.2      | 3/3            | Complete    | 2026-03-17 |
-| 10. Reactions Frontend State and UI             | 2/2       | Complete       | 2026-03-17  | -          |
+| 10. Reactions Frontend State and UI             | v1.2      | 2/2            | Complete    | 2026-03-17 |
 | 11. Shared Utilities and Hook Extraction        | v1.3      | 0/TBD          | Not started | -          |
 | 12. Component Decomposition and QAPanel Cleanup | v1.3      | 0/TBD          | Not started | -          |
 | 13. Accessibility and UX Polish                 | v1.3      | 0/TBD          | Not started | -          |

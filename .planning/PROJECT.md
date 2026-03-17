@@ -35,11 +35,13 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - ✓ Pino structured JSON logging in Lambda resolvers — v1.1
 - ✓ SEO: robots.txt, sitemap.xml, dynamic OG images, generateMetadata, JSON-LD — v1.1
 - ✓ Accessibility: semantic landmarks, ARIA labels, skip-to-content, aria-live — v1.1
-- ✓ Reactions backend: EMOJI_PALETTE, handleReact resolver, rate limiting, ban check — v1.2 (Phase 9)
+- ✓ Reactions backend: EMOJI_PALETTE, handleReact resolver, rate limiting, ban check — v1.2
+- ✓ ReactionBar with Slack-style pills, optimistic toggle, ARIA labels, 44px touch targets — v1.2
+- ✓ Real-time reaction pipeline: subscription → reducer → optimistic UI with localStorage persistence — v1.2
+- ✓ 25-test reaction suite covering resolver toggle, schema validation, privacy enforcement — v1.2
 
 ### Active
 
-- [ ] ReactionBar component with optimistic toggle, ARIA, 44px touch targets (RXN-10-13)
 - [ ] Shared `formatRelativeTime` + `useSessionMutations` hook extraction (STRUC-01, STRUC-02, STRUC-06)
 - [ ] SnippetCard extraction, QAPanel sort dedup, QuestionCard variants (STRUC-03-05)
 - [ ] Vote button fill states, identity chip, own-question indicator (UXINT-01-07)
@@ -58,21 +60,15 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - E2E tests on every PR — 5-15 min; run on main only
 - WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Current Milestone: v1.2 Reactions
-
-**Goal:** Add emoji reactions to Questions and Replies — lightweight sentiment beyond upvotes.
-
-**Status:** Phase 9 (backend) complete. Phase 10 (frontend UI) next.
-
-## Future Milestone: v1.3 Participant & Host UX Refactor
+## Next Milestone: v1.3 Participant & Host UX Refactor
 
 **Goal:** Decompose monolithic components, eliminate duplication, improve accessibility and interaction design.
 
 ## Context
 
 - **Stack**: Next.js 16 + SST Ion (AWS) + DynamoDB + AppSync
-- **Codebase**: 8,056 LOC TypeScript across 3 packages (core, frontend, functions)
-- **Test suite**: 98 tests passing (74 v1.1 + 25 v1.2 reaction tests)
+- **Codebase**: ~9,150 LOC TypeScript across 3 packages (core, frontend, functions)
+- **Test suite**: 98 tests passing (74 v1.1 + 24 v1.2 reaction tests)
 - **Scale target**: 50-500 concurrent participants per session
 - **Auth model**: No accounts. Host via hashed secret. Participants via device fingerprint
 - **Quality gates**: Pre-commit lint+format+typecheck, CI on every PR
@@ -88,23 +84,28 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ## Key Decisions
 
-| Decision                                    | Rationale                                                           | Outcome                                            |
-| ------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------- |
-| Single-table DynamoDB                       | Minimize read latency for session-scoped data                       | ✓ Good — single scan serves entire session         |
-| Single AppSync subscription channel         | Reduces connection overhead; union type keeps it typed              | ✓ Good — reactions reuse same channel              |
-| Device fingerprint over IP                  | Conference WiFi would cause false positives                         | ✓ Good — works across shared networks              |
-| Host-only clipboard                         | Keeps feed curated and relevant to presentation                     | ✓ Good                                             |
-| Shiki dual-theme SSR                        | No layout shift on theme toggle, no client JS                       | ✓ Good — Shiki absent from client bundle           |
-| 50% downvote threshold                      | Balance community moderation without easy censorship                | ✓ Good                                             |
-| aws-amplify for AppSync client              | Official SDK for WebSocket subscriptions                            | ⚠️ Revisit — 68kB gzipped exceeds budget alone     |
-| Static OG image → dynamic per-session       | Phase 8 decision: brand consistency first, then added dynamic route | ✓ Good — both exist now                            |
-| safeAction wrapper                          | Network failures need graceful handling                             | ✓ Good — 15 call sites protected                   |
-| Pino at module level in Lambda              | Avoid re-init on warm starts                                        | ✓ Good — structured logs in CloudWatch             |
-| EMOJI_PALETTE as single source of truth     | Zod + TypeScript + runtime all derived from one array               | ✓ Good — extending palette auto-updates everything |
-| Separate rate-limit namespace for reactions | Don't consume question submission budget                            | ✓ Good — `reaction#` prefix isolates limits        |
-| continue-on-error for bundle-size CI job    | aws-amplify exceeds budget; can't block PRs                         | ⚠️ Revisit — remove when amplify replaced          |
-| noValidate on landing form                  | Route all validation through server action for unified toast UX     | ✓ Good                                             |
+| Decision                                     | Rationale                                                           | Outcome                                            |
+| -------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------- |
+| Single-table DynamoDB                        | Minimize read latency for session-scoped data                       | ✓ Good — single scan serves entire session         |
+| Single AppSync subscription channel          | Reduces connection overhead; union type keeps it typed              | ✓ Good — reactions reuse same channel              |
+| Device fingerprint over IP                   | Conference WiFi would cause false positives                         | ✓ Good — works across shared networks              |
+| Host-only clipboard                          | Keeps feed curated and relevant to presentation                     | ✓ Good                                             |
+| Shiki dual-theme SSR                         | No layout shift on theme toggle, no client JS                       | ✓ Good — Shiki absent from client bundle           |
+| 50% downvote threshold                       | Balance community moderation without easy censorship                | ✓ Good                                             |
+| aws-amplify for AppSync client               | Official SDK for WebSocket subscriptions                            | ⚠️ Revisit — 68kB gzipped exceeds budget alone     |
+| Static OG image → dynamic per-session        | Phase 8 decision: brand consistency first, then added dynamic route | ✓ Good — both exist now                            |
+| safeAction wrapper                           | Network failures need graceful handling                             | ✓ Good — 15 call sites protected                   |
+| Pino at module level in Lambda               | Avoid re-init on warm starts                                        | ✓ Good — structured logs in CloudWatch             |
+| EMOJI_PALETTE as single source of truth      | Zod + TypeScript + runtime all derived from one array               | ✓ Good — extending palette auto-updates everything |
+| Separate rate-limit namespace for reactions  | Don't consume question submission budget                            | ✓ Good — `reaction#` prefix isolates limits        |
+| continue-on-error for bundle-size CI job     | aws-amplify exceeds budget; can't block PRs                         | ⚠️ Revisit — remove when amplify replaced          |
+| noValidate on landing form                   | Route all validation through server action for unified toast UX     | ✓ Good                                             |
+| Fixed 6-emoji palette (no picker library)    | Bundle budget (80kB); prevents abuse; single source of truth        | ✓ Good — extending palette auto-updates everything |
+| Inline emoji picker (flex flow, not popover) | Bret Victor direct manipulation; calm, non-intrusive UX             | ✓ Good                                             |
+| reactedByMe via localStorage, not server     | Privacy: subscription payload has counts only, no fingerprints      | ✓ Good — by design for anonymous sessions          |
+| Silent failure on reactAction                | No toast on error; UI reverts optimistically                        | ✓ Good — consistent with vote pattern              |
+| Slack-style reaction pills (bg-muted)        | Neutral gray, not brand indigo — per design system anti-patterns    | ✓ Good                                             |
 
 ---
 
-_Last updated: 2026-03-17 after v1.1 Enterprise Hardening milestone_
+_Last updated: 2026-03-17 after v1.2 Reactions milestone_

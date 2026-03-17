@@ -1,5 +1,32 @@
 # Milestones
 
+## v1.2 Reactions (Shipped: 2026-03-17)
+
+**Phases completed:** 2 phases (9-10), 5 plans, 11 tasks
+**Timeline:** 2 days (2026-03-16 → 2026-03-17)
+**Git range:** `0f4e6d8..61e5f68` (25 files, +2,421/-31)
+
+**Key accomplishments:**
+
+- EMOJI_PALETTE as single source of truth in @nasqa/core — EmojiKey type, Zod schema, and 6-emoji palette auto-derived
+- handleReact resolver with atomic DynamoDB String Set toggle, per-fingerprint dedup, `reaction#` rate-limit namespace (30/min), ban enforcement
+- GraphQL wiring: react mutation, REACTION_UPDATED subscription event, reactionCounts AWSJSON in getSessionData SSR hydration
+- 25-test reaction suite covering resolver toggle logic, emoji schema validation, and privacy enforcement (no fingerprint leaks)
+- ReactionBar component with Slack-style pills, inline emoji picker, optimistic toggle with debounce, ARIA labels, 44px touch targets
+- Full real-time pipeline: subscription → reducer → optimistic UI with localStorage persistence and silent rollback
+
+**Known tech debt:**
+
+- `reactedByMe` dead payload weight in subscription (~200 bytes/event) — by design
+- Cross-device own-reaction highlight not restored after localStorage clear — by design
+
+**Archives:**
+
+- `milestones/v1.2-ROADMAP.md`
+- `milestones/v1.2-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.1 Enterprise Hardening (Shipped: 2026-03-17)
 
 **Phases completed:** 4 phases (5-8), 10 plans
