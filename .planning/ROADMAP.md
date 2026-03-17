@@ -42,7 +42,7 @@
 **Milestone Goal:** Decompose monolithic session components, eliminate code duplication, and implement interaction improvements across both participant and host views — making the interface honest, accessible, and structurally sound.
 
 - [x] **Phase 11: Shared Utilities and Hook Extraction** — `formatRelativeTime` extracted to a single canonical module; `useSessionMutations` hook consolidates all mutation handlers from both page orchestrators (completed 2026-03-17)
-- [ ] **Phase 12: Component Decomposition** — `SnippetCard` extracted as a standalone component; `QAPanel` sort logic deduplicated into one shared utility; `QuestionCard` split into host and participant variants
+- [x] **Phase 12: Component Decomposition** — `SnippetCard` extracted as a standalone component; `QAPanel` sort logic deduplicated into one shared utility; `QuestionCard` split into host and participant variants (completed 2026-03-17)
 - [ ] **Phase 13: UX Polish and Accessibility** — Vote buttons show filled state with `aria-pressed`; identity chip surfaces device identity inline in QAInput; own questions visually distinguished in the feed
 
 ## Phase Details
@@ -77,7 +77,7 @@ Plans:
 3. `QuestionCard` renders a distinct host variant (with moderation controls) and a distinct participant variant (without them) based on the caller context — the two variants are independently importable
 4. State transitions between question states (normal, hidden, banned) animate correctly — a question moving from visible to hidden plays its exit animation without a layout pop
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 
@@ -116,5 +116,5 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete    | 2026-03-17 |
 | 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
 | 11. Shared Utilities and Hook Extraction | 2/2       | Complete       | 2026-03-17  | -          |
-| 12. Component Decomposition              | 2/3       | In Progress    |             | -          |
+| 12. Component Decomposition              | 3/3       | Complete       | 2026-03-17  | -          |
 | 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |
