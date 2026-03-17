@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 9 of 13 (Reactions Data Model and Backend — in progress)
-Plan: 1 of 3 complete
-Status: Phase 9 Plan 01 complete; Plan 02 next (schema wiring + resolver registration)
-Last activity: 2026-03-16 — Phase 9 Plan 01 complete (EMOJI_PALETTE, emojiKeySchema, ReactArgs, ReactionCounts, handleReact resolver)
+Plan: 3 of 3 complete
+Status: Phase 9 all 3 plans complete; Phase 10 next (reactions frontend)
+Last activity: 2026-03-17 — Phase 9 Plan 03 complete (unit tests for handleReact, EMOJI_PALETTE, emojiKeySchema — 98 tests passing)
 
-Progress: [█████████████░░░░░░░] 58% (v1.0+v1.1 Phases 5-9.1 complete; 9.2 next)
+Progress: [██████████████░░░░░░] 62% (v1.0+v1.1 Phases 5-9 complete; Phase 10 next)
 
 ## Performance Metrics
 
@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - [09-01]: Array.from() over Set.has() for reactors inspection — DynamoDB DocumentClient may return StringSet as custom object; Array.from().includes() is safe regardless of marshaling
 - [09-01]: reactedByMe toggled emoji overridden with isNowReacted flag — avoids re-reading the just-modified Set; eliminates DocumentClient StringSet ambiguity for the key that matters most
 - [09-01]: Second CCF on toggle-off = no-op — race condition where two concurrent toggle-off requests arrive simultaneously is handled as idempotent; client reconciles via subscription
+- [09-03]: Rate-limit UpdateCommand fires before reaction UpdateCommand — mock sequences must provide rate-limit resolve as call #1 when testing toggle-off path
+- [09-03]: SESSION# PK filter distinguishes reaction UpdateCommand from RATELIMIT# UpdateCommand in mock call inspection — cleaner than parsing UpdateExpression
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16
-Stopped at: Completed 09-01-PLAN.md (EMOJI_PALETTE + emojiKeySchema in @nasqa/core, ReactArgs + ReactionCounts types, REACTION_UPDATED enum, handleReact resolver with atomic DynamoDB toggle)
+Last session: 2026-03-17
+Stopped at: Completed 09-03-PLAN.md (unit tests for handleReact resolver, EMOJI_PALETTE, emojiKeySchema — 98 tests passing across all packages)
 Resume file: None
