@@ -108,6 +108,16 @@ export const RESTORE_QUESTION = `
   }
 `;
 
+export const REACT = `
+  mutation React($sessionSlug: String!, $targetId: String!, $targetType: ReactionTargetType!, $emoji: String!, $fingerprint: String!) {
+    react(sessionSlug: $sessionSlug, targetId: $targetId, targetType: $targetType, emoji: $emoji, fingerprint: $fingerprint) {
+      eventType
+      sessionSlug
+      payload
+    }
+  }
+`;
+
 export const GET_SESSION_DATA = `
   query GetSessionData($sessionSlug: String!) {
     getSessionData(sessionSlug: $sessionSlug) {
@@ -131,6 +141,7 @@ export const GET_SESSION_DATA = `
         isHidden
         isFocused
         isBanned
+        reactionCounts
         createdAt
         TTL
       }
@@ -141,6 +152,7 @@ export const GET_SESSION_DATA = `
         text
         isHostReply
         fingerprint
+        reactionCounts
         createdAt
         TTL
       }

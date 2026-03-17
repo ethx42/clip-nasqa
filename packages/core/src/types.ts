@@ -83,6 +83,7 @@ export interface Question {
   isHidden: boolean;
   isFocused: boolean;
   isBanned: boolean;
+  reactionCounts?: string; // AWSJSON — JSON.stringify of ReactionCounts
   createdAt: number;
   TTL: number;
 }
@@ -94,6 +95,7 @@ export interface Reply {
   text: string;
   isHostReply: boolean;
   fingerprint: string;
+  reactionCounts?: string; // AWSJSON — JSON.stringify of ReactionCounts
   createdAt: number;
   TTL: number;
 }
