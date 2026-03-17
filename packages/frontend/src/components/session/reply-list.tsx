@@ -6,9 +6,13 @@ import type { Reply } from "@nasqa/core";
 
 import { linkifyText } from "@/lib/linkify";
 
+import { ReactionBar } from "./reaction-bar";
+
 interface ReplyListProps {
   replies: Reply[];
   isHost: boolean;
+  sessionSlug: string;
+  fingerprint: string;
 }
 
 function formatRelativeTime(
@@ -24,7 +28,7 @@ function formatRelativeTime(
   return t("timeDaysAgo", { count: Math.floor(diffSeconds / 86400) });
 }
 
-export function ReplyList({ replies }: ReplyListProps) {
+export function ReplyList({ replies, sessionSlug, fingerprint }: ReplyListProps) {
   const t = useTranslations("session");
   return (
     <div className="space-y-3">
@@ -33,13 +37,13 @@ export function ReplyList({ replies }: ReplyListProps) {
           key={reply.id}
           className={
             reply.isHostReply
-              ? "border-l-2 border-emerald-500 pl-4"
+              ? "border-l-2 border-indigo-500 pl-4"
               : "border-l-2 border-border pl-4"
           }
         >
           <div className="flex flex-wrap items-center gap-2">
             {reply.isHostReply && (
-              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-500">
+              <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-bold text-indigo-500">
                 {t("speaker")}
               </span>
             )}
@@ -50,6 +54,14 @@ export function ReplyList({ replies }: ReplyListProps) {
           <p className="mt-1 break-words text-[15px] leading-relaxed text-foreground/85">
             {linkifyText(reply.text)}
           </p>
+          <ReactionBar
+            sessionSlug={sessionSlug}
+            targetId={reply.id}
+            targetType="REPLY"
+            reactionCounts={reply.reactionCounts}
+            fingerprint={fingerprint}
+            className="mt-1.5"
+          />
         </div>
       ))}
     </div>

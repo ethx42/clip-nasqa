@@ -11,6 +11,7 @@ import { linkifyText } from "@/lib/linkify";
 import { cn } from "@/lib/utils";
 
 import { PixelAvatar } from "./pixel-avatar";
+import { ReactionBar } from "./reaction-bar";
 import { ReplyList } from "./reply-list";
 
 interface QuestionCardProps {
@@ -161,7 +162,7 @@ export function QuestionCard({
           {isHost && (
             <button
               onClick={() => onRestore?.(question.id)}
-              className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/10"
+              className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/10"
             >
               {t("restore")}
             </button>
@@ -177,12 +178,12 @@ export function QuestionCard({
       className={cn(
         "group relative rounded-xl border border-border bg-card p-4 transition-all",
         question.isFocused &&
-          "ring-2 ring-emerald-500/50 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]",
+          "ring-2 ring-indigo-500/50 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
       )}
     >
       {question.isFocused && (
         <div className="mb-3 flex items-center gap-1.5">
-          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-500">
+          <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-indigo-500">
             {tSession("focused")}
           </span>
         </div>
@@ -197,7 +198,7 @@ export function QuestionCard({
             aria-label={isVoted ? tSession("removeUpvote") : tSession("upvoteQuestion")}
             className={cn(
               "rounded-lg p-1.5 transition-colors hover:bg-accent",
-              isVoted ? "text-emerald-500" : "text-muted-foreground",
+              isVoted ? "text-amber-500" : "text-muted-foreground",
             )}
           >
             <ChevronUp className="h-5 w-5" />
@@ -205,7 +206,7 @@ export function QuestionCard({
           <span
             className={cn(
               "text-base font-bold tabular-nums",
-              isVoted ? "text-emerald-500" : "text-muted-foreground",
+              isVoted ? "text-amber-500" : "text-muted-foreground",
             )}
           >
             {question.upvoteCount}
@@ -217,7 +218,7 @@ export function QuestionCard({
             aria-label={isDownvoted ? tSession("removeDownvote") : tSession("downvoteQuestion")}
             className={cn(
               "mt-1 rounded-lg p-1.5 transition-colors hover:bg-accent",
-              isDownvoted ? "text-rose-500" : "text-muted-foreground",
+              isDownvoted ? "text-destructive" : "text-muted-foreground",
             )}
           >
             <ThumbsDown className="h-4 w-4" />
@@ -225,7 +226,7 @@ export function QuestionCard({
           <span
             className={cn(
               "text-xs font-semibold tabular-nums",
-              isDownvoted ? "text-rose-500" : "text-muted-foreground",
+              isDownvoted ? "text-destructive" : "text-muted-foreground",
             )}
           >
             {question.downvoteCount}
@@ -243,7 +244,7 @@ export function QuestionCard({
               className={cn(
                 "text-[13px] font-semibold truncate max-w-[10rem]",
                 isOwn
-                  ? "text-emerald-600 dark:text-emerald-400"
+                  ? "text-indigo-600 dark:text-indigo-400"
                   : question.authorName
                     ? "text-foreground/80"
                     : "text-muted-foreground/60",
@@ -336,6 +337,16 @@ export function QuestionCard({
             </button>
           </div>
 
+          {/* Reaction bar — only in normal/expanded state, not banned/hidden-collapsed */}
+          <ReactionBar
+            sessionSlug={question.sessionSlug}
+            targetId={question.id}
+            targetType="QUESTION"
+            reactionCounts={question.reactionCounts}
+            fingerprint={fingerprint}
+            className="mt-2"
+          />
+
           {/* Inline reply input */}
           {showReplyInput && (
             <div className="mt-4">
@@ -347,7 +358,7 @@ export function QuestionCard({
                   placeholder={tSession("replyPlaceholder")}
                   rows={2}
                   maxLength={REPLY_CHAR_LIMIT}
-                  className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 />
                 <div className="mt-2 flex items-center justify-between">
                   {replyText.length >= REPLY_COUNTER_THRESHOLD ? (
@@ -375,7 +386,7 @@ export function QuestionCard({
                     <button
                       onClick={handleReplySubmit}
                       disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
-                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                     >
                       {tSession("send")}
                     </button>
@@ -388,7 +399,12 @@ export function QuestionCard({
           {/* Expanded reply list */}
           {showReplies && replies.length > 0 && (
             <div className="mt-4">
-              <ReplyList replies={replies} isHost={isHost} />
+              <ReplyList
+                replies={replies}
+                isHost={isHost}
+                sessionSlug={question.sessionSlug}
+                fingerprint={fingerprint}
+              />
             </div>
           )}
         </div>
