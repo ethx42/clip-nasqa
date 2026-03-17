@@ -10,14 +10,14 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 11 — Shared Utilities and Hook Extraction
-Plan: —
-Status: Roadmap created, ready for planning
-Last activity: 2026-03-17 — v1.3 roadmap finalized (phases 11-13)
+Plan: 02 of 02 complete
+Status: Phase 11 complete
+Last activity: 2026-03-17 — Phase 11 plans 01 and 02 executed (formatRelativeTime + mutation hook extraction)
 
 **Progress bar:** Phase 11 of 13 total (phases 11-13 are v1.3 scope)
 
 ```
-v1.3: [          ] 0/3 phases complete
+v1.3: [###       ] 1/3 phases complete
 ```
 
 ## Performance Metrics
@@ -36,17 +36,20 @@ _Updated after each plan completion_
 
 Decisions are logged in PROJECT.md Key Decisions table.
 
+- [11-02] Used `useRef + useEffect` for questionsRef (not experimental `useEffectEvent`) — compatible with current React version, same correctness for async rollbacks
+- [11-02] `authorName` typed as `string | undefined` in UseSessionMutationsParams to match `useIdentity` return type without forced non-null assertions at call sites
+- [Phase 11]: Single formatRelativeTime utility with two overloads: short-token for Server Components, i18n-aware for Client Components; week bucket added at >=7d per user decision
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-- [Phase 11]: Confirm stale closure fix strategy — `useEffectEvent` vs `useRef`-based state snapshot — during implementation
 - [Phase 12]: Validate AnimatePresence compound key approach under rapid state transitions before committing to it
 
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: v1.3 roadmap created (phases 11-13)
-Resume at: `/gsd:plan-phase 11`
+Stopped at: Completed 11-02-PLAN.md (mutation hook extraction — useSessionMutations + useHostMutations)
+Resume at: `/gsd:plan-phase 12`

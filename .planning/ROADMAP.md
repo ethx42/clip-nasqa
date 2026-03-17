@@ -41,7 +41,7 @@
 
 **Milestone Goal:** Decompose monolithic session components, eliminate code duplication, and implement interaction improvements across both participant and host views — making the interface honest, accessible, and structurally sound.
 
-- [ ] **Phase 11: Shared Utilities and Hook Extraction** — `formatRelativeTime` extracted to a single canonical module; `useSessionMutations` hook consolidates all mutation handlers from both page orchestrators
+- [x] **Phase 11: Shared Utilities and Hook Extraction** — `formatRelativeTime` extracted to a single canonical module; `useSessionMutations` hook consolidates all mutation handlers from both page orchestrators (completed 2026-03-17)
 - [ ] **Phase 12: Component Decomposition** — `SnippetCard` extracted as a standalone component; `QAPanel` sort logic deduplicated into one shared utility; `QuestionCard` split into host and participant variants
 - [ ] **Phase 13: UX Polish and Accessibility** — Vote buttons show filled state with `aria-pressed`; identity chip surfaces device identity inline in QAInput; own questions visually distinguished in the feed
 
@@ -58,7 +58,7 @@
 2. `SessionLivePage` and `SessionLiveHostPage` each contain no inline mutation handlers — all submit, vote, reply, and moderation callbacks are imported from `useSessionMutations`
 3. Stale closure bugs under concurrent vote events are eliminated — rollback handlers in `useSessionMutations` read current state without capturing a snapshot from the render they were created in
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 
@@ -108,6 +108,6 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 8. SEO and Accessibility                 | v1.1      | 2/2            | Complete    | 2026-03-17 |
 | 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete    | 2026-03-17 |
 | 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction | v1.3      | 0/2            | Not started | -          |
+| 11. Shared Utilities and Hook Extraction | 2/2       | Complete       | 2026-03-17  | -          |
 | 12. Component Decomposition              | v1.3      | 0/TBD          | Not started | -          |
 | 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |
