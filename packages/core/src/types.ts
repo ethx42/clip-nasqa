@@ -107,6 +107,7 @@ export enum SessionEventType {
   QUESTION_UPDATED = "QUESTION_UPDATED",
   REPLY_ADDED = "REPLY_ADDED",
   PARTICIPANT_BANNED = "PARTICIPANT_BANNED",
+  REACTION_UPDATED = "REACTION_UPDATED",
 }
 
 // SessionUpdate tagged union — mirrors the GraphQL SessionUpdate type
@@ -199,4 +200,23 @@ export interface BanItem {
   isBanned: boolean;
   bannedPostCount: number;
   TTL: number;
+}
+
+// Reaction mutation argument interface
+export interface ReactArgs {
+  sessionSlug: string;
+  targetId: string;
+  targetType: "QUESTION" | "REPLY";
+  emoji: string; // validated against emojiKeySchema in the resolver
+  fingerprint: string;
+}
+
+// Reaction counts for all 6 emojis (used in mutation response and subscription payload)
+export interface ReactionCounts {
+  thumbsup: number;
+  heart: number;
+  party: number;
+  laugh: number;
+  thinking: number;
+  eyes: number;
 }
