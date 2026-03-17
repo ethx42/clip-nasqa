@@ -77,7 +77,12 @@ Plans:
 2. A participant's own active reactions are visually distinct from inactive ones (highlighted state); toggling an active reaction removes the highlight and decrements the displayed count
 3. When a `REACTION_UPDATED` subscription event arrives for an item, only that item's reaction counts update in place — no full list re-render; count display converges to the authoritative server value
 4. All 6 reaction buttons have `aria-label` strings in en, es, and pt (e.g., "React with thumbs up: 3 reactions") and carry `aria-pressed` to reflect active state; each button's touch target meets the 44px minimum on mobile
-   **Plans**: TBD
+   **Plans**: 2 plans
+
+Plans:
+
+- [ ] 10-01-PLAN.md — Type updates, GraphQL query fix, REACT mutation, server action, reducer + subscription wiring, i18n keys
+- [ ] 10-02-PLAN.md — useReactionState hook, ReactionBar component, integration into QuestionCard and ReplyList
 
 ### Phase 11: Shared Utilities and Hook Extraction
 
@@ -102,7 +107,7 @@ Plans:
 1. `SnippetCard` can be imported from its own file and rendered in a Vitest component test without importing `ClipboardPanel`
 2. Sort logic exists in exactly one location in `QAPanel`; removing the duplicate means questions cannot display in different orders between the panel and any derived view
 3. `QuestionCard` renders one of three clearly-separated variant components (`QuestionCardNormal`, `QuestionCardBanned`, `QuestionCardHidden`) based on question state; each variant is independently importable and testable
-4. Framer Motion `AnimatePresence` exit animations still play when a question transitions between states (normal → banned, normal → hidden) — compound key `${question.id}-${variant}` forces clean remount without layout pop
+4. Framer Motion `AnimatePresence` exit animations still play when a question transitions between states (normal -> banned, normal -> hidden) — compound key `${question.id}-${variant}` forces clean remount without layout pop
 5. `isFocused` prop changes on an already-mounted `QuestionCardNormal` auto-expand the reply section via `useEffect` sync — the stale-state bug where already-mounted cards ignore host focus is fixed
    **Plans**: TBD
 
@@ -124,7 +129,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 9 → 10 → 11 → 12 → 13
+Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13
 
 | Phase                                           | Milestone | Plans Complete | Status      | Completed  |
 | ----------------------------------------------- | --------- | -------------- | ----------- | ---------- |
@@ -137,7 +142,7 @@ Phases execute in numeric order: 9 → 10 → 11 → 12 → 13
 | 7. Error Handling and Observability             | v1.1      | 3/3            | Complete    | 2026-03-16 |
 | 8. SEO and Accessibility                        | v1.1      | 2/2            | Complete    | 2026-03-17 |
 | 9. Reactions Data Model and Backend             | v1.2      | 3/3            | Complete    | 2026-03-17 |
-| 10. Reactions Frontend State and UI             | v1.2      | 0/TBD          | Not started | -          |
+| 10. Reactions Frontend State and UI             | v1.2      | 0/2            | Not started | -          |
 | 11. Shared Utilities and Hook Extraction        | v1.3      | 0/TBD          | Not started | -          |
 | 12. Component Decomposition and QAPanel Cleanup | v1.3      | 0/TBD          | Not started | -          |
 | 13. Accessibility and UX Polish                 | v1.3      | 0/TBD          | Not started | -          |
