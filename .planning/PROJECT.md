@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time session tool for speakers and presenters. The host creates a temporary live session where they push code snippets and text to a shared clipboard, while the audience asks questions, upvotes, and interacts — all anonymous, no accounts, no friction. Sessions auto-expire after 24 hours.
+A real-time session tool for speakers and presenters. The host creates a temporary live session where they push code snippets and text to a shared clipboard, while the audience asks questions, upvotes, and interacts — all anonymous, no accounts, no friction. Sessions auto-expire after 24 hours. Production-hardened with quality gates, CI/CD, error handling, SEO, and accessibility.
 
 ## Core Value
 
@@ -12,38 +12,38 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Marketing landing page with CTA to create session — v1.0
+- ✓ Anonymous session creation with title, slug, hostSecret — v1.0
+- ✓ Host secret SHA-256 hashed, displayed once on creation — v1.0
+- ✓ Host URL with hash fragment secret — v1.0
+- ✓ QR code for participant scanning — v1.0
+- ✓ 24-hour TTL auto-cleanup — v1.0
+- ✓ Real-time clipboard with Shiki dual-theme highlighting (SSR) — v1.0
+- ✓ Q&A with upvoting, reply threading, speaker badges — v1.0
+- ✓ Community moderation (50% threshold) + host superuser + auto-ban — v1.0
+- ✓ Device fingerprint identity tracking — v1.0
+- ✓ i18n (en/es/pt) with locale-prefixed routing — v1.0
+- ✓ Theme system (dark/light) with no layout shift — v1.0
+- ✓ Optimistic UI < 100ms, broadcast < 200ms — v1.0
+- ✓ Rate limiting (host 10/min, participant 3/min) — v1.0
+- ✓ SST Ion IaC with `sst deploy` — v1.0
+- ✓ Pre-commit hooks (Husky + lint-staged + Prettier + TypeScript strict) — v1.1
+- ✓ 74-test Vitest suite (schemas, resolvers, components) — v1.1
+- ✓ GitHub Actions CI with 4 parallel jobs gating every PR — v1.1
+- ✓ Error boundaries (global-error, error, not-found) with structured errors — v1.1
+- ✓ safeAction network resilience wrapper on all 15 server action call sites — v1.1
+- ✓ Pino structured JSON logging in Lambda resolvers — v1.1
+- ✓ SEO: robots.txt, sitemap.xml, dynamic OG images, generateMetadata, JSON-LD — v1.1
+- ✓ Accessibility: semantic landmarks, ARIA labels, skip-to-content, aria-live — v1.1
+- ✓ Reactions backend: EMOJI_PALETTE, handleReact resolver, rate limiting, ban check — v1.2 (Phase 9)
 
 ### Active
 
-- [ ] Marketing landing page explaining Nasqa Live with CTA to create session
-- [ ] Anonymous session creation with title input (max 50 chars), slug generation, and UUIDv4 hostSecret
-- [ ] Host secret displayed on creation page for copying; hashed (SHA-256) before storage
-- [ ] Host URL with embedded secret as query param for bookmark-based re-entry
-- [ ] QR code generation for participants to scan and join
-- [ ] 24-hour TTL auto-cleanup on all records (Session, Snippet, Question, Reply)
-- [ ] Reverse-chronological snippet feed with "Hero" (latest) prominence
-- [ ] Host-only snippet posting (text and code with language attribute)
-- [ ] Shiki syntax highlighting with dual-theme support (light/dark, no layout shift)
-- [ ] Host can delete individual snippets or clear entire clipboard (verified by hostSecret)
-- [ ] Anonymous question submission (max 500 chars)
-- [ ] Real-time upvoting with DynamoDB atomic increments; localStorage prevents double-voting
-- [ ] Community moderation: thumbs-down votes >= 50% of connected audience auto-hides content
-- [ ] Auto-ban: 3 banned posts (by audience or host) blocks participant from posting
-- [ ] Host superuser: can instantly ban content or permanently ban participants (by device fingerprint)
-- [ ] Device fingerprint (localStorage token) for anonymous participant identity tracking
-- [ ] One-level deep reply threading; speaker replies visually distinct (emerald border + "Speaker" badge)
-- [ ] Focus state: host toggles isFocused on a question, pinning it with pulsing glow animation
-- [ ] Optional participant identity: name displayed on posts, email stored but not shown
-- [ ] DynamoDB single-table design (PK: SESSION#slug, SK patterns: METADATA, SNIPPET#, QUESTION#, REPLY#)
-- [ ] AppSync WebSocket subscriptions via single union-type SessionUpdate channel per session
-- [ ] i18n with next-intl (en, es, pt) — UI labels only, not user-generated content
-- [ ] Locale-based routing via middleware (e.g., /en/live/myslug), browser-detected default with en fallback
-- [ ] Theme system via next-themes (Dark: Zinc-950/Zinc-50/Zinc-800, Light: White/Zinc-900/Zinc-200, Accent: Emerald-500)
-- [ ] Optimistic UI with < 100ms internal state updates, < 200ms global broadcast
-- [ ] Initial JS payload < 80kB gzipped; Next.js Server Components for session shell
-- [ ] Rate limiting: host 10 snippets/min, public 3 questions/min
-- [ ] IaC via SST Ion: `sst deploy` provisions all AWS resources without manual intervention
+- [ ] ReactionBar component with optimistic toggle, ARIA, 44px touch targets (RXN-10-13)
+- [ ] Shared `formatRelativeTime` + `useSessionMutations` hook extraction (STRUC-01, STRUC-02, STRUC-06)
+- [ ] SnippetCard extraction, QAPanel sort dedup, QuestionCard variants (STRUC-03-05)
+- [ ] Vote button fill states, identity chip, own-question indicator (UXINT-01-07)
+- [ ] ARIA tablist on mobile tabs, aria-live on NewContentBanner, aria-pressed on votes (A11Y-04-07)
 
 ### Out of Scope
 
@@ -52,81 +52,59 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - Participant snippet posting — clipboard is host-only
 - Session persistence beyond 24 hours — TTL is a feature, not a limitation
 - Mobile native apps — web-first, responsive design
+- Emoji picker library — bundle budget (80kB); fixed 6-emoji palette prevents abuse
+- "Who reacted" tooltip — privacy concern for anonymous sessions
+- Reactions affecting sort order — upvotes handle ranking; reactions are sentiment only
+- E2E tests on every PR — 5-15 min; run on main only
+- WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Current Milestone: v1.1 Enterprise Hardening
+## Current Milestone: v1.2 Reactions
 
-**Goal:** Harden the codebase for production reliability and developer experience — testing, CI/CD, error handling, monitoring, code quality gates, accessibility, and SEO.
+**Goal:** Add emoji reactions to Questions and Replies — lightweight sentiment beyond upvotes.
 
-**Target features:**
-
-- Testing infrastructure (Vitest + React Testing Library)
-- CI/CD pipeline (GitHub Actions: lint, typecheck, test, deploy)
-- Error boundaries (error.tsx, graceful fallbacks)
-- Monitoring/observability (Sentry error tracking, structured logging)
-- Pre-commit hooks (Husky + lint-staged)
-- Dynamic SEO (Open Graph, per-session metadata)
-- Accessibility improvements (ARIA labels, keyboard navigation, semantic HTML)
-
-## Next Milestone: v1.2 Reactions
-
-**Goal:** Add emoji reactions to Questions and Replies so participants can express sentiment beyond upvotes — lightweight engagement signals that complement the existing voting system without affecting sort order.
-
-**Target features:**
-
-- Fixed 6-emoji palette (👍 ❤️ 🎉 😂 🤔 👀) — no emoji picker (bundle budget)
-- Reactions on Questions and Replies (not Snippets)
-- DynamoDB atomic dedup (same Set pattern as existing votes)
-- Real-time propagation via existing SessionUpdate subscription
-- Rate limiting and ban enforcement for reactions
-- Optimistic UI with same patterns as vote system
+**Status:** Phase 9 (backend) complete. Phase 10 (frontend UI) next.
 
 ## Future Milestone: v1.3 Participant & Host UX Refactor
 
-**Goal:** Decompose monolithic session components, eliminate code duplication, and implement interaction improvements across both participant and host views — making the interface honest, accessible, and structurally sound.
-
-**Target features:**
-
-- Extract `useSessionMutations` hook from SessionLivePage (270-line God Orchestrator → 40-line composition root)
-- Shared `formatRelativeTime` utility (deduplicate from 3 files)
-- Extract `SnippetCard` to own file, memoize `repliesByQuestion` grouping
-- Remove duplicate sorting from QAPanel (accept pre-sorted, own only debounced visual stability)
-- Split `QuestionCard` into state-specific variants (normal, banned, hidden)
-- Identity chip in QAInput (avatar + name, click to edit)
-- ARIA tablist semantics for SessionShell mobile tabs
-- Auto-expand replies for focused questions, merge reply action into reply section
-- Vote button animation + mutual-exclusion visual feedback
-- Enhanced empty states with contextual copy
-- Visual "own question" indicator (left border)
-- `aria-live` on NewContentBanner, `active:scale-95` on vote buttons
+**Goal:** Decompose monolithic components, eliminate duplication, improve accessibility and interaction design.
 
 ## Context
 
 - **Stack**: Next.js 16 + SST Ion (AWS) + DynamoDB + AppSync
-- **Existing codebase**: SST project scaffolding already in place (see `.planning/codebase/`)
+- **Codebase**: 8,056 LOC TypeScript across 3 packages (core, frontend, functions)
+- **Test suite**: 98 tests passing (74 v1.1 + 25 v1.2 reaction tests)
 - **Scale target**: 50-500 concurrent participants per session
-- **Auth model**: No user accounts. Host authenticated via hashed secret. Participants identified by device fingerprint (localStorage token)
-- **Moderation model**: Dual-layer — community voting (50% threshold) + host superuser powers. 3-strike auto-ban for participants
-- **Real-time protocol**: AppSync GraphQL subscriptions over WebSocket, single channel per session with union-type events
+- **Auth model**: No accounts. Host via hashed secret. Participants via device fingerprint
+- **Quality gates**: Pre-commit lint+format+typecheck, CI on every PR
+- **Known tech debt**: Bundle size 156.7kB (aws-amplify ~68kB), pre-commit skips frontend typecheck, no tests for error boundaries/SEO
 
 ## Constraints
 
 - **Tech stack**: Next.js 16 + SST Ion + DynamoDB + AppSync — non-negotiable
 - **TTL**: All data expires in 24 hours — no archival, no export
-- **Bundle**: < 80kB gzipped initial JS payload
+- **Bundle**: < 80kB gzipped initial JS payload (currently exceeded by aws-amplify)
 - **Latency**: < 200ms for real-time broadcast across all clients
-- **Locales**: en, es, pt only for v1
+- **Locales**: en, es, pt only
 
 ## Key Decisions
 
-| Decision                            | Rationale                                                                      | Outcome   |
-| ----------------------------------- | ------------------------------------------------------------------------------ | --------- |
-| Single-table DynamoDB               | Minimize read latency, simplify access patterns for session-scoped data        | — Pending |
-| Single AppSync subscription channel | Reduces connection overhead; union type keeps it typed                         | — Pending |
-| Device fingerprint over IP          | Shared networks (conference WiFi) would cause false positives with IP tracking | — Pending |
-| Host-only clipboard                 | Keeps the feed curated and relevant to the presentation                        | — Pending |
-| Shiki dual-theme                    | Prevents layout shift on theme toggle, better UX than CSS-only approach        | — Pending |
-| 50% downvote threshold              | Balances community moderation power without making it too easy to censor       | — Pending |
+| Decision                                    | Rationale                                                           | Outcome                                            |
+| ------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------- |
+| Single-table DynamoDB                       | Minimize read latency for session-scoped data                       | ✓ Good — single scan serves entire session         |
+| Single AppSync subscription channel         | Reduces connection overhead; union type keeps it typed              | ✓ Good — reactions reuse same channel              |
+| Device fingerprint over IP                  | Conference WiFi would cause false positives                         | ✓ Good — works across shared networks              |
+| Host-only clipboard                         | Keeps feed curated and relevant to presentation                     | ✓ Good                                             |
+| Shiki dual-theme SSR                        | No layout shift on theme toggle, no client JS                       | ✓ Good — Shiki absent from client bundle           |
+| 50% downvote threshold                      | Balance community moderation without easy censorship                | ✓ Good                                             |
+| aws-amplify for AppSync client              | Official SDK for WebSocket subscriptions                            | ⚠️ Revisit — 68kB gzipped exceeds budget alone     |
+| Static OG image → dynamic per-session       | Phase 8 decision: brand consistency first, then added dynamic route | ✓ Good — both exist now                            |
+| safeAction wrapper                          | Network failures need graceful handling                             | ✓ Good — 15 call sites protected                   |
+| Pino at module level in Lambda              | Avoid re-init on warm starts                                        | ✓ Good — structured logs in CloudWatch             |
+| EMOJI_PALETTE as single source of truth     | Zod + TypeScript + runtime all derived from one array               | ✓ Good — extending palette auto-updates everything |
+| Separate rate-limit namespace for reactions | Don't consume question submission budget                            | ✓ Good — `reaction#` prefix isolates limits        |
+| continue-on-error for bundle-size CI job    | aws-amplify exceeds budget; can't block PRs                         | ⚠️ Revisit — remove when amplify replaced          |
+| noValidate on landing form                  | Route all validation through server action for unified toast UX     | ✓ Good                                             |
 
 ---
 
-_Last updated: 2026-03-16 after milestone v1.3 definition_
+_Last updated: 2026-03-17 after v1.1 Enterprise Hardening milestone_
