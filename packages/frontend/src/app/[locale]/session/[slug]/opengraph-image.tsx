@@ -38,17 +38,37 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(145deg, #18181b 0%, #09090b 100%)",
+          backgroundColor: "#09090b",
+          position: "relative",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <LogoMark size={80} color="#6366f1" />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 6,
+            background: "linear-gradient(90deg, #4f46e5 0%, #818cf8 50%, #4f46e5 100%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: 600,
+            height: 600,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(99,102,241,0.20) 0%, rgba(99,102,241,0) 60%)",
+          }}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
+          <LogoMark size={80} color="#818cf8" />
           <span
             style={{
               fontFamily: "sans-serif",
               fontSize: 96,
               fontWeight: 800,
-              color: "#6366f1",
+              color: "#fafafa",
               letterSpacing: "-0.04em",
             }}
           >
@@ -63,7 +83,8 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
   const { questions } = await getSessionData(slug);
   const questionCount = questions.length;
   const statusLabel = session.isActive ? "LIVE" : "ENDED";
-  const statusColor = session.isActive ? "#22c55e" : "#71717a";
+  const statusDot = session.isActive ? "#22c55e" : "#71717a";
+  const statusText = session.isActive ? "#4ade80" : "#a1a1aa";
   const qrUrl = `https://clip.nasqa.io/session/${slug}`;
 
   return new ImageResponse(
@@ -72,44 +93,72 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
         width: "100%",
         height: "100%",
         display: "flex",
-        background: "linear-gradient(145deg, #18181b 0%, #09090b 100%)",
+        backgroundColor: "#09090b",
         position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Indigo glow — gives depth to the dark surface */}
+      {/* Top accent line — 6px, visible even at thumbnail size */}
       <div
         style={{
           position: "absolute",
-          width: 700,
-          height: 700,
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 6,
+          background: "linear-gradient(90deg, #4f46e5 0%, #818cf8 50%, #4f46e5 100%)",
+        }}
+      />
+
+      {/* Primary glow — strong indigo spotlight on content */}
+      <div
+        style={{
+          position: "absolute",
+          width: 900,
+          height: 900,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0) 65%)",
-          top: "20%",
-          left: "15%",
+          background:
+            "radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.06) 35%, rgba(99,102,241,0) 60%)",
+          top: "35%",
+          left: "25%",
           transform: "translate(-50%, -50%)",
         }}
       />
 
-      {/* Left column — branding + content */}
+      {/* Secondary glow — subtle warm wash on QR zone */}
+      <div
+        style={{
+          position: "absolute",
+          width: 500,
+          height: 500,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(129,140,248,0.14) 0%, rgba(129,140,248,0) 65%)",
+          top: "55%",
+          left: "80%",
+          transform: "translate(-50%, -50%)",
+        }}
+      />
+
+      {/* Left column */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
           flex: 1,
-          padding: "48px 0 48px 64px",
+          padding: "52px 0 52px 64px",
           position: "relative",
         }}
       >
-        {/* Top: logo + wordmark — prominent */}
+        {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <LogoMark size={44} color="#6366f1" />
+          <LogoMark size={44} color="#818cf8" />
           <span
             style={{
               fontFamily: "sans-serif",
               fontSize: 36,
               fontWeight: 800,
-              color: "#6366f1",
+              color: "#818cf8",
               letterSpacing: "-0.02em",
             }}
           >
@@ -117,7 +166,7 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           </span>
         </div>
 
-        {/* Middle: session title + status */}
+        {/* Title + status */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 620 }}>
           <span
             style={{
@@ -132,13 +181,13 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
             {session.title}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            {/* Status pill */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                backgroundColor: "rgba(255,255,255,0.06)",
+                backgroundColor: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: 20,
                 padding: "8px 18px",
               }}
@@ -148,22 +197,21 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
                   width: 10,
                   height: 10,
                   borderRadius: "50%",
-                  backgroundColor: statusColor,
+                  backgroundColor: statusDot,
                 }}
               />
               <span
                 style={{
                   fontFamily: "sans-serif",
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: 700,
-                  color: statusColor,
+                  color: statusText,
                   letterSpacing: "0.06em",
                 }}
               >
                 {statusLabel}
               </span>
             </div>
-            {/* Question count */}
             <span
               style={{
                 fontFamily: "sans-serif",
@@ -172,12 +220,12 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
                 fontWeight: 500,
               }}
             >
-              {questionCount} {questionCount === 1 ? "question" : "questions"}
+              {questionCount} {questionCount === 1 ? "Question" : "Questions"}
             </span>
           </div>
         </div>
 
-        {/* Bottom: CTA + domain */}
+        {/* CTA + domain */}
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <div
             style={{
@@ -191,21 +239,20 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
             <span
               style={{
                 fontFamily: "sans-serif",
-                fontSize: 19,
+                fontSize: 22,
                 fontWeight: 700,
                 color: "#ffffff",
               }}
             >
-              Join session →
+              Join Session →
             </span>
           </div>
           <span
             style={{
               fontFamily: "sans-serif",
-              fontSize: 18,
-              color: "#52525b",
-              fontWeight: 500,
-              letterSpacing: "0.01em",
+              fontSize: 22,
+              color: "#a1a1aa",
+              fontWeight: 600,
             }}
           >
             clip.nasqa.io
@@ -213,14 +260,26 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
         </div>
       </div>
 
-      {/* Right column — QR code card */}
+      {/* Vertical divider */}
+      <div style={{ display: "flex", alignItems: "center", padding: "80px 0" }}>
+        <div
+          style={{
+            width: 1,
+            height: "100%",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%)",
+          }}
+        />
+      </div>
+
+      {/* Right column — QR */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "48px 64px 48px 40px",
+          padding: "52px 64px 52px 40px",
         }}
       >
         <div
@@ -231,12 +290,12 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
             gap: 20,
             backgroundColor: "rgba(255,255,255,0.03)",
             borderRadius: 24,
-            border: "1px solid rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.06)",
             padding: "36px 40px",
           }}
         >
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=18181b&color=fafafa&format=png`}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=09090b&color=fafafa&format=png`}
             width={200}
             height={200}
             style={{ borderRadius: 12 }}
@@ -244,13 +303,13 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           <span
             style={{
               fontFamily: "sans-serif",
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: 600,
-              color: "#71717a",
+              color: "#a1a1aa",
               letterSpacing: "0.02em",
             }}
           >
-            Scan to join
+            Scan to Join
           </span>
         </div>
       </div>
