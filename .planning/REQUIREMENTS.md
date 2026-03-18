@@ -29,13 +29,13 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ### URL & Routing
 
-- [ ] **URL-01**: Session codes are 6-digit numeric (collision-free with 24h TTL, pool of 1M codes)
+- [x] **URL-01**: Session codes are 6-digit numeric (collision-free with 24h TTL, pool of 1M codes)
 - [ ] **URL-02**: Session URL flattened from `/[locale]/session/[slug]` to `/[locale]/[code]` (e.g., `/es/482913`)
 - [ ] **URL-03**: Host URL follows same pattern: `/[locale]/[code]/host#secret`
 - [ ] **URL-04**: Dedicated `/join` page with code entry field for voice-dictation scenarios
 - [ ] **URL-05**: QR code updated to resolve to flat URL format
-- [ ] **URL-06**: DynamoDB key migrated from `SESSION#word-slug` to `SESSION#482913`
-- [ ] **URL-07**: `createSession` Server Action generates 6-digit numeric code with collision check instead of word-pair slug
+- [x] **URL-06**: DynamoDB key migrated from `SESSION#word-slug` to `SESSION#482913`
+- [x] **URL-07**: `createSession` Server Action generates 6-digit numeric code with collision check instead of word-pair slug
 - [ ] **URL-08**: Session-specific OG image route relocated from `session/[slug]/opengraph-image.tsx` to `[code]/opengraph-image.tsx` and updated to display numeric code
 
 ### Real-time UX
@@ -113,13 +113,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SHIKI-05    | Phase 16 | Pending  |
 | SHIKI-06    | Phase 16 | Pending  |
 | SHIKI-07    | Phase 16 | Pending  |
-| URL-01      | Phase 14 | Pending  |
+| URL-01      | Phase 14 | Complete |
 | URL-02      | Phase 14 | Pending  |
 | URL-03      | Phase 14 | Pending  |
 | URL-04      | Phase 14 | Pending  |
 | URL-05      | Phase 14 | Pending  |
-| URL-06      | Phase 14 | Pending  |
-| URL-07      | Phase 14 | Pending  |
+| URL-06      | Phase 14 | Complete |
+| URL-07      | Phase 14 | Complete |
 | URL-08      | Phase 14 | Pending  |
 
 **Coverage:**
