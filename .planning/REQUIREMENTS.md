@@ -32,7 +32,7 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 - [x] **URL-01**: Session codes are 6-digit numeric (collision-free with 24h TTL, pool of 1M codes)
 - [x] **URL-02**: Session URL flattened from `/[locale]/session/[slug]` to `/[locale]/[code]` (e.g., `/es/482913`)
 - [x] **URL-03**: Host URL follows same pattern: `/[locale]/[code]/host#secret`
-- [ ] **URL-04**: Dedicated `/join` page with code entry field for voice-dictation scenarios
+- [x] **URL-04**: Dedicated `/join` page with code entry field for voice-dictation scenarios
 - [x] **URL-05**: QR code updated to resolve to flat URL format
 - [x] **URL-06**: DynamoDB key migrated from `SESSION#word-slug` to `SESSION#482913`
 - [x] **URL-07**: `createSession` Server Action generates 6-digit numeric code with collision check instead of word-pair slug
@@ -116,7 +116,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | URL-01      | Phase 14 | Complete |
 | URL-02      | Phase 14 | Complete |
 | URL-03      | Phase 14 | Complete |
-| URL-04      | Phase 14 | Pending  |
+| URL-04      | Phase 14 | Complete |
 | URL-05      | Phase 14 | Complete |
 | URL-06      | Phase 14 | Complete |
 | URL-07      | Phase 14 | Complete |

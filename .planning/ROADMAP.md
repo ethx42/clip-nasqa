@@ -51,7 +51,7 @@
 
 **Milestone Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
 
-- [ ] **Phase 14: Infrastructure and URL Routing** — Lambda memory at 256MB, SSR fetch deduplication, QA sort debounce with layout animations, 6-digit numeric session codes, flat URL structure, /join page
+- [x] **Phase 14: Infrastructure and URL Routing** — Lambda memory at 256MB, SSR fetch deduplication, QA sort debounce with layout animations, 6-digit numeric session codes, flat URL structure, /join page (completed 2026-03-18)
 - [ ] **Phase 15: Mutation Path and Client Utilities** — `graphqlMutation()` and `safeClientMutation()` client utilities, shared error parser, participant mutations execute directly against AppSync, lazy i18n in surviving Server Actions
 - [ ] **Phase 16: Optimistic Snippet Push and Client Shiki** — Host snippet push appears at 0ms via optimistic dispatch with content-fingerprint dedup and rollback, client-side Shiki syntax preview with dynamic import and JS regex engine
 
@@ -124,6 +124,6 @@ Phases execute in numeric order: 14 -> 15 -> 16
 | 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete    | 2026-03-17 |
 | 12. Component Decomposition                  | v1.3      | 3/3            | Complete    | 2026-03-17 |
 | 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete    | 2026-03-18 |
-| 14. Infrastructure and URL Routing           | 3/4       | In Progress    |             | -          |
+| 14. Infrastructure and URL Routing           | 4/4       | Complete       | 2026-03-18  | -          |
 | 15. Mutation Path and Client Utilities       | v2.0      | 0/TBD          | Not started | -          |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 0/TBD          | Not started | -          |

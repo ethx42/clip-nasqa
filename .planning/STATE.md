@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 14 of 16 (Infrastructure and URL Routing)
-Plan: 3 of TBD in current phase
-Status: In progress
-Last activity: 2026-03-18 — Plan 14-03 complete: session routes migrated to [locale]/[code] flat URL structure, OG image updated, robots.ts cleaned
+Plan: 4 of TBD in current phase
+Status: In progress (paused at checkpoint)
+Last activity: 2026-03-18 — Plan 14-04 tasks 1-2 complete: /join page with OTP input and branded OG image built; paused at checkpoint:human-verify (Task 3)
 
 Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
@@ -40,6 +40,7 @@ Recent decisions affecting current work:
 - [14-01]: React.cache pattern established for server-side DynamoDB fetch deduplication; layout animation duration aligned to 300ms debounce with useReducedMotion gating
 - [14-02]: Numeric codes use range 100000-999999 (6-digit, 900000 possibilities) for readability; random-word-slugs dependency removed; route param still named "slug" in filesystem routes until URL restructure (plan 03)
 - [14-03]: 6-digit validation guard (/^\d{6}$/) placed in both generateMetadata and page default export; participantUrl uses /${locale}/${code} flat format; OG image shows formatCode(code) badge; robots.ts disallow rules removed in favor of per-page robots metadata
+- [14-04]: /join page renders inside [locale] layout (nav bar visible) — full standalone requires route group restructure not planned; JoinForm extracted as client component for server generateMetadata; paste handler uses /(\d{6})/ to extract codes from URLs
 
 ### Pending Todos
 
@@ -52,5 +53,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 14-03-PLAN.md — session routes migrated to [locale]/[code] flat URL structure
-Resume at: `/gsd:execute-phase 14` (plan 04: next plan in phase)
+Stopped at: 14-04-PLAN.md Task 3 checkpoint:human-verify — /join page built, awaiting visual verification
+Resume at: `/gsd:execute-phase 14` (continue plan 04: Task 3 verification complete)
