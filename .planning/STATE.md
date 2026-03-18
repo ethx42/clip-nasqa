@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 14 of 16 (Infrastructure and URL Routing)
-Plan: 2 of TBD in current phase
+Plan: 3 of TBD in current phase
 Status: In progress
-Last activity: 2026-03-17 — Plan 14-02 complete: slug→code rename across full stack, numeric code generation, random-word-slugs removed
+Last activity: 2026-03-18 — Plan 14-03 complete: session routes migrated to [locale]/[code] flat URL structure, OG image updated, robots.ts cleaned
 
 Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
@@ -20,7 +20,7 @@ Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
 **Velocity:**
 
-- Total plans completed: 39 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 2)
+- Total plans completed: 40 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 3)
 - Average duration: 5 min
 - Total execution time: ~2.5 hours
 
@@ -39,6 +39,7 @@ Recent decisions affecting current work:
 - [v2.0 research]: Client-side Shiki must use `import("shiki/core")` with `createJavaScriptRegexEngine()` inside async callback only — static import adds 695kB gzip to initial bundle
 - [14-01]: React.cache pattern established for server-side DynamoDB fetch deduplication; layout animation duration aligned to 300ms debounce with useReducedMotion gating
 - [14-02]: Numeric codes use range 100000-999999 (6-digit, 900000 possibilities) for readability; random-word-slugs dependency removed; route param still named "slug" in filesystem routes until URL restructure (plan 03)
+- [14-03]: 6-digit validation guard (/^\d{6}$/) placed in both generateMetadata and page default export; participantUrl uses /${locale}/${code} flat format; OG image shows formatCode(code) badge; robots.ts disallow rules removed in favor of per-page robots metadata
 
 ### Pending Todos
 
@@ -50,6 +51,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-17
-Stopped at: Completed 14-02-PLAN.md — slug→code rename across full stack (types, GraphQL, Lambda, frontend)
-Resume at: `/gsd:execute-phase 14` (plan 03: URL routing restructure)
+Last session: 2026-03-18
+Stopped at: Completed 14-03-PLAN.md — session routes migrated to [locale]/[code] flat URL structure
+Resume at: `/gsd:execute-phase 14` (plan 04: next plan in phase)
