@@ -88,7 +88,11 @@
 2. Host mutations (pushSnippet, deleteSnippet, clearClipboard, focusQuestion, banQuestion, banParticipant, restoreQuestion) still execute as Server Actions — no host mutation appears as a browser-originated AppSync request in DevTools
 3. Rate limit errors from AppSync return a localized countdown toast to the user — the raw `RATE_LIMIT_EXCEEDED:N` string is never shown
 4. `lib/appsync-client.ts` exports `graphqlMutation()` and `lib/safe-action.ts` exports `safeClientMutation()` — both are importable and typed against the AppSync schema
-   **Plans**: TBD
+   **Plans**: 2 plans
+   Plans:
+
+- [ ] 15-01-PLAN.md — Client mutation utilities (graphqlMutation, safeClientMutation), hook migration, QAInput pending state, delete old participant Server Actions
+- [ ] 15-02-PLAN.md — Lazy-load getTranslations in surviving Server Actions (snippet, session, moderation)
 
 ### Phase 16: Optimistic Snippet Push and Client Shiki
 
@@ -124,6 +128,6 @@ Phases execute in numeric order: 14 -> 15 -> 16
 | 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete    | 2026-03-17 |
 | 12. Component Decomposition                  | v1.3      | 3/3            | Complete    | 2026-03-17 |
 | 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete    | 2026-03-18 |
-| 14. Infrastructure and URL Routing           | 4/4       | Complete       | 2026-03-18  | -          |
-| 15. Mutation Path and Client Utilities       | v2.0      | 0/TBD          | Not started | -          |
+| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete    | 2026-03-18 |
+| 15. Mutation Path and Client Utilities       | v2.0      | 0/2            | Not started | -          |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 0/TBD          | Not started | -          |
