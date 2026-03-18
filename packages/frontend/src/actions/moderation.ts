@@ -39,12 +39,11 @@ export async function banQuestionAction(args: {
   hostSecretHash: string;
   questionId: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(BAN_QUESTION, args);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedBanQuestion");
   }
@@ -55,12 +54,11 @@ export async function banParticipantAction(args: {
   hostSecretHash: string;
   fingerprint: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(BAN_PARTICIPANT, args);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedBanParticipant");
   }
@@ -71,12 +69,11 @@ export async function focusQuestionAction(args: {
   hostSecretHash: string;
   questionId?: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(FOCUS_QUESTION, args);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedFocusQuestion");
   }
@@ -87,12 +84,11 @@ export async function restoreQuestionAction(args: {
   hostSecretHash: string;
   questionId: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(RESTORE_QUESTION, args);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedRestore");
   }
