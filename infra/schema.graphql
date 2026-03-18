@@ -20,6 +20,7 @@ type Snippet {
   language: String
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
+  editedAt: AWSTimestamp
 }
 
 type Question {
@@ -38,6 +39,7 @@ type Question {
   reactionOrder: AWSJSON
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
+  editedAt: AWSTimestamp
 }
 
 type Reply {
@@ -51,6 +53,7 @@ type Reply {
   reactionOrder: AWSJSON
   createdAt: AWSTimestamp!
   TTL: AWSTimestamp!
+  editedAt: AWSTimestamp
 }
 
 enum ReactionTargetType {
@@ -67,6 +70,11 @@ enum SessionEventType {
   REPLY_ADDED
   PARTICIPANT_BANNED
   REACTION_UPDATED
+  QUESTION_EDITED
+  QUESTION_DELETED
+  REPLY_EDITED
+  REPLY_DELETED
+  SNIPPET_EDITED
 }
 
 type SessionUpdate {
@@ -100,9 +108,14 @@ type Mutation {
   downvoteQuestion(sessionCode: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
   restoreQuestion(sessionCode: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
   react(sessionCode: String!, targetId: String!, targetType: ReactionTargetType!, emoji: String!, fingerprint: String!): SessionUpdate!
+  editQuestion(sessionCode: String!, questionId: String!, text: String!, fingerprint: String, hostSecretHash: String): SessionUpdate!
+  deleteQuestion(sessionCode: String!, questionId: String!, fingerprint: String, hostSecretHash: String): SessionUpdate!
+  editReply(sessionCode: String!, replyId: String!, text: String!, fingerprint: String, hostSecretHash: String): SessionUpdate!
+  deleteReply(sessionCode: String!, replyId: String!, fingerprint: String, hostSecretHash: String): SessionUpdate!
+  editSnippet(sessionCode: String!, snippetId: String!, content: String!, language: String, hostSecretHash: String!): SessionUpdate!
 }
 
 type Subscription {
   onSessionUpdate(sessionCode: String!): SessionUpdate
-    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion", "react"])
+    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion", "react", "editQuestion", "deleteQuestion", "editReply", "deleteReply", "editSnippet"])
 }

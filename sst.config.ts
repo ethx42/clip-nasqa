@@ -92,6 +92,11 @@ export default $config({
     api.addResolver("Mutation downvoteQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Mutation restoreQuestion", { dataSource: lambdaDS.name });
     api.addResolver("Mutation react", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation editQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation deleteQuestion", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation editReply", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation deleteReply", { dataSource: lambdaDS.name });
+    api.addResolver("Mutation editSnippet", { dataSource: lambdaDS.name });
     api.addResolver("Query getSessionData", { dataSource: lambdaDS.name });
 
     return {

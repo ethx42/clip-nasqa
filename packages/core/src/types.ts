@@ -20,6 +20,8 @@ export interface SnippetItem {
   language?: string;
   createdAt: number;
   TTL: number;
+  editedAt?: number;
+  deletedAt?: number;
 }
 
 export interface QuestionItem {
@@ -38,6 +40,8 @@ export interface QuestionItem {
   isBanned: boolean;
   createdAt: number;
   TTL: number;
+  editedAt?: number;
+  deletedAt?: number;
 }
 
 export interface ReplyItem {
@@ -49,8 +53,11 @@ export interface ReplyItem {
   text: string;
   isHostReply: boolean;
   fingerprint: string;
+  authorName?: string;
   createdAt: number;
   TTL: number;
+  editedAt?: number;
+  deletedAt?: number;
 }
 
 // Application interfaces (used in resolvers — no DynamoDB internals)
@@ -71,6 +78,7 @@ export interface Snippet {
   language?: string;
   createdAt: number;
   TTL: number;
+  editedAt?: number;
 }
 
 export interface Question {
@@ -89,6 +97,7 @@ export interface Question {
   reactionOrder?: string; // AWSJSON — JSON.stringify of EmojiKey[] (insertion order)
   createdAt: number;
   TTL: number;
+  editedAt?: number;
 }
 
 export interface Reply {
@@ -103,6 +112,7 @@ export interface Reply {
   reactionOrder?: string; // AWSJSON — JSON.stringify of EmojiKey[] (insertion order)
   createdAt: number;
   TTL: number;
+  editedAt?: number;
 }
 
 // SessionEventType enum matching GraphQL schema
@@ -115,6 +125,11 @@ export enum SessionEventType {
   REPLY_ADDED = "REPLY_ADDED",
   PARTICIPANT_BANNED = "PARTICIPANT_BANNED",
   REACTION_UPDATED = "REACTION_UPDATED",
+  QUESTION_EDITED = "QUESTION_EDITED",
+  QUESTION_DELETED = "QUESTION_DELETED",
+  REPLY_EDITED = "REPLY_EDITED",
+  REPLY_DELETED = "REPLY_DELETED",
+  SNIPPET_EDITED = "SNIPPET_EDITED",
 }
 
 // SessionUpdate tagged union — mirrors the GraphQL SessionUpdate type
@@ -208,6 +223,41 @@ export interface BanItem {
   isBanned: boolean;
   bannedPostCount: number;
   TTL: number;
+}
+
+// Edit/Delete mutation argument interfaces
+export interface EditQuestionArgs {
+  sessionCode: string;
+  questionId: string;
+  text: string;
+  fingerprint?: string;
+  hostSecretHash?: string;
+}
+export interface DeleteQuestionArgs {
+  sessionCode: string;
+  questionId: string;
+  fingerprint?: string;
+  hostSecretHash?: string;
+}
+export interface EditReplyArgs {
+  sessionCode: string;
+  replyId: string;
+  text: string;
+  fingerprint?: string;
+  hostSecretHash?: string;
+}
+export interface DeleteReplyArgs {
+  sessionCode: string;
+  replyId: string;
+  fingerprint?: string;
+  hostSecretHash?: string;
+}
+export interface EditSnippetArgs {
+  sessionCode: string;
+  snippetId: string;
+  content: string;
+  language?: string;
+  hostSecretHash: string;
 }
 
 // Reaction mutation argument interface
