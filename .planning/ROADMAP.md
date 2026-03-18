@@ -69,7 +69,13 @@
 3. Questions visibly animate into their new sorted position when upvotes change at 300ms debounce — no card teleporting during active voting
 4. A host creates a session and receives a 6-digit numeric URL (e.g., `/en/482913`) — word-pair slugs no longer appear anywhere in the app
 5. A participant can navigate to `/join`, type a 6-digit code, and reach the correct session without needing the full URL
-   **Plans**: TBD
+   **Plans**: 4 plans
+   Plans:
+
+- [ ] 14-01-PLAN.md — Lambda 256MB + arm64, React.cache SSR dedup, force-dynamic, QA debounce 300ms with reduced-motion
+- [ ] 14-02-PLAN.md — slug→code rename across types, GraphQL, Lambda resolvers; numeric code generation; remove random-word-slugs
+- [ ] 14-03-PLAN.md — Route migration from session/[slug] to [code], OG image relocation, QR URL update
+- [ ] 14-04-PLAN.md — /join page with OTP-style input, validateSessionCode action, branded OG image
 
 ### Phase 15: Mutation Path and Client Utilities
 
