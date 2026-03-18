@@ -1,8 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import { ImageResponse } from "next/og";
 
+import { OG_LOGO_SRC } from "@/lib/og-logo";
 import { getSession, getSessionData } from "@/lib/session";
 
 export const alt = "clip session — join and ask questions live";
@@ -13,8 +11,7 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const session = await getSession(slug);
 
-  const logoPath = path.join(process.cwd(), "public/images/clip-logo-og.png");
-  const logoSrc = `data:image/png;base64,${fs.readFileSync(logoPath).toString("base64")}`;
+  const logoSrc = OG_LOGO_SRC;
 
   if (!session) {
     return new ImageResponse(

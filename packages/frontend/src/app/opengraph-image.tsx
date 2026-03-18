@@ -1,15 +1,13 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import { ImageResponse } from "next/og";
+
+import { OG_LOGO_SRC } from "@/lib/og-logo";
 
 export const alt = "clip — real-time clipboard and Q&A for live sessions";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
-  const logoPath = path.join(process.cwd(), "public/images/clip-logo-og.png");
-  const logoSrc = `data:image/png;base64,${fs.readFileSync(logoPath).toString("base64")}`;
+  const logoSrc = OG_LOGO_SRC;
 
   return new ImageResponse(
     <div
