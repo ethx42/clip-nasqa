@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { AppSyncResolverContext, GetSessionDataArgs } from "@nasqa/core";
 import { EMOJI_KEYS } from "@nasqa/core";
 
-import { clearClipboard, deleteSnippet, pushSnippet } from "./clipboard";
+import { clearClipboard, deleteSnippet, editSnippet, pushSnippet } from "./clipboard";
 import { logger } from "./logger";
 import {
   handleBanParticipant,
@@ -12,7 +12,16 @@ import {
   handleDownvoteQuestion,
   handleRestoreQuestion,
 } from "./moderation";
-import { addQuestion, addReply, focusQuestion, upvoteQuestion } from "./qa";
+import {
+  addQuestion,
+  addReply,
+  deleteQuestion,
+  deleteReply,
+  editQuestion,
+  editReply,
+  focusQuestion,
+  upvoteQuestion,
+} from "./qa";
 import { handleReact } from "./reactions";
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION ?? "us-east-1" });
@@ -48,7 +57,9 @@ async function getSessionData(args: GetSessionDataArgs) {
   );
 
   const now = Math.floor(Date.now() / 1000);
-  const items = (result.Items ?? []).filter((item) => !item.TTL || item.TTL > now);
+  const items = (result.Items ?? []).filter(
+    (item) => (!item.TTL || item.TTL > now) && !item.deletedAt,
+  );
 
   const snippets = items
     .filter((item) => (item.SK as string).startsWith("SNIPPET#"))
@@ -60,6 +71,7 @@ async function getSessionData(args: GetSessionDataArgs) {
       language: item.language ?? null,
       createdAt: item.createdAt,
       TTL: item.TTL,
+      editedAt: item.editedAt ?? null,
     }));
 
   const questions = items
@@ -94,6 +106,7 @@ async function getSessionData(args: GetSessionDataArgs) {
       ),
       createdAt: item.createdAt,
       TTL: item.TTL,
+      editedAt: item.editedAt ?? null,
     }));
 
   const replies = items
@@ -124,6 +137,7 @@ async function getSessionData(args: GetSessionDataArgs) {
       ),
       createdAt: item.createdAt,
       TTL: item.TTL,
+      editedAt: item.editedAt ?? null,
     }));
 
   return { snippets, questions, replies };
@@ -183,6 +197,21 @@ export const handler = async (event: AppSyncResolverContext): Promise<unknown> =
         break;
       case "react":
         result = await handleReact(args);
+        break;
+      case "editQuestion":
+        result = await editQuestion(args);
+        break;
+      case "deleteQuestion":
+        result = await deleteQuestion(args);
+        break;
+      case "editReply":
+        result = await editReply(args);
+        break;
+      case "deleteReply":
+        result = await deleteReply(args);
+        break;
+      case "editSnippet":
+        result = await editSnippet(args);
         break;
       case "getSessionData":
         result = await getSessionData(args);

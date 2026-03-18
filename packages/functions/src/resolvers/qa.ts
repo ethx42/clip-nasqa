@@ -5,6 +5,10 @@ import { ulid } from "ulid";
 import type {
   AddQuestionArgs,
   AddReplyArgs,
+  DeleteQuestionArgs,
+  DeleteReplyArgs,
+  EditQuestionArgs,
+  EditReplyArgs,
   FocusQuestionArgs,
   SessionEventType,
   SessionUpdate,
@@ -13,26 +17,12 @@ import type {
 
 import { docClient } from "./index";
 import { checkNotBanned, checkRateLimit } from "./rate-limit";
+import { verifyHostSecret } from "./shared";
 
 function tableName(): string {
   const name = process.env.TABLE_NAME;
   if (!name) throw new Error("TABLE_NAME environment variable is not set");
   return name;
-}
-
-async function verifyHostSecret(sessionCode: string, hostSecretHash: string): Promise<void> {
-  const result = await docClient.send(
-    new GetCommand({
-      TableName: tableName(),
-      Key: {
-        PK: `SESSION#${sessionCode}`,
-        SK: `SESSION#${sessionCode}`,
-      },
-    }),
-  );
-  if (!result.Item || result.Item.hostSecretHash !== hostSecretHash) {
-    throw new Error("Unauthorized");
-  }
 }
 
 export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate> {
@@ -203,6 +193,174 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
       createdAt: now,
       TTL: ttl,
     }),
+  };
+}
+
+export async function editQuestion(args: EditQuestionArgs): Promise<SessionUpdate> {
+  const { sessionCode, questionId, text, fingerprint, hostSecretHash } = args;
+
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `QUESTION#${questionId}` },
+    }),
+  );
+
+  if (!result.Item) throw new Error("Question not found");
+
+  const item = result.Item;
+  const now = Math.floor(Date.now() / 1000);
+
+  if (hostSecretHash) {
+    // Host superuser path — verify host, no time restriction
+    await verifyHostSecret(sessionCode, hostSecretHash);
+  } else if (fingerprint) {
+    // Participant path — verify fingerprint + 5-minute window
+    if (item.fingerprint !== fingerprint) throw new Error("Unauthorized");
+    if (now - (item.createdAt as number) > 300) throw new Error("EDIT_WINDOW_EXPIRED");
+  } else {
+    throw new Error("Unauthorized");
+  }
+
+  if (text.length > 500) throw new Error("Question text exceeds 500 character limit");
+
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `QUESTION#${questionId}` },
+      UpdateExpression: "SET #text = :text, editedAt = :editedAt",
+      ExpressionAttributeNames: { "#text": "text" },
+      ExpressionAttributeValues: { ":text": text, ":editedAt": now },
+    }),
+  );
+
+  return {
+    eventType: "QUESTION_EDITED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ questionId, text, editedAt: now }),
+  };
+}
+
+export async function deleteQuestion(args: DeleteQuestionArgs): Promise<SessionUpdate> {
+  const { sessionCode, questionId, fingerprint, hostSecretHash } = args;
+
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `QUESTION#${questionId}` },
+    }),
+  );
+
+  if (!result.Item) throw new Error("Question not found");
+
+  const item = result.Item;
+  const now = Math.floor(Date.now() / 1000);
+
+  if (hostSecretHash) {
+    await verifyHostSecret(sessionCode, hostSecretHash);
+  } else if (fingerprint) {
+    if (item.fingerprint !== fingerprint) throw new Error("Unauthorized");
+    if (now - (item.createdAt as number) > 300) throw new Error("EDIT_WINDOW_EXPIRED");
+  } else {
+    throw new Error("Unauthorized");
+  }
+
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `QUESTION#${questionId}` },
+      UpdateExpression: "SET deletedAt = :now",
+      ExpressionAttributeValues: { ":now": now },
+    }),
+  );
+
+  return {
+    eventType: "QUESTION_DELETED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ questionId }),
+  };
+}
+
+export async function editReply(args: EditReplyArgs): Promise<SessionUpdate> {
+  const { sessionCode, replyId, text, fingerprint, hostSecretHash } = args;
+
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `REPLY#${replyId}` },
+    }),
+  );
+
+  if (!result.Item) throw new Error("Reply not found");
+
+  const item = result.Item;
+  const now = Math.floor(Date.now() / 1000);
+
+  if (hostSecretHash) {
+    await verifyHostSecret(sessionCode, hostSecretHash);
+  } else if (fingerprint) {
+    if (item.fingerprint !== fingerprint) throw new Error("Unauthorized");
+    if (now - (item.createdAt as number) > 300) throw new Error("EDIT_WINDOW_EXPIRED");
+  } else {
+    throw new Error("Unauthorized");
+  }
+
+  if (text.length > 500) throw new Error("Reply text exceeds 500 character limit");
+
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `REPLY#${replyId}` },
+      UpdateExpression: "SET #text = :text, editedAt = :editedAt",
+      ExpressionAttributeNames: { "#text": "text" },
+      ExpressionAttributeValues: { ":text": text, ":editedAt": now },
+    }),
+  );
+
+  return {
+    eventType: "REPLY_EDITED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ replyId, text, editedAt: now }),
+  };
+}
+
+export async function deleteReply(args: DeleteReplyArgs): Promise<SessionUpdate> {
+  const { sessionCode, replyId, fingerprint, hostSecretHash } = args;
+
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `REPLY#${replyId}` },
+    }),
+  );
+
+  if (!result.Item) throw new Error("Reply not found");
+
+  const item = result.Item;
+  const now = Math.floor(Date.now() / 1000);
+
+  if (hostSecretHash) {
+    await verifyHostSecret(sessionCode, hostSecretHash);
+  } else if (fingerprint) {
+    if (item.fingerprint !== fingerprint) throw new Error("Unauthorized");
+    if (now - (item.createdAt as number) > 300) throw new Error("EDIT_WINDOW_EXPIRED");
+  } else {
+    throw new Error("Unauthorized");
+  }
+
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `REPLY#${replyId}` },
+      UpdateExpression: "SET deletedAt = :now",
+      ExpressionAttributeValues: { ":now": now },
+    }),
+  );
+
+  return {
+    eventType: "REPLY_DELETED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ replyId }),
   };
 }
 

@@ -4,12 +4,14 @@ import {
   GetCommand,
   PutCommand,
   QueryCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 
 import type {
   ClearClipboardArgs,
   DeleteSnippetArgs,
+  EditSnippetArgs,
   PushSnippetArgs,
   SessionEventType,
   SessionUpdate,
@@ -17,26 +19,12 @@ import type {
 
 import { docClient } from "./index";
 import { checkRateLimit } from "./rate-limit";
+import { verifyHostSecret } from "./shared";
 
 function tableName(): string {
   const name = process.env.TABLE_NAME;
   if (!name) throw new Error("TABLE_NAME environment variable is not set");
   return name;
-}
-
-async function verifyHostSecret(sessionCode: string, hostSecretHash: string): Promise<void> {
-  const result = await docClient.send(
-    new GetCommand({
-      TableName: tableName(),
-      Key: {
-        PK: `SESSION#${sessionCode}`,
-        SK: `SESSION#${sessionCode}`,
-      },
-    }),
-  );
-  if (!result.Item || result.Item.hostSecretHash !== hostSecretHash) {
-    throw new Error("Unauthorized");
-  }
 }
 
 export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate> {
@@ -143,5 +131,44 @@ export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionU
     eventType: "CLIPBOARD_CLEARED" as SessionEventType,
     sessionCode,
     payload: JSON.stringify({}),
+  };
+}
+
+export async function editSnippet(args: EditSnippetArgs): Promise<SessionUpdate> {
+  const { sessionCode, snippetId, content, language, hostSecretHash } = args;
+
+  // Host-only mutation — always requires verifyHostSecret; no time window
+  await verifyHostSecret(sessionCode, hostSecretHash);
+
+  const now = Math.floor(Date.now() / 1000);
+
+  // Build update expression conditionally for optional language field
+  const updateParts = ["#content = :content", "editedAt = :editedAt"];
+  const expressionAttributeNames: Record<string, string> = { "#content": "content" };
+  const expressionAttributeValues: Record<string, unknown> = {
+    ":content": content,
+    ":editedAt": now,
+  };
+
+  if (language !== undefined) {
+    updateParts.push("#language = :language");
+    expressionAttributeNames["#language"] = "language";
+    expressionAttributeValues[":language"] = language;
+  }
+
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName(),
+      Key: { PK: `SESSION#${sessionCode}`, SK: `SNIPPET#${snippetId}` },
+      UpdateExpression: `SET ${updateParts.join(", ")}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+    }),
+  );
+
+  return {
+    eventType: "SNIPPET_EDITED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ snippetId, content, language: language ?? null, editedAt: now }),
   };
 }
