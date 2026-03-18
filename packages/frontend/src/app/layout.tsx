@@ -20,10 +20,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://clip.nasqa.io"),
   title: {
-    default: "clip — real-time clipboard and Q&A",
+    default: "clip — real-time clipboard and Q&A for live sessions",
     template: "%s — clip",
   },
-  description: "Share code snippets and collect audience questions in real time.",
+  description:
+    "Share code snippets and collect audience questions in real time. No sign-up required — create a session, share the link, and engage your audience instantly.",
   icons: {
     icon: "/icon.svg",
   },

@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 
 import { getSession, getSessionData } from "@/lib/session";
 
-export const alt = "clip session";
+export const alt = "clip session — join and ask questions live";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -28,13 +28,7 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           backgroundColor: "#09090b",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <img src={logoSrc} width={64} height={55} alt="" />
           <span
             style={{
@@ -55,9 +49,8 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
 
   const { questions } = await getSessionData(slug);
   const questionCount = questions.length;
-  const status = session.isActive
-    ? `Live — ${questionCount} questions`
-    : `Ended — ${questionCount} questions`;
+  const statusLabel = session.isActive ? "LIVE" : "ENDED";
+  const statusColor = session.isActive ? "#22c55e" : "#71717a";
   const qrUrl = `https://clip.nasqa.io/session/${slug}`;
 
   return new ImageResponse(
@@ -66,125 +59,191 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
         width: "100%",
         height: "100%",
         display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
         backgroundColor: "#09090b",
-        padding: 60,
         position: "relative",
       }}
     >
-      {/* Background glow */}
+      {/* Subtle glow — offset left for depth */}
       <div
         style={{
           position: "absolute",
-          width: 500,
-          height: 500,
+          width: 600,
+          height: 600,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0) 70%)",
-          top: "50%",
-          left: "50%",
+          background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0) 70%)",
+          top: "30%",
+          left: "20%",
           transform: "translate(-50%, -50%)",
         }}
       />
 
-      {/* Top bar: logo mark + "clip" branding */}
+      {/* Left column — branding + content */}
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          gap: 10,
-          position: "absolute",
-          top: 40,
-          left: 60,
-        }}
-      >
-        <img src={logoSrc} width={32} height={27} alt="" />
-        <span
-          style={{
-            fontFamily: "sans-serif",
-            fontSize: 32,
-            fontWeight: 700,
-            color: "#6366f1",
-            letterSpacing: "-0.04em",
-          }}
-        >
-          clip
-        </span>
-      </div>
-
-      {/* Main content area */}
-      <div
-        style={{
-          display: "flex",
-          width: "100%",
-          alignItems: "center",
+          flexDirection: "column",
           justifyContent: "space-between",
+          flex: 1,
+          padding: "56px 0 56px 64px",
           position: "relative",
         }}
       >
-        {/* Left: title and status */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            paddingRight: 40,
-          }}
-        >
+        {/* Top: logo + wordmark */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <img src={logoSrc} width={36} height={36} alt="" />
           <span
             style={{
               fontFamily: "sans-serif",
-              fontSize: 48,
+              fontSize: 28,
               fontWeight: 700,
+              color: "#6366f1",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            clip
+          </span>
+        </div>
+
+        {/* Middle: session title + status */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 620 }}>
+          <span
+            style={{
+              fontFamily: "sans-serif",
+              fontSize: 52,
+              fontWeight: 800,
               color: "#fafafa",
-              lineHeight: 1.2,
-              letterSpacing: "-0.02em",
-              maxWidth: 700,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              lineHeight: 1.15,
+              letterSpacing: "-0.03em",
             }}
           >
             {session.title}
           </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {/* Status pill */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                backgroundColor: "rgba(255,255,255,0.06)",
+                borderRadius: 20,
+                padding: "6px 16px",
+              }}
+            >
+              <div
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  backgroundColor: statusColor,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "sans-serif",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: statusColor,
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {statusLabel}
+              </span>
+            </div>
+            {/* Question count */}
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 18,
+                color: "#a1a1aa",
+              }}
+            >
+              {questionCount} {questionCount === 1 ? "question" : "questions"}
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom: CTA */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            backgroundColor: "#6366f1",
+            borderRadius: 12,
+            padding: "12px 28px",
+            width: "fit-content",
+          }}
+        >
           <span
             style={{
               fontFamily: "sans-serif",
-              fontSize: 24,
-              color: "#a1a1aa",
-              marginTop: 16,
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#ffffff",
             }}
           >
-            {status}
+            Join session →
           </span>
         </div>
+      </div>
 
-        {/* Right: QR code */}
+      {/* Right column — QR code card */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "56px 64px 56px 40px",
+        }}
+      >
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 12,
+            gap: 20,
+            backgroundColor: "rgba(255,255,255,0.04)",
+            borderRadius: 20,
+            border: "1px solid rgba(255,255,255,0.08)",
+            padding: "32px 36px",
           }}
         >
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrUrl)}&bgcolor=09090b&color=fafafa&format=png`}
-            width={160}
-            height={160}
-            style={{ borderRadius: 8 }}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=09090b&color=fafafa&format=png`}
+            width={180}
+            height={180}
+            style={{ borderRadius: 12 }}
           />
           <span
             style={{
               fontFamily: "sans-serif",
-              fontSize: 14,
+              fontSize: 15,
+              fontWeight: 600,
               color: "#71717a",
+              letterSpacing: "0.02em",
             }}
           >
             Scan to join
           </span>
         </div>
       </div>
+
+      {/* Bottom-right: URL watermark */}
+      <span
+        style={{
+          position: "absolute",
+          bottom: 24,
+          right: 64,
+          fontFamily: "sans-serif",
+          fontSize: 14,
+          color: "#3f3f46",
+          letterSpacing: "0.02em",
+        }}
+      >
+        clip.nasqa.io
+      </span>
     </div>,
     { ...size },
   );
