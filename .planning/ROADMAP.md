@@ -96,7 +96,13 @@ Plans:
 2. `aria-pressed="true"` is present on the upvote button when the user has voted and `aria-pressed="false"` when they have not — screen readers announce the toggle state on every change
 3. A participant sees their pixel avatar and name (or "Anonymous") inline inside the question input before submitting — the identity is visible without opening any additional panel
 4. A participant's own questions display a visually distinct left-border accent in the feed — they can immediately locate their own contributions among other questions
-   **Plans**: TBD
+
+**Plans:** 2 plans
+
+Plans:
+
+- [ ] 13-01-PLAN.md — Vote button filled states, aria-pressed, and micro-interactions
+- [ ] 13-02-PLAN.md — Identity chip in QAInput and own-question left-border accent
 
 ## Progress
 
@@ -117,4 +123,4 @@ Phases execute in numeric order: 11 -> 12 -> 13
 | 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete    | 2026-03-17 |
 | 11. Shared Utilities and Hook Extraction | 2/2       | Complete       | 2026-03-17  | -          |
 | 12. Component Decomposition              | 3/3       | Complete       | 2026-03-17  | -          |
-| 13. UX Polish and Accessibility          | v1.3      | 0/TBD          | Not started | -          |
+| 13. UX Polish and Accessibility          | v1.3      | 0/2            | Not started | -          |
