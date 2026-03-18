@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 15 of 16 (Mutation Path and Client Utilities)
-Plan: 2 of TBD in current phase
+Plan: 3 of TBD in current phase
 Status: In progress
-Last activity: 2026-03-18 — Plan 15-01 complete: direct AppSync participant mutations, graphqlMutation/safeClientMutation utilities, QAInput pending state (2/2 tasks)
+Last activity: 2026-03-18 — Plan 15-02 complete: lazy getTranslations in all 8 Server Actions — happy path never touches i18n (2/2 tasks)
 
 Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
@@ -20,7 +20,7 @@ Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
 **Velocity:**
 
-- Total plans completed: 41 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 4)
+- Total plans completed: 42 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 5)
 - Average duration: 5 min
 - Total execution time: ~2.5 hours
 
@@ -42,6 +42,7 @@ Recent decisions affecting current work:
 - [14-03]: 6-digit validation guard (/^\d{6}$/) placed in both generateMetadata and page default export; participantUrl uses /${locale}/${code} flat format; OG image shows formatCode(code) badge; robots.ts disallow rules removed in favor of per-page robots metadata
 - [14-04]: /join page renders inside [locale] layout (nav bar visible) — full standalone requires route group restructure not planned; JoinForm extracted as client component for server generateMetadata; paste handler uses /(\d{6})/ to extract codes from URLs
 - [15-01]: VOTE_CONFLICT silent handling in dedicated callVoteMutation() helper outside safeClientMutation to keep shared utility clean; isPending/restoredText threaded through QAPanel as props (QAPanel stays stateless); focusQuestionAction moved to moderation.ts so qa.ts could be deleted entirely
+- [15-02]: getTranslations deferred to error paths only in all 8 host Server Actions — happy-path mutations skip i18n resolution entirely; createSession has 3 independent lazy call sites (validation, DynamoDB catch, code exhaustion)
 
 ### Pending Todos
 
@@ -54,5 +55,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 15-01-PLAN.md — direct AppSync participant mutations and client utilities (2/2 tasks)
+Stopped at: Completed 15-02-PLAN.md — lazy getTranslations in all Server Actions (2/2 tasks)
 Resume at: `/gsd:execute-phase 15` (begin next plan in phase 15)
