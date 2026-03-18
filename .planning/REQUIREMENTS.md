@@ -23,9 +23,9 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ### Optimistic UI
 
-- [ ] **OPT-01**: Host snippet push appears instantly in clipboard via optimistic dispatch before server confirmation
-- [ ] **OPT-02**: Snippet reducer deduplicates optimistic entries using content-fingerprint matching (mirrors question pattern)
-- [ ] **OPT-03**: Failed snippet push rolls back optimistic entry and restores input content
+- [x] **OPT-01**: Host snippet push appears instantly in clipboard via optimistic dispatch before server confirmation
+- [x] **OPT-02**: Snippet reducer deduplicates optimistic entries using content-fingerprint matching (mirrors question pattern)
+- [x] **OPT-03**: Failed snippet push rolls back optimistic entry and restores input content
 
 ### URL & Routing
 
@@ -101,9 +101,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MUT-03      | Phase 15 | Complete |
 | MUT-04      | Phase 15 | Complete |
 | MUT-05      | Phase 15 | Complete |
-| OPT-01      | Phase 16 | Pending  |
-| OPT-02      | Phase 16 | Pending  |
-| OPT-03      | Phase 16 | Pending  |
+| OPT-01      | Phase 16 | Complete |
+| OPT-02      | Phase 16 | Complete |
+| OPT-03      | Phase 16 | Complete |
 | UX-01       | Phase 14 | Complete |
 | UX-02       | Phase 14 | Complete |
 | SHIKI-01    | Phase 16 | Pending  |

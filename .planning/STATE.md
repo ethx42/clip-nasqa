@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-18 — Milestone v2.1 started, PROJECT.md updated. v2.0 Phase 16 still pending.
+Phase: 16-optimistic-snippet-push-and-client-shiki
+Plan: 01 of 2 complete
+Status: Executing phase 16
+Last activity: 2026-03-18 — Plan 16-01 complete: optimistic snippet push, failure state, snippet numbering, pill banner.
 
-Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
+Progress: [██░░░░░░░░] 15% (v2.0 milestone)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 42 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 5)
+- Total plans completed: 43 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6)
 - Average duration: 5 min
-- Total execution time: ~2.5 hours
+- Total execution time: ~2.6 hours
 
 _Updated after each plan completion_
 
@@ -43,6 +43,8 @@ Recent decisions affecting current work:
 - [14-04]: /join page renders inside [locale] layout (nav bar visible) — full standalone requires route group restructure not planned; JoinForm extracted as client component for server generateMetadata; paste handler uses /(\d{6})/ to extract codes from URLs
 - [15-01]: VOTE_CONFLICT silent handling in dedicated callVoteMutation() helper outside safeClientMutation to keep shared utility clean; isPending/restoredText threaded through QAPanel as props (QAPanel stays stateless); focusQuestionAction moved to moderation.ts so qa.ts could be deleted entirely
 - [15-02]: getTranslations deferred to error paths only in all 8 host Server Actions — happy-path mutations skip i18n resolution entirely; createSession has 3 independent lazy call sites (validation, DynamoDB catch, code exhaustion)
+- [Phase 16-01]: Deferred push via editingSnippetIds check in executeServerPush; push fires when handleEditEnd is called with final edited content
+- [Phase 16-01]: Content-fingerprint dedup in SNIPPET*ADDED matches sessionCode+content+language+type without optimisticId, auto-removes matched \_opt* ID from failedSnippetIds
 
 ### Pending Todos
 
@@ -55,5 +57,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: v2.1 milestone setup — PROJECT.md updated, need to finish v2.0 Phase 16, then complete requirements + roadmap for v2.1
-Resume at: `/gsd:new-milestone` to continue v2.1 setup (requirements → roadmap). But first finish v2.0 Phase 16 with `/gsd:execute-phase 16`
+Stopped at: Completed 16-01-PLAN.md — optimistic snippet push wired end-to-end
+Resume at: `/gsd:execute-phase 16` to run plan 16-02 (client-side Shiki)
