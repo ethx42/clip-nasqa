@@ -6,7 +6,8 @@
 - ✅ **v1.1 Enterprise Hardening** — Phases 5-8 (shipped 2026-03-17)
 - ✅ **v1.2 Reactions** — Phases 9-10 (shipped 2026-03-17)
 - ✅ **v1.3 Participant & Host UX Refactor** — Phases 11-13 (shipped 2026-03-18)
-- 🚧 **v2.0 Performance & Instant Operations** — Phases 14-16 (in progress)
+- ✅ **v2.0 Performance & Instant Operations** — Phases 14-16 (shipped 2026-03-18)
+- 🚧 **v2.1 Edit & Delete** — Phase 17 (in progress)
 
 ## Phases
 
@@ -47,13 +48,19 @@
 
 </details>
 
-### v2.0 Performance & Instant Operations (In Progress)
+### v2.0 Performance & Instant Operations (Complete)
 
 **Milestone Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
 
 - [x] **Phase 14: Infrastructure and URL Routing** — Lambda memory at 256MB, SSR fetch deduplication, QA sort debounce with layout animations, 6-digit numeric session codes, flat URL structure, /join page (completed 2026-03-18)
 - [x] **Phase 15: Mutation Path and Client Utilities** — `graphqlMutation()` and `safeClientMutation()` client utilities, shared error parser, participant mutations execute directly against AppSync, lazy i18n in surviving Server Actions (completed 2026-03-18)
 - [x] **Phase 16: Optimistic Snippet Push and Client Shiki** — Host snippet push appears at 0ms via optimistic dispatch with content-fingerprint dedup and rollback, client-side Shiki syntax preview with dynamic import and JS regex engine (completed 2026-03-18)
+
+### v2.1 Edit & Delete (In Progress)
+
+**Milestone Goal:** Authors can edit and delete their own questions, replies, and clipboard snippets within a 5-minute window. The host has superuser powers to edit or delete any post at any time. All changes broadcast in real-time.
+
+- [ ] **Phase 17: Edit & Delete** — Backend mutations + DynamoDB schema, 5-min author window, host superuser, frontend inline editing UI, edited indicators, real-time broadcast
 
 ## Phase Details
 
@@ -112,26 +119,40 @@
 - [ ] 16-01-PLAN.md — Optimistic push hook, reducer extensions (failed state, content-fingerprint dedup), SnippetCard failed variant, snippet numbering, compact pill banner
 - [ ] 16-02-PLAN.md — Client Shiki hook (singleton, lazy langs, JS regex engine), stricter detectLanguage, language dropdown, HostInput live preview, SnippetCard migration, renderHighlight removal
 
+### Phase 17: Edit & Delete
+
+**Goal**: Authors can edit and delete their own questions, replies, and clipboard snippets within a 5-minute window; the host can edit or delete any post at any time as superuser; all edits and deletes broadcast in real-time with visual indicators
+**Depends on**: Phase 16
+**Requirements**: EDIT-01, EDIT-02, EDIT-03, EDIT-04, EDIT-05, EDIT-06, EDIT-07, EDIT-08, EDIT-09, EDIT-10, EDIT-11, EDIT-12, EDIT-13
+**Success Criteria** (what must be TRUE):
+
+1. An author can tap edit on their own question within 5 minutes and save changes — the edited content appears for all participants in real-time with an "edited" indicator
+2. An author can delete their own question within 5 minutes — it disappears for all participants in real-time (soft-delete)
+3. After 5 minutes, the edit/delete buttons are no longer visible to the author
+4. The host can edit or delete any question, reply, or snippet at any time regardless of the 5-minute window
+5. A host can edit a clipboard snippet's content and language — the updated snippet appears in real-time for all participants
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 14 -> 15 -> 16
+Phases execute in numeric order: 14 -> 15 -> 16 -> 17
 
-| Phase                                        | Milestone | Plans Complete | Status     | Completed  |
-| -------------------------------------------- | --------- | -------------- | ---------- | ---------- |
-| 1. Infrastructure                            | v1.0      | 3/3            | Complete   | 2026-03-14 |
-| 2. Session and View Shell                    | v1.0      | 3/3            | Complete   | 2026-03-14 |
-| 3. Real-Time Core                            | v1.0      | 6/6            | Complete   | 2026-03-14 |
-| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete   | 2026-03-14 |
-| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete   | 2026-03-15 |
-| 6. Testing and CI                            | v1.1      | 3/3            | Complete   | 2026-03-16 |
-| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete   | 2026-03-16 |
-| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete   | 2026-03-17 |
-| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete   | 2026-03-17 |
-| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete   | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete   | 2026-03-17 |
-| 12. Component Decomposition                  | v1.3      | 3/3            | Complete   | 2026-03-17 |
-| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete   | 2026-03-18 |
-| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete   | 2026-03-18 |
-| 15. Mutation Path and Client Utilities       | 2/2       | Complete       | 2026-03-18 | -          |
-| 16. Optimistic Snippet Push and Client Shiki | 2/2       | Complete       | 2026-03-18 | -          |
+| Phase                                        | Milestone | Plans Complete | Status   | Completed  |
+| -------------------------------------------- | --------- | -------------- | -------- | ---------- |
+| 1. Infrastructure                            | v1.0      | 3/3            | Complete | 2026-03-14 |
+| 2. Session and View Shell                    | v1.0      | 3/3            | Complete | 2026-03-14 |
+| 3. Real-Time Core                            | v1.0      | 6/6            | Complete | 2026-03-14 |
+| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete | 2026-03-14 |
+| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete | 2026-03-15 |
+| 6. Testing and CI                            | v1.1      | 3/3            | Complete | 2026-03-16 |
+| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete | 2026-03-16 |
+| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete | 2026-03-17 |
+| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete | 2026-03-17 |
+| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete | 2026-03-17 |
+| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete | 2026-03-17 |
+| 12. Component Decomposition                  | v1.3      | 3/3            | Complete | 2026-03-17 |
+| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete | 2026-03-18 |
+| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete | 2026-03-18 |
+| 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete | 2026-03-18 |
+| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete | 2026-03-18 |
+| 17. Edit & Delete                            | v2.1      | 0/0            | Planning | -          |

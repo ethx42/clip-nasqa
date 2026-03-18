@@ -55,19 +55,35 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ## v2.1 Requirements
 
-Deferred to future release. Tracked but not in current roadmap.
+Requirements for Edit & Delete milestone. Each maps to roadmap phases.
 
-### Bundle Optimization
+### Edit & Delete — Questions & Replies
+
+- [ ] **EDIT-01**: Author can edit their own question within 5 minutes of posting (createdAt + 5min window)
+- [ ] **EDIT-02**: Author can edit their own reply within 5 minutes of posting
+- [ ] **EDIT-03**: Author can delete their own question within 5 minutes of posting (soft-delete)
+- [ ] **EDIT-04**: Author can delete their own reply within 5 minutes of posting (soft-delete)
+- [ ] **EDIT-05**: Host can edit any question or reply at any time (superuser)
+- [ ] **EDIT-06**: Host can delete any question or reply at any time (superuser, soft-delete)
+- [ ] **EDIT-07**: Edited posts display an "edited" indicator with timestamp
+- [ ] **EDIT-08**: Edits and deletes broadcast in real-time via AppSync subscription
+
+### Edit & Delete — Clipboard Snippets
+
+- [ ] **EDIT-09**: Host can edit their own clipboard snippets (content and/or language)
+- [ ] **EDIT-10**: Edited snippets display an "edited" indicator
+
+### Infrastructure
+
+- [ ] **EDIT-11**: DynamoDB schema supports edit/delete fields (editedAt, deletedAt, editedContent) without migration
+- [ ] **EDIT-12**: GraphQL schema adds editQuestion, editReply, deleteQuestion, deleteReply, editSnippet mutations
+- [ ] **EDIT-13**: Lambda resolvers enforce 5-minute author window and host superuser bypass via fingerprint/hostSecretHash validation
+
+### Deferred (future milestones)
 
 - **BUNDLE-01**: Replace aws-amplify with lighter AppSync WebSocket client (eliminate 68kB)
 - **BUNDLE-02**: Host mutations moved client-side after dedicated security review
-
-### Monitoring
-
 - **MON-01**: Sentry error tracking integration (deferred from v1.1)
-
-### Accessibility
-
 - **A11Y-02**: ARIA tablist role on mobile tab navigation
 - **A11Y-03**: aria-live region on NewContentBanner for screen reader announcements
 
