@@ -40,12 +40,14 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - ✓ Real-time reaction pipeline: subscription → reducer → optimistic UI with localStorage persistence — v1.2
 - ✓ 25-test reaction suite covering resolver toggle, schema validation, privacy enforcement — v1.2
 
+- ✓ Shared `formatRelativeTime` utility + `useSessionMutations`/`useHostMutations` hooks — v1.3
+- ✓ SnippetCard extraction, QAPanel sort dedup, QuestionCard host/participant variants — v1.3
+- ✓ Vote button fill states (Indigo/muted gray), identity chip, own-question accent — v1.3
+- ✓ `aria-pressed` on vote buttons for screen reader toggle state — v1.3
+
 ### Active
 
-- [ ] Shared `formatRelativeTime` + `useSessionMutations` hook extraction (STRUC-01, STRUC-02, STRUC-06)
-- [ ] SnippetCard extraction, QAPanel sort dedup, QuestionCard variants (STRUC-03-05)
-- [ ] Vote button fill states, identity chip, own-question indicator (UXINT-01-07)
-- [ ] ARIA tablist on mobile tabs, aria-live on NewContentBanner, aria-pressed on votes (A11Y-04-07)
+(No active requirements — define next milestone)
 
 ### Out of Scope
 
@@ -60,22 +62,16 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - E2E tests on every PR — 5-15 min; run on main only
 - WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Current Milestone: v1.3 Participant & Host UX Refactor
+## Current State
 
-**Goal:** Decompose monolithic components, eliminate duplication, improve accessibility and interaction design.
-
-**Target features:**
-
-- Component decomposition (SnippetCard, QuestionCard variants, QAPanel sort dedup)
-- Shared hooks extraction (formatRelativeTime, useSessionMutations)
-- UX interaction polish (vote fill states, identity chip, own-question indicator)
-- Accessibility gaps (ARIA tablist on mobile tabs, aria-live on NewContentBanner, aria-pressed on votes)
+**Shipped:** v1.3 Participant & Host UX Refactor (2026-03-18)
+**Next milestone:** Not yet planned — run `/gsd:new-milestone` to start
 
 ## Context
 
 - **Stack**: Next.js 16 + SST Ion (AWS) + DynamoDB + AppSync
 - **Codebase**: ~9,150 LOC TypeScript across 3 packages (core, frontend, functions)
-- **Test suite**: 98 tests passing (74 v1.1 + 24 v1.2 reaction tests)
+- **Test suite**: 105 tests passing (74 v1.1 + 24 v1.2 + 7 v1.3 tests)
 - **Scale target**: 50-500 concurrent participants per session
 - **Auth model**: No accounts. Host via hashed secret. Participants via device fingerprint
 - **Quality gates**: Pre-commit lint+format+typecheck, CI on every PR
@@ -112,7 +108,11 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 | reactedByMe via localStorage, not server     | Privacy: subscription payload has counts only, no fingerprints      | ✓ Good — by design for anonymous sessions          |
 | Silent failure on reactAction                | No toast on error; UI reverts optimistically                        | ✓ Good — consistent with vote pattern              |
 | Slack-style reaction pills (bg-muted)        | Neutral gray, not brand indigo — per design system anti-patterns    | ✓ Good                                             |
+| formatRelativeTime as overloaded utility     | Two call modes: short-token (Server) + i18n (Client)                | ✓ Good — zero duplication, 19 tests                |
+| QuestionCard facade routing to variants      | Host/participant split without breaking consumers                   | ✓ Good — moderation isolated from participant      |
+| Prop threading over hook calls in QAInput    | Simpler than calling useIdentity/useFingerprint inside leaf         | ✓ Good — single source of truth in orchestrator    |
+| Instant vote toggle, no animation            | State honesty over decorative motion                                | ✓ Good — aligns with design philosophy             |
 
 ---
 
-_Last updated: 2026-03-17 after v1.3 milestone started_
+_Last updated: 2026-03-18 after v1.3 milestone_

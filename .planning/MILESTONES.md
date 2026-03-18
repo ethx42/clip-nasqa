@@ -75,3 +75,13 @@
 - Theme system (dark/light) with Emerald-500 accent, no layout shift
 
 ---
+
+## v1.3 Participant & Host UX Refactor (Shipped: 2026-03-18)
+
+**Phases completed:** 11 phases, 33 plans, 13 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
