@@ -84,7 +84,15 @@
     "manual": "(manual)",
     "share": "Share",
     "sessionPanels": "Session panels",
-    "skipToQaFeed": "Skip to Q&A feed"
+    "skipToQaFeed": "Skip to Q&A feed",
+    "pushFailed": "Failed",
+    "editSnippet": "Edit snippet",
+    "retryPush": "Retry push",
+    "dismissFailed": "Dismiss",
+    "cancelEdit": "Cancel edit",
+    "saveEdit": "Save edit",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "pages": {
     "sessionNotFound": "Session not found or expired",

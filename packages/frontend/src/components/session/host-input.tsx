@@ -2,25 +2,24 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
 
-import { pushSnippetAction, renderHighlight } from "@/actions/snippet";
+import { renderHighlight } from "@/actions/snippet";
 import { detectLanguage, SUPPORTED_LANGUAGES } from "@/lib/detect-language";
-import { safeAction } from "@/lib/safe-action";
 
 interface HostInputProps {
   sessionCode: string;
   hostSecretHash: string;
+  /** Optimistic push handler. If not provided, push button is disabled. */
+  onPush?: (content: string, lang: string) => Promise<{ success: boolean; tempId: string }>;
+  /** Called after a snippet is pushed — use for scroll-to-top. */
   onSnippetPushed?: () => void;
 }
 
-export function HostInput({ sessionCode, hostSecretHash, onSnippetPushed }: HostInputProps) {
+export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
   const t = useTranslations("session");
-  const tErrors = useTranslations("actionErrors");
   const [value, setValue] = useState("");
   const [detectedLang, setDetectedLang] = useState("text");
   const [highlightHtml, setHighlightHtml] = useState("");
-  const [isPushing, setIsPushing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,51 +75,34 @@ export function HostInput({ sessionCode, hostSecretHash, onSnippetPushed }: Host
 
   const handlePush = useCallback(async () => {
     const content = value.trim();
-    if (!content || isPushing) return;
+    if (!content || !onPush) return;
 
-    if (!hostSecretHash) {
-      toast.error("Host secret not ready — try again in a moment");
-      return;
-    }
-
-    // Cancel any pending highlight to avoid racing with the push server action
+    // Cancel any pending highlight to avoid racing with the push
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
     }
 
-    setIsPushing(true);
     const lang = activeLang;
+
+    // Clear immediately — optimistic push is instant, no spinner
     setValue("");
     setHighlightHtml("");
     setDetectedLang("text");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
+      // Fix SHIKI-07 clear artifact: reset selection to prevent residual highlight from text-transparent
+      textareaRef.current.selectionStart = 0;
+      textareaRef.current.selectionEnd = 0;
+      textareaRef.current.focus();
     }
     if (backdropRef.current) {
       backdropRef.current.style.height = "auto";
     }
-    const type = lang !== "text" ? "code" : "text";
-    const result = await safeAction(
-      pushSnippetAction({
-        sessionCode,
-        hostSecretHash,
-        content,
-        type,
-        language: lang !== "text" ? lang : undefined,
-      }),
-      tErrors("networkError"),
-    );
-    setIsPushing(false);
-    if (!result.success) {
-      // Restore content so the user doesn't lose their work
-      setValue(content);
-      setDetectedLang(lang);
-      toast.error(result.error, { duration: 5000 });
-      return;
-    }
+
+    await onPush(content, lang);
     onSnippetPushed?.();
-  }, [value, isPushing, activeLang, sessionCode, hostSecretHash, onSnippetPushed, tErrors]);
+  }, [value, activeLang, onPush, onSnippetPushed]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -188,10 +170,10 @@ export function HostInput({ sessionCode, hostSecretHash, onSnippetPushed }: Host
         <button
           type="button"
           onClick={() => void handlePush()}
-          disabled={!value.trim() || isPushing}
+          disabled={!value.trim() || !onPush}
           className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          {isPushing ? t("pushing") : t("pushSnippet")}
+          {t("pushSnippet")}
           <kbd className="ml-1 hidden rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-medium sm:inline">
             ⌘↵
           </kbd>

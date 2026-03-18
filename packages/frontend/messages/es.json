@@ -84,7 +84,15 @@
     "manual": "(manual)",
     "share": "Compartir",
     "sessionPanels": "Paneles de sesión",
-    "skipToQaFeed": "Saltar a preguntas"
+    "skipToQaFeed": "Saltar a preguntas",
+    "pushFailed": "Falló",
+    "editSnippet": "Editar fragmento",
+    "retryPush": "Reintentar",
+    "dismissFailed": "Descartar",
+    "cancelEdit": "Cancelar edición",
+    "saveEdit": "Guardar edición",
+    "cancel": "Cancelar",
+    "save": "Guardar"
   },
   "pages": {
     "sessionNotFound": "Sesión no encontrada o expirada",

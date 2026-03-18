@@ -10,6 +10,7 @@ import { QAPanel } from "@/components/session/qa-panel";
 import { SessionShell } from "@/components/session/session-shell";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useHostMutations } from "@/hooks/use-host-mutations";
+import { useHostSnippetPush } from "@/hooks/use-host-snippet-push";
 import { useIdentity } from "@/hooks/use-identity";
 import { useSessionMutations } from "@/hooks/use-session-mutations";
 import { useSessionState } from "@/hooks/use-session-state";
@@ -53,7 +54,14 @@ export function SessionLiveHostPage({
   const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
     useFingerprint(sessionCode);
 
-  const { state, dispatch, sortedQuestions, bannedFingerprints } = useSessionState({
+  const {
+    state,
+    dispatch,
+    sortedQuestions,
+    bannedFingerprints,
+    failedSnippetIds,
+    editingSnippetIds,
+  } = useSessionState({
     snippets: initialSnippets,
     questions: initialQuestions,
     replies: initialReplies,
@@ -103,6 +111,15 @@ export function SessionLiveHostPage({
     questionsRef,
   });
 
+  const { handlePush, handleEditStart, handleEditEnd, handleRetry, handleDismissFailed } =
+    useHostSnippetPush({
+      sessionCode,
+      hostSecretHash,
+      dispatch,
+      snippetsLength: state.snippets.length,
+      editingSnippetIds,
+    });
+
   const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
 
   return (
@@ -125,6 +142,12 @@ export function SessionLiveHostPage({
           connectionStatus={connectionStatus}
           onDeleteSnippet={handleDeleteSnippet}
           onClearClipboard={handleClearClipboard}
+          onPush={handlePush}
+          onRetryFailed={handleRetry}
+          onDismissFailed={handleDismissFailed}
+          onEditStart={handleEditStart}
+          onEditEnd={handleEditEnd}
+          failedSnippetIds={failedSnippetIds}
         />
       }
       qaSlot={

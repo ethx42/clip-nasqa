@@ -1,7 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-
 interface NewContentBannerProps {
   /** Message to show, e.g. "New snippet from speaker" or "2 new questions". */
   message: string;
@@ -10,28 +8,24 @@ interface NewContentBannerProps {
 }
 
 /**
- * Sticky banner that appears at the top of a scroll panel when new content
- * arrives while the user is scrolled down.
- *
- * Only rendered when visible — takes zero layout space.
+ * Compact centered pill that appears over a scroll panel when new content
+ * arrives while the user is scrolled down. Uses opacity fade, takes no layout space.
  */
 export function NewContentBanner({ message, visible, onTap }: NewContentBannerProps) {
-  const t = useTranslations("session");
-
-  if (!visible) return null;
-
   return (
     <div
       role="button"
-      tabIndex={0}
-      aria-hidden="true"
-      onClick={onTap}
+      tabIndex={visible ? 0 : -1}
+      aria-hidden={!visible}
+      onClick={visible ? onTap : undefined}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onTap();
+        if (visible && (e.key === "Enter" || e.key === " ")) onTap();
       }}
-      className="sticky top-0 z-10 cursor-pointer select-none bg-indigo-500 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+      className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white shadow-lg transition-opacity cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 ${
+        visible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
     >
-      {message} · {t("tapToScroll")}
+      {message}
     </div>
   );
 }

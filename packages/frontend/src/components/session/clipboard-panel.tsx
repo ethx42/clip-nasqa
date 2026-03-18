@@ -4,7 +4,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { AnimatePresence, motion } from "framer-motion";
 import { ClipboardList, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { HostInput } from "./host-input";
@@ -19,6 +19,14 @@ interface ClipboardPanelProps {
   connectionStatus?: "connected" | "connecting" | "disconnected";
   onDeleteSnippet?: (snippetId: string) => void;
   onClearClipboard?: () => void;
+  /** Optimistic push handler from useHostSnippetPush. */
+  onPush?: (content: string, lang: string) => Promise<{ success: boolean; tempId: string }>;
+  onRetryFailed?: (tempId: string, content: string, lang: string) => void;
+  onDismissFailed?: (tempId: string) => void;
+  onEditStart?: (tempId: string) => void;
+  onEditEnd?: (tempId: string, content: string, lang: string) => void;
+  /** Set of snippet IDs that failed to push. */
+  failedSnippetIds?: Set<string>;
 }
 
 const HISTORY_PAGE_SIZE = 10;
@@ -32,6 +40,12 @@ export function ClipboardPanel({
   connectionStatus = "connecting",
   onDeleteSnippet,
   onClearClipboard,
+  onPush,
+  onRetryFailed,
+  onDismissFailed,
+  onEditStart,
+  onEditEnd,
+  failedSnippetIds,
 }: ClipboardPanelProps) {
   const t = useTranslations("session");
   const tCommon = useTranslations("common");
@@ -95,6 +109,12 @@ export function ClipboardPanel({
     }
   }, []);
 
+  // Assign persistent creation-order numbers: oldest snippet = #1
+  const snippetNumbers = useMemo(() => {
+    const sorted = [...snippets].sort((a, b) => a.createdAt - b.createdAt);
+    return new Map(sorted.map((s, i) => [s.id, i + 1]));
+  }, [snippets]);
+
   const heroSnippet = snippets[0];
   const historySnippets = snippets.slice(1, visibleCount + 1);
   const hasMore = snippets.length > visibleCount + 1;
@@ -102,7 +122,11 @@ export function ClipboardPanel({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Scrollable content */}
-      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="relative flex-1 overflow-y-auto"
+      >
         <NewContentBanner message={t("newSnippet")} visible={showNewBanner} onTap={scrollToTop} />
 
         {/* Host controls */}
@@ -146,9 +170,37 @@ export function ClipboardPanel({
                     snippet={heroSnippet}
                     variant="hero"
                     isHost={isHost}
+                    snippetNumber={snippetNumbers.get(heroSnippet.id)}
+                    isFailed={failedSnippetIds?.has(heroSnippet.id) ?? false}
+                    isOptimistic={heroSnippet.id.startsWith("_opt_")}
                     onDelete={
                       onDeleteSnippet
                         ? () => setConfirmAction({ type: "delete", snippetId: heroSnippet.id })
+                        : undefined
+                    }
+                    onRetry={
+                      onRetryFailed && failedSnippetIds?.has(heroSnippet.id)
+                        ? () =>
+                            onRetryFailed(
+                              heroSnippet.id,
+                              heroSnippet.content,
+                              heroSnippet.language ?? "text",
+                            )
+                        : undefined
+                    }
+                    onDismiss={
+                      onDismissFailed && failedSnippetIds?.has(heroSnippet.id)
+                        ? () => onDismissFailed(heroSnippet.id)
+                        : undefined
+                    }
+                    onEditStart={
+                      heroSnippet.id.startsWith("_opt_")
+                        ? () => onEditStart?.(heroSnippet.id)
+                        : undefined
+                    }
+                    onEditEnd={
+                      heroSnippet.id.startsWith("_opt_")
+                        ? (content, lang) => onEditEnd?.(heroSnippet.id, content, lang)
                         : undefined
                     }
                   />
@@ -171,9 +223,31 @@ export function ClipboardPanel({
                       snippet={snippet}
                       variant="compact"
                       isHost={isHost}
+                      snippetNumber={snippetNumbers.get(snippet.id)}
+                      isFailed={failedSnippetIds?.has(snippet.id) ?? false}
+                      isOptimistic={snippet.id.startsWith("_opt_")}
                       onDelete={
                         onDeleteSnippet
                           ? () => setConfirmAction({ type: "delete", snippetId: snippet.id })
+                          : undefined
+                      }
+                      onRetry={
+                        onRetryFailed && failedSnippetIds?.has(snippet.id)
+                          ? () =>
+                              onRetryFailed(snippet.id, snippet.content, snippet.language ?? "text")
+                          : undefined
+                      }
+                      onDismiss={
+                        onDismissFailed && failedSnippetIds?.has(snippet.id)
+                          ? () => onDismissFailed(snippet.id)
+                          : undefined
+                      }
+                      onEditStart={
+                        snippet.id.startsWith("_opt_") ? () => onEditStart?.(snippet.id) : undefined
+                      }
+                      onEditEnd={
+                        snippet.id.startsWith("_opt_")
+                          ? (content, lang) => onEditEnd?.(snippet.id, content, lang)
                           : undefined
                       }
                     />
@@ -190,7 +264,12 @@ export function ClipboardPanel({
       {/* Host input — sticky at bottom */}
       {isHost && (
         <div className="shrink-0 border-t border-border p-3">
-          <HostInput sessionCode={sessionCode} hostSecretHash={hostSecretHash} />
+          <HostInput
+            sessionCode={sessionCode}
+            hostSecretHash={hostSecretHash}
+            onPush={onPush}
+            onSnippetPushed={scrollToTop}
+          />
         </div>
       )}
 
