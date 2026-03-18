@@ -55,7 +55,7 @@ function parseRateLimitOrBan(
  * Pushes a new snippet to the session via AppSync mutation.
  */
 export async function pushSnippetAction(formData: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   content: string;
   type: string;
@@ -76,7 +76,7 @@ export async function pushSnippetAction(formData: {
  * Deletes a single snippet from the session.
  */
 export async function deleteSnippetAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   snippetId: string;
 }): Promise<ActionResult> {
@@ -95,7 +95,7 @@ export async function deleteSnippetAction(args: {
  * Clears all snippets from the session clipboard.
  */
 export async function clearClipboardAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
 }): Promise<ActionResult> {
   const t = await getTranslations("actionErrors");

@@ -12,7 +12,7 @@ import type { SessionAction } from "@/hooks/use-session-state";
 import { safeAction } from "@/lib/safe-action";
 
 interface UseSessionMutationsParams {
-  sessionSlug: string;
+  sessionCode: string;
   fingerprint: string;
   authorName: string | undefined;
   dispatch: React.Dispatch<SessionAction>;
@@ -39,7 +39,7 @@ interface SessionMutations {
 }
 
 export function useSessionMutations({
-  sessionSlug,
+  sessionCode,
   fingerprint,
   authorName,
   dispatch,
@@ -70,7 +70,7 @@ export function useSessionMutations({
       }
 
       const result = await safeAction(
-        upvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove }),
+        upvoteQuestionAction({ sessionCode, questionId, fingerprint, remove }),
         tErrors("networkError"),
       );
 
@@ -90,7 +90,7 @@ export function useSessionMutations({
         }
       }
     },
-    [sessionSlug, fingerprint, dispatch, addVote, removeVote, tErrors],
+    [sessionCode, fingerprint, dispatch, addVote, removeVote, tErrors],
   );
 
   const handleDownvote = useCallback(
@@ -123,7 +123,7 @@ export function useSessionMutations({
       }
 
       const result = await safeAction(
-        downvoteQuestionAction({ sessionSlug, questionId, fingerprint, remove }),
+        downvoteQuestionAction({ sessionCode, questionId, fingerprint, remove }),
         tErrors("networkError"),
       );
 
@@ -149,7 +149,7 @@ export function useSessionMutations({
       }
     },
     [
-      sessionSlug,
+      sessionCode,
       fingerprint,
       dispatch,
       questionsRef,
@@ -167,7 +167,7 @@ export function useSessionMutations({
       const tempId = `_opt_${Date.now()}`;
       const optimisticQuestion: Question = {
         id: tempId,
-        sessionSlug,
+        sessionCode,
         text,
         fingerprint,
         authorName,
@@ -183,7 +183,7 @@ export function useSessionMutations({
       dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
       const result = await safeAction(
-        addQuestionAction({ sessionSlug, text, fingerprint, authorName }),
+        addQuestionAction({ sessionCode, text, fingerprint, authorName }),
         tErrors("networkError"),
       );
 
@@ -194,7 +194,7 @@ export function useSessionMutations({
         onSubmitSuccess?.();
       }
     },
-    [sessionSlug, fingerprint, authorName, dispatch, onSubmitSuccess, tErrors],
+    [sessionCode, fingerprint, authorName, dispatch, onSubmitSuccess, tErrors],
   );
 
   const handleReply = useCallback(
@@ -204,7 +204,7 @@ export function useSessionMutations({
       const optimisticReply: Reply = {
         id: tempId,
         questionId,
-        sessionSlug,
+        sessionCode,
         text,
         isHostReply,
         fingerprint,
@@ -215,7 +215,7 @@ export function useSessionMutations({
       dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
 
       const result = await safeAction(
-        addReplyAction({ sessionSlug, questionId, text, fingerprint, isHostReply, authorName }),
+        addReplyAction({ sessionCode, questionId, text, fingerprint, isHostReply, authorName }),
         tErrors("networkError"),
       );
 
@@ -226,7 +226,7 @@ export function useSessionMutations({
         onReplySuccess?.();
       }
     },
-    [sessionSlug, fingerprint, authorName, isHostReply, dispatch, onReplySuccess, tErrors],
+    [sessionCode, fingerprint, authorName, isHostReply, dispatch, onReplySuccess, tErrors],
   );
 
   return { handleUpvote, handleDownvote, handleAddQuestion, handleReply };

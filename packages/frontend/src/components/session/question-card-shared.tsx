@@ -19,7 +19,7 @@ export interface QuestionCardBaseProps {
   question: Question;
   isHost: boolean;
   fingerprint: string;
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash?: string;
   votedQuestionIds: Set<string>;
   downvotedQuestionIds: Set<string>;

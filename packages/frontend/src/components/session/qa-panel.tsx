@@ -15,7 +15,7 @@ import { QuestionCard } from "./question-card";
 
 interface QAPanelProps {
   isHost?: boolean;
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash?: string;
   questions: Question[];
   replies: Reply[];
@@ -38,7 +38,7 @@ const SCROLL_THRESHOLD = 80; // px scrolled down before showing banner
 
 export function QAPanel({
   isHost = false,
-  sessionSlug,
+  sessionCode,
   hostSecretHash,
   questions,
   replies,
@@ -177,7 +177,7 @@ export function QAPanel({
                     replies={repliesByQuestion.get(question.id) ?? []}
                     isHost={isHost}
                     fingerprint={fingerprint}
-                    sessionSlug={sessionSlug}
+                    sessionCode={sessionCode}
                     hostSecretHash={hostSecretHash}
                     votedQuestionIds={votedQuestionIds}
                     downvotedQuestionIds={downvotedQuestionIds}

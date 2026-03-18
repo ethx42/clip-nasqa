@@ -1,129 +1,129 @@
 export const PUSH_SNIPPET = `
-  mutation PushSnippet($sessionSlug: String!, $hostSecretHash: String!, $content: String!, $type: String!, $language: String) {
-    pushSnippet(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, content: $content, type: $type, language: $language) {
+  mutation PushSnippet($sessionCode: String!, $hostSecretHash: String!, $content: String!, $type: String!, $language: String) {
+    pushSnippet(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash, content: $content, type: $type, language: $language) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const DELETE_SNIPPET = `
-  mutation DeleteSnippet($sessionSlug: String!, $hostSecretHash: String!, $snippetId: String!) {
-    deleteSnippet(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, snippetId: $snippetId) {
+  mutation DeleteSnippet($sessionCode: String!, $hostSecretHash: String!, $snippetId: String!) {
+    deleteSnippet(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash, snippetId: $snippetId) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const CLEAR_CLIPBOARD = `
-  mutation ClearClipboard($sessionSlug: String!, $hostSecretHash: String!) {
-    clearClipboard(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash) {
+  mutation ClearClipboard($sessionCode: String!, $hostSecretHash: String!) {
+    clearClipboard(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const ADD_QUESTION = `
-  mutation AddQuestion($sessionSlug: String!, $text: String!, $fingerprint: String!, $authorName: String) {
-    addQuestion(sessionSlug: $sessionSlug, text: $text, fingerprint: $fingerprint, authorName: $authorName) {
+  mutation AddQuestion($sessionCode: String!, $text: String!, $fingerprint: String!, $authorName: String) {
+    addQuestion(sessionCode: $sessionCode, text: $text, fingerprint: $fingerprint, authorName: $authorName) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const UPVOTE_QUESTION = `
-  mutation UpvoteQuestion($sessionSlug: String!, $questionId: String!, $fingerprint: String!, $remove: Boolean) {
-    upvoteQuestion(sessionSlug: $sessionSlug, questionId: $questionId, fingerprint: $fingerprint, remove: $remove) {
+  mutation UpvoteQuestion($sessionCode: String!, $questionId: String!, $fingerprint: String!, $remove: Boolean) {
+    upvoteQuestion(sessionCode: $sessionCode, questionId: $questionId, fingerprint: $fingerprint, remove: $remove) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const ADD_REPLY = `
-  mutation AddReply($sessionSlug: String!, $questionId: String!, $text: String!, $fingerprint: String!, $isHostReply: Boolean!, $authorName: String) {
-    addReply(sessionSlug: $sessionSlug, questionId: $questionId, text: $text, fingerprint: $fingerprint, isHostReply: $isHostReply, authorName: $authorName) {
+  mutation AddReply($sessionCode: String!, $questionId: String!, $text: String!, $fingerprint: String!, $isHostReply: Boolean!, $authorName: String) {
+    addReply(sessionCode: $sessionCode, questionId: $questionId, text: $text, fingerprint: $fingerprint, isHostReply: $isHostReply, authorName: $authorName) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const FOCUS_QUESTION = `
-  mutation FocusQuestion($sessionSlug: String!, $hostSecretHash: String!, $questionId: String) {
-    focusQuestion(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, questionId: $questionId) {
+  mutation FocusQuestion($sessionCode: String!, $hostSecretHash: String!, $questionId: String) {
+    focusQuestion(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash, questionId: $questionId) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const BAN_QUESTION = `
-  mutation BanQuestion($sessionSlug: String!, $hostSecretHash: String!, $questionId: String!) {
-    banQuestion(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, questionId: $questionId) {
+  mutation BanQuestion($sessionCode: String!, $hostSecretHash: String!, $questionId: String!) {
+    banQuestion(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash, questionId: $questionId) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const BAN_PARTICIPANT = `
-  mutation BanParticipant($sessionSlug: String!, $hostSecretHash: String!, $fingerprint: String!) {
-    banParticipant(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, fingerprint: $fingerprint) {
+  mutation BanParticipant($sessionCode: String!, $hostSecretHash: String!, $fingerprint: String!) {
+    banParticipant(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash, fingerprint: $fingerprint) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const DOWNVOTE_QUESTION = `
-  mutation DownvoteQuestion($sessionSlug: String!, $questionId: String!, $fingerprint: String!, $remove: Boolean) {
-    downvoteQuestion(sessionSlug: $sessionSlug, questionId: $questionId, fingerprint: $fingerprint, remove: $remove) {
+  mutation DownvoteQuestion($sessionCode: String!, $questionId: String!, $fingerprint: String!, $remove: Boolean) {
+    downvoteQuestion(sessionCode: $sessionCode, questionId: $questionId, fingerprint: $fingerprint, remove: $remove) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const RESTORE_QUESTION = `
-  mutation RestoreQuestion($sessionSlug: String!, $hostSecretHash: String!, $questionId: String!) {
-    restoreQuestion(sessionSlug: $sessionSlug, hostSecretHash: $hostSecretHash, questionId: $questionId) {
+  mutation RestoreQuestion($sessionCode: String!, $hostSecretHash: String!, $questionId: String!) {
+    restoreQuestion(sessionCode: $sessionCode, hostSecretHash: $hostSecretHash, questionId: $questionId) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const REACT = `
-  mutation React($sessionSlug: String!, $targetId: String!, $targetType: ReactionTargetType!, $emoji: String!, $fingerprint: String!) {
-    react(sessionSlug: $sessionSlug, targetId: $targetId, targetType: $targetType, emoji: $emoji, fingerprint: $fingerprint) {
+  mutation React($sessionCode: String!, $targetId: String!, $targetType: ReactionTargetType!, $emoji: String!, $fingerprint: String!) {
+    react(sessionCode: $sessionCode, targetId: $targetId, targetType: $targetType, emoji: $emoji, fingerprint: $fingerprint) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }
 `;
 
 export const GET_SESSION_DATA = `
-  query GetSessionData($sessionSlug: String!) {
-    getSessionData(sessionSlug: $sessionSlug) {
+  query GetSessionData($sessionCode: String!) {
+    getSessionData(sessionCode: $sessionCode) {
       snippets {
         id
-        sessionSlug
+        sessionCode
         type
         content
         language
@@ -132,7 +132,7 @@ export const GET_SESSION_DATA = `
       }
       questions {
         id
-        sessionSlug
+        sessionCode
         text
         fingerprint
         authorName
@@ -149,7 +149,7 @@ export const GET_SESSION_DATA = `
       replies {
         id
         questionId
-        sessionSlug
+        sessionCode
         text
         isHostReply
         fingerprint

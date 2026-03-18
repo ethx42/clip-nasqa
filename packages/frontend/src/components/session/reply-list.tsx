@@ -12,11 +12,11 @@ import { ReactionBar } from "./reaction-bar";
 interface ReplyListProps {
   replies: Reply[];
   isHost: boolean;
-  sessionSlug: string;
+  sessionCode: string;
   fingerprint: string;
 }
 
-export function ReplyList({ replies, sessionSlug, fingerprint }: ReplyListProps) {
+export function ReplyList({ replies, sessionCode, fingerprint }: ReplyListProps) {
   const t = useTranslations("session");
   return (
     <div className="space-y-3">
@@ -43,7 +43,7 @@ export function ReplyList({ replies, sessionSlug, fingerprint }: ReplyListProps)
             {linkifyText(reply.text)}
           </p>
           <ReactionBar
-            sessionSlug={sessionSlug}
+            sessionCode={sessionCode}
             targetId={reply.id}
             targetType="REPLY"
             reactionCounts={reply.reactionCounts}

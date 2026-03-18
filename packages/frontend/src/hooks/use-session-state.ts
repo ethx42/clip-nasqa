@@ -96,7 +96,7 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
         : state.questions.some(
             (x) =>
               x.id.startsWith("_opt_") &&
-              x.sessionSlug === q.sessionSlug &&
+              x.sessionCode === q.sessionCode &&
               x.fingerprint === q.fingerprint &&
               x.text === q.text,
           );
@@ -105,7 +105,7 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
             (x) =>
               !(
                 x.id.startsWith("_opt_") &&
-                x.sessionSlug === q.sessionSlug &&
+                x.sessionCode === q.sessionCode &&
                 x.fingerprint === q.fingerprint &&
                 x.text === q.text
               ),

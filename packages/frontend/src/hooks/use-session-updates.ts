@@ -32,7 +32,7 @@ function parseAwsJson(value: unknown): unknown {
 
 interface SessionUpdateEvent {
   eventType: string;
-  sessionSlug: string;
+  sessionCode: string;
   payload: string; // AWSJSON — serialized JSON string
 }
 
@@ -66,10 +66,10 @@ function mapConnectionState(state: ConnectionState): ConnectionStatus {
  * (not dependent on receiving the first data event).
  *
  * Returns connection status and last host activity timestamp for the live indicator.
- * Cleanup: unsubscribes on unmount or when sessionSlug changes.
+ * Cleanup: unsubscribes on unmount or when sessionCode changes.
  */
 export function useSessionUpdates(
-  sessionSlug: string,
+  sessionCode: string,
   dispatch: React.Dispatch<SessionAction>,
 ): UseSessionUpdatesResult {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
@@ -105,7 +105,7 @@ export function useSessionUpdates(
     const sub = (
       appsyncClient.graphql({
         query: ON_SESSION_UPDATE,
-        variables: { sessionSlug },
+        variables: { sessionCode },
       }) as unknown as AppSyncSubscription
     ).subscribe({
       next: ({ data }: { data: { onSessionUpdate: SessionUpdateEvent } }) => {
@@ -191,7 +191,7 @@ export function useSessionUpdates(
     return () => {
       sub.unsubscribe();
     };
-  }, [sessionSlug, stableDispatch]);
+  }, [sessionCode, stableDispatch]);
 
   return { connectionStatus, lastHostActivity };
 }

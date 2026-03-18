@@ -12,7 +12,7 @@ import messages from "../../messages/en.json";
 // Base question fixture
 const baseQuestion: Question = {
   id: "q1",
-  sessionSlug: "test-session",
+  sessionCode: "test-session",
   text: "What is the meaning of life?",
   fingerprint: "fp-viewer",
   authorName: undefined,
@@ -56,7 +56,7 @@ function renderCard({
         replies={replies}
         isHost={isHost}
         fingerprint={fingerprint}
-        sessionSlug="test-session"
+        sessionCode="test-session"
         votedQuestionIds={votedQuestionIds}
         downvotedQuestionIds={downvotedQuestionIds}
         onUpvote={onUpvote}
@@ -117,7 +117,7 @@ describe("QuestionCard", () => {
       {
         id: "r1",
         questionId: "q1",
-        sessionSlug: "test-session",
+        sessionCode: "test-session",
         text: "Great question!",
         isHostReply: false,
         fingerprint: "fp-other",

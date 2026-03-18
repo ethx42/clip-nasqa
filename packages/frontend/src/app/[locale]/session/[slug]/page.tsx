@@ -115,7 +115,7 @@ export default async function SessionPage({
   return (
     <SessionLivePage
       session={session}
-      sessionSlug={slug}
+      sessionCode={slug}
       initialSnippets={snippets}
       initialQuestions={questions}
       initialReplies={replies}

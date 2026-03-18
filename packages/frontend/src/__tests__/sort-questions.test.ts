@@ -6,7 +6,7 @@ import { sortQuestions } from "@/lib/sort-questions";
 
 function makeQuestion(overrides: Partial<Question> & { id: string }): Question {
   return {
-    sessionSlug: "test-session",
+    sessionCode: "test-session",
     text: "Test question",
     fingerprint: "fp-1",
     upvoteCount: 0,

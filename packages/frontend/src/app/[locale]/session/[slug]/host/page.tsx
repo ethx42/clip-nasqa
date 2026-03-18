@@ -72,7 +72,7 @@ export default async function HostPage({
   return (
     <SessionLiveHostPage
       session={session}
-      sessionSlug={slug}
+      sessionCode={slug}
       rawSecret={raw}
       initialSnippets={snippets}
       initialQuestions={questions}

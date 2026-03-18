@@ -9,7 +9,7 @@ import { IdentityEditor } from "@/components/session/identity-editor";
 interface SessionShellProps {
   title: string;
   isHost?: boolean;
-  sessionSlug?: string;
+  sessionCode?: string;
   clipboardSlot: React.ReactNode;
   qaSlot: React.ReactNode;
   hostToolbar?: React.ReactNode;

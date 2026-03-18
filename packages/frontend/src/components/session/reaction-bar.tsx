@@ -20,7 +20,7 @@ function formatCount(n: number): string {
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface ReactionBarProps {
-  sessionSlug: string;
+  sessionCode: string;
   targetId: string;
   targetType: "QUESTION" | "REPLY";
   reactionCounts: string | undefined; // raw AWSJSON from question/reply
@@ -40,7 +40,7 @@ interface ReactionBarProps {
  * - Neutral gray active highlight (bg-muted — never brand indigo)
  */
 export function ReactionBar({
-  sessionSlug,
+  sessionCode,
   targetId,
   targetType,
   reactionCounts,
@@ -52,7 +52,7 @@ export function ReactionBar({
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const { displayCounts, activeEmojis, toggle } = useReactionState({
-    sessionSlug,
+    sessionCode,
     targetId,
     targetType,
     serverCounts: reactionCounts,

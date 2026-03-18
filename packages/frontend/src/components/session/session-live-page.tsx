@@ -18,7 +18,7 @@ import type { Session } from "@/lib/session";
 
 interface SessionLivePageProps {
   session: Session;
-  sessionSlug: string;
+  sessionCode: string;
   initialSnippets: Snippet[];
   initialQuestions: Question[];
   initialReplies: Reply[];
@@ -36,7 +36,7 @@ interface SessionLivePageProps {
  */
 export function SessionLivePage({
   session,
-  sessionSlug,
+  sessionCode,
   initialSnippets,
   initialQuestions,
   initialReplies,
@@ -46,14 +46,14 @@ export function SessionLivePage({
 
   // Show JoinModal once per session (sessionStorage flag)
   useEffect(() => {
-    if (shouldShowJoinModal(sessionSlug)) {
+    if (shouldShowJoinModal(sessionCode)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing modal visibility from sessionStorage on mount
       setJoinModalOpen(true);
     }
-  }, [sessionSlug]);
+  }, [sessionCode]);
 
   const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
-    useFingerprint(sessionSlug);
+    useFingerprint(sessionCode);
 
   const { state, dispatch, sortedQuestions, bannedFingerprints } = useSessionState({
     snippets: initialSnippets,
@@ -67,10 +67,10 @@ export function SessionLivePage({
     questionsRef.current = state.questions;
   }, [state.questions]);
 
-  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionSlug, dispatch);
+  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionCode, dispatch);
 
   const { handleUpvote, handleDownvote, handleAddQuestion, handleReply } = useSessionMutations({
-    sessionSlug,
+    sessionCode,
     fingerprint,
     authorName,
     dispatch,
@@ -89,13 +89,13 @@ export function SessionLivePage({
   return (
     <>
       <JoinModal
-        sessionSlug={sessionSlug}
+        sessionCode={sessionCode}
         open={joinModalOpen}
         onClose={() => setJoinModalOpen(false)}
       />
       <SessionShell
         title={session.title}
-        sessionSlug={sessionSlug}
+        sessionCode={sessionCode}
         snippetCount={state.snippets.length}
         questionCount={state.questions.length}
         liveIndicator={
@@ -103,14 +103,14 @@ export function SessionLivePage({
         }
         clipboardSlot={
           <ClipboardPanel
-            sessionSlug={sessionSlug}
+            sessionCode={sessionCode}
             snippets={state.snippets}
             connectionStatus={connectionStatus}
           />
         }
         qaSlot={
           <QAPanel
-            sessionSlug={sessionSlug}
+            sessionCode={sessionCode}
             questions={sortedQuestions}
             replies={state.replies}
             fingerprint={fingerprint}

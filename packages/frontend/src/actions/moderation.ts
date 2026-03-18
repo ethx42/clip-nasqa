@@ -35,7 +35,7 @@ function parseRateLimitOrBan(
 }
 
 export async function banQuestionAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   questionId: string;
 }): Promise<ActionResult> {
@@ -51,7 +51,7 @@ export async function banQuestionAction(args: {
 }
 
 export async function banParticipantAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   fingerprint: string;
 }): Promise<ActionResult> {
@@ -67,7 +67,7 @@ export async function banParticipantAction(args: {
 }
 
 export async function downvoteQuestionAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   questionId: string;
   fingerprint: string;
   remove?: boolean;
@@ -84,7 +84,7 @@ export async function downvoteQuestionAction(args: {
 }
 
 export async function restoreQuestionAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   questionId: string;
 }): Promise<ActionResult> {

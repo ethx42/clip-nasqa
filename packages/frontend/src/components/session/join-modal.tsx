@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useIdentity } from "@/hooks/use-identity";
 
 interface JoinModalProps {
-  sessionSlug: string;
+  sessionCode: string;
   open: boolean;
   onClose: () => void;
 }
@@ -16,7 +16,7 @@ function joinShownKey(slug: string) {
   return `nasqa_join_shown_${slug}`;
 }
 
-export function JoinModal({ sessionSlug, open, onClose }: JoinModalProps) {
+export function JoinModal({ sessionCode, open, onClose }: JoinModalProps) {
   const t = useTranslations("identity");
   const { name: savedName, email: savedEmail, setIdentity } = useIdentity();
 
@@ -34,12 +34,12 @@ export function JoinModal({ sessionSlug, open, onClose }: JoinModalProps) {
     const trimmedName = name.trim() || undefined;
     const trimmedEmail = email.trim() || undefined;
     setIdentity(trimmedName, trimmedEmail);
-    sessionStorage.setItem(joinShownKey(sessionSlug), "1");
+    sessionStorage.setItem(joinShownKey(sessionCode), "1");
     onClose();
   }
 
   function handleSkip() {
-    sessionStorage.setItem(joinShownKey(sessionSlug), "1");
+    sessionStorage.setItem(joinShownKey(sessionCode), "1");
     onClose();
   }
 
@@ -105,7 +105,7 @@ export function JoinModal({ sessionSlug, open, onClose }: JoinModalProps) {
  * Returns true if the join modal should be shown for this session.
  * Checks sessionStorage to avoid showing on every page load.
  */
-export function shouldShowJoinModal(sessionSlug: string): boolean {
+export function shouldShowJoinModal(sessionCode: string): boolean {
   if (typeof window === "undefined") return false;
-  return !sessionStorage.getItem(joinShownKey(sessionSlug));
+  return !sessionStorage.getItem(joinShownKey(sessionCode));
 }

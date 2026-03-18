@@ -9,12 +9,12 @@ import { detectLanguage, SUPPORTED_LANGUAGES } from "@/lib/detect-language";
 import { safeAction } from "@/lib/safe-action";
 
 interface HostInputProps {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   onSnippetPushed?: () => void;
 }
 
-export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: HostInputProps) {
+export function HostInput({ sessionCode, hostSecretHash, onSnippetPushed }: HostInputProps) {
   const t = useTranslations("session");
   const tErrors = useTranslations("actionErrors");
   const [value, setValue] = useState("");
@@ -103,7 +103,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
     const type = lang !== "text" ? "code" : "text";
     const result = await safeAction(
       pushSnippetAction({
-        sessionSlug,
+        sessionCode,
         hostSecretHash,
         content,
         type,
@@ -120,7 +120,7 @@ export function HostInput({ sessionSlug, hostSecretHash, onSnippetPushed }: Host
       return;
     }
     onSnippetPushed?.();
-  }, [value, isPushing, activeLang, sessionSlug, hostSecretHash, onSnippetPushed, tErrors]);
+  }, [value, isPushing, activeLang, sessionCode, hostSecretHash, onSnippetPushed, tErrors]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

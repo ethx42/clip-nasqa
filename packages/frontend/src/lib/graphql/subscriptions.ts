@@ -1,8 +1,8 @@
 export const ON_SESSION_UPDATE = `
-  subscription OnSessionUpdate($sessionSlug: String!) {
-    onSessionUpdate(sessionSlug: $sessionSlug) {
+  subscription OnSessionUpdate($sessionCode: String!) {
+    onSessionUpdate(sessionCode: $sessionCode) {
       eventType
-      sessionSlug
+      sessionCode
       payload
     }
   }

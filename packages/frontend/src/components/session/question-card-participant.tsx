@@ -35,7 +35,7 @@ export function QuestionCardParticipant({
   question,
   replies,
   fingerprint,
-  sessionSlug: _sessionSlug,
+  sessionCode: _sessionCode,
   hostSecretHash: _hostSecretHash,
   votedQuestionIds,
   downvotedQuestionIds,
@@ -232,7 +232,7 @@ export function QuestionCardParticipant({
 
                 {/* Reaction bar */}
                 <ReactionBar
-                  sessionSlug={question.sessionSlug}
+                  sessionCode={question.sessionCode}
                   targetId={question.id}
                   targetType="QUESTION"
                   reactionCounts={question.reactionCounts}
@@ -298,7 +298,7 @@ export function QuestionCardParticipant({
                     <ReplyList
                       replies={replies}
                       isHost={false}
-                      sessionSlug={question.sessionSlug}
+                      sessionCode={question.sessionCode}
                       fingerprint={fingerprint}
                     />
                   </div>

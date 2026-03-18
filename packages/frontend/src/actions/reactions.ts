@@ -4,7 +4,7 @@ import { appsyncMutation } from "@/lib/appsync-server";
 import { REACT } from "@/lib/graphql/mutations";
 
 interface ReactArgs {
-  sessionSlug: string;
+  sessionCode: string;
   targetId: string;
   targetType: "QUESTION" | "REPLY";
   emoji: string;

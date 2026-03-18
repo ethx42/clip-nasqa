@@ -13,7 +13,7 @@ import { SnippetCard, type SnippetWithHtml } from "./snippet-card";
 
 interface ClipboardPanelProps {
   isHost?: boolean;
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash?: string;
   snippets: SnippetWithHtml[];
   connectionStatus?: "connected" | "connecting" | "disconnected";
@@ -26,7 +26,7 @@ const SCROLL_THRESHOLD = 80;
 
 export function ClipboardPanel({
   isHost = false,
-  sessionSlug,
+  sessionCode,
   hostSecretHash = "",
   snippets,
   connectionStatus = "connecting",
@@ -190,7 +190,7 @@ export function ClipboardPanel({
       {/* Host input — sticky at bottom */}
       {isHost && (
         <div className="shrink-0 border-t border-border p-3">
-          <HostInput sessionSlug={sessionSlug} hostSecretHash={hostSecretHash} />
+          <HostInput sessionCode={sessionCode} hostSecretHash={hostSecretHash} />
         </div>
       )}
 

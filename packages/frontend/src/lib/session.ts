@@ -6,20 +6,20 @@ import { EMOJI_KEYS, type Question, type Reply, type Snippet } from "@nasqa/core
 import { docClient, tableName } from "@/lib/dynamo";
 
 export interface Session {
-  slug: string;
+  code: string;
   title: string;
   isActive: boolean;
   createdAt: number;
   expiresAt: number;
 }
 
-export const getSession = cache(async function getSession(slug: string): Promise<Session | null> {
+export const getSession = cache(async function getSession(code: string): Promise<Session | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${slug}`,
-        SK: `SESSION#${slug}`,
+        PK: `SESSION#${code}`,
+        SK: `SESSION#${code}`,
       },
     }),
   );
@@ -38,7 +38,7 @@ export const getSession = cache(async function getSession(slug: string): Promise
   }
 
   return {
-    slug: item.slug as string,
+    code: item.code as string,
     title: item.title as string,
     isActive: item.isActive as boolean,
     createdAt: item.createdAt as number,
@@ -70,7 +70,7 @@ function buildReactionOrder(rawOrder: string[], counts: Record<string, number>):
 }
 
 export const getSessionData = cache(async function getSessionData(
-  slug: string,
+  code: string,
 ): Promise<SessionData> {
   const now = Math.floor(Date.now() / 1000);
 
@@ -79,7 +79,7 @@ export const getSessionData = cache(async function getSessionData(
       TableName: tableName(),
       KeyConditionExpression: "PK = :pk",
       ExpressionAttributeValues: {
-        ":pk": `SESSION#${slug}`,
+        ":pk": `SESSION#${code}`,
       },
     }),
   );
@@ -98,7 +98,7 @@ export const getSessionData = cache(async function getSessionData(
     if (sk.startsWith("SNIPPET#")) {
       snippets.push({
         id: item.id as string,
-        sessionSlug: item.sessionSlug as string,
+        sessionCode: item.sessionCode as string,
         type: item.type as string,
         content: item.content as string,
         language: item.language as string | undefined,
@@ -108,7 +108,7 @@ export const getSessionData = cache(async function getSessionData(
     } else if (sk.startsWith("QUESTION#")) {
       questions.push({
         id: item.id as string,
-        sessionSlug: item.sessionSlug as string,
+        sessionCode: item.sessionCode as string,
         text: item.text as string,
         fingerprint: item.fingerprint as string,
         authorName: item.authorName as string | undefined,
@@ -135,7 +135,7 @@ export const getSessionData = cache(async function getSessionData(
       replies.push({
         id: item.id as string,
         questionId: item.questionId as string,
-        sessionSlug: item.sessionSlug as string,
+        sessionCode: item.sessionCode as string,
         text: item.text as string,
         isHostReply: (item.isHostReply as boolean) ?? false,
         fingerprint: item.fingerprint as string,

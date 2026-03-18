@@ -30,7 +30,7 @@ function parseRateLimitOrBan(
 }
 
 export async function addQuestionAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   text: string;
   fingerprint: string;
   authorName?: string;
@@ -54,7 +54,7 @@ export async function addQuestionAction(args: {
 }
 
 export async function upvoteQuestionAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   questionId: string;
   fingerprint: string;
   remove?: boolean;
@@ -75,7 +75,7 @@ export async function upvoteQuestionAction(args: {
 }
 
 export async function addReplyAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   questionId: string;
   text: string;
   fingerprint: string;
@@ -101,7 +101,7 @@ export async function addReplyAction(args: {
 }
 
 export async function focusQuestionAction(args: {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   questionId?: string;
 }): Promise<ActionResult> {

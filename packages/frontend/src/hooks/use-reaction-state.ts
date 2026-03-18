@@ -25,13 +25,13 @@ export function parseReactionCounts(raw: string | undefined | null): ReactionCou
   }
 }
 
-function reactionsLocalKey(sessionSlug: string, targetId: string): string {
-  return `reactions:${sessionSlug}:${targetId}`;
+function reactionsLocalKey(sessionCode: string, targetId: string): string {
+  return `reactions:${sessionCode}:${targetId}`;
 }
 
-function readActiveEmojis(sessionSlug: string, targetId: string): Set<EmojiKey> {
+function readActiveEmojis(sessionCode: string, targetId: string): Set<EmojiKey> {
   try {
-    const raw = localStorage.getItem(reactionsLocalKey(sessionSlug, targetId));
+    const raw = localStorage.getItem(reactionsLocalKey(sessionCode, targetId));
     if (!raw) return new Set();
     const parsed = JSON.parse(raw) as EmojiKey[];
     return new Set(
@@ -42,9 +42,9 @@ function readActiveEmojis(sessionSlug: string, targetId: string): Set<EmojiKey> 
   }
 }
 
-function writeActiveEmojis(sessionSlug: string, targetId: string, set: Set<EmojiKey>): void {
+function writeActiveEmojis(sessionCode: string, targetId: string, set: Set<EmojiKey>): void {
   try {
-    localStorage.setItem(reactionsLocalKey(sessionSlug, targetId), JSON.stringify([...set]));
+    localStorage.setItem(reactionsLocalKey(sessionCode, targetId), JSON.stringify([...set]));
   } catch {
     // SSR or storage unavailable — ignore
   }
@@ -53,7 +53,7 @@ function writeActiveEmojis(sessionSlug: string, targetId: string, set: Set<Emoji
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 interface UseReactionStateOptions {
-  sessionSlug: string;
+  sessionCode: string;
   targetId: string;
   targetType: "QUESTION" | "REPLY";
   serverCounts: string | undefined; // raw AWSJSON from state (question.reactionCounts)
@@ -80,7 +80,7 @@ interface UseReactionStateResult {
  * - On success, pending stays until the subscription updates serverCounts — no flash.
  */
 export function useReactionState({
-  sessionSlug,
+  sessionCode,
   targetId,
   targetType,
   serverCounts,
@@ -90,8 +90,8 @@ export function useReactionState({
   const [activeEmojis, setActiveEmojis] = useState<Set<EmojiKey>>(() => new Set());
 
   useEffect(() => {
-    setActiveEmojis(readActiveEmojis(sessionSlug, targetId));
-  }, [sessionSlug, targetId]);
+    setActiveEmojis(readActiveEmojis(sessionCode, targetId));
+  }, [sessionCode, targetId]);
 
   // Pending optimistic delta — per-emoji, not a full snapshot.
   // When set, displayCounts = serverCounts + pending.delta for pending.emoji.
@@ -148,7 +148,7 @@ export function useReactionState({
           next.delete(emoji);
         }
 
-        writeActiveEmojis(sessionSlug, targetId, next);
+        writeActiveEmojis(sessionCode, targetId, next);
 
         // Set per-emoji optimistic delta
         setPending({ emoji, delta: isAdding ? 1 : -1 });
@@ -164,7 +164,7 @@ export function useReactionState({
       debounceTimerRef.current = setTimeout(() => {
         void (async () => {
           const result = await reactAction({
-            sessionSlug,
+            sessionCode,
             targetId,
             targetType,
             emoji,
@@ -175,7 +175,7 @@ export function useReactionState({
             // Silent rollback — revert activeEmojis and clear pending immediately
             const { activeEmojis: prevActiveEmojis } = preToggleRef.current;
             setActiveEmojis(prevActiveEmojis);
-            writeActiveEmojis(sessionSlug, targetId, prevActiveEmojis);
+            writeActiveEmojis(sessionCode, targetId, prevActiveEmojis);
             setPending(null);
             pendingBaseCountRef.current = null;
           }
@@ -195,7 +195,7 @@ export function useReactionState({
         })();
       }, 300);
     },
-    [sessionSlug, targetId, targetType, fingerprint],
+    [sessionCode, targetId, targetType, fingerprint],
   );
 
   // Cleanup timers on unmount

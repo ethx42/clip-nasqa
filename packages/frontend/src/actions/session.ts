@@ -10,7 +10,11 @@ import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import { docClient, tableName } from "@/lib/dynamo";
 
-const MAX_SLUG_RETRIES = 3;
+const MAX_CODE_RETRIES = 3;
+
+function generateNumericCode(): string {
+  return String(Math.floor(Math.random() * 900000) + 100000);
+}
 
 export async function createSession(formData: FormData): Promise<ActionResult | never> {
   const t = await getTranslations("actionErrors");
@@ -23,12 +27,10 @@ export async function createSession(formData: FormData): Promise<ActionResult | 
     return { success: false, error: t("titleRequired") };
   }
 
-  const { generateSlug } = await import("random-word-slugs");
-
   let redirectUrl: string | null = null;
 
-  for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
-    const slug = generateSlug(2, { format: "kebab" });
+  for (let attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
+    const code = generateNumericCode();
     const rawSecret = randomUUID();
     const hashedSecret = createHash("sha256").update(rawSecret).digest("hex");
     const now = Math.floor(Date.now() / 1000);
@@ -38,9 +40,9 @@ export async function createSession(formData: FormData): Promise<ActionResult | 
         new PutCommand({
           TableName: tableName(),
           Item: {
-            PK: `SESSION#${slug}`,
-            SK: `SESSION#${slug}`,
-            slug,
+            PK: `SESSION#${code}`,
+            SK: `SESSION#${code}`,
+            code,
             title,
             hostSecretHash: hashedSecret,
             isActive: true,
@@ -52,7 +54,7 @@ export async function createSession(formData: FormData): Promise<ActionResult | 
       );
 
       // PutCommand succeeded — redirect to host view with raw secret
-      redirectUrl = `/${locale}/session/${slug}/host?raw=${rawSecret}`;
+      redirectUrl = `/${locale}/${code}/host?raw=${rawSecret}`;
       break;
     } catch (err) {
       if (err instanceof ConditionalCheckFailedException) {

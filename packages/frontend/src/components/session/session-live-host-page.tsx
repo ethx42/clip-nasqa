@@ -20,7 +20,7 @@ import type { Session } from "@/lib/session";
 
 interface SessionLiveHostPageProps {
   session: Session;
-  sessionSlug: string;
+  sessionCode: string;
   /** Raw secret passed via query param on first visit after session creation. */
   rawSecret?: string;
   initialSnippets: Snippet[];
@@ -32,7 +32,7 @@ interface SessionLiveHostPageProps {
 
 export function SessionLiveHostPage({
   session,
-  sessionSlug,
+  sessionCode,
   rawSecret,
   initialSnippets,
   initialQuestions,
@@ -44,14 +44,14 @@ export function SessionLiveHostPage({
 
   // Persist raw secret to localStorage (if provided via query param) and hash it
   useEffect(() => {
-    const secret = rawSecret || loadHostSecret(sessionSlug);
+    const secret = rawSecret || loadHostSecret(sessionCode);
     if (!secret) return;
-    if (rawSecret) storeHostSecret(sessionSlug, rawSecret);
+    if (rawSecret) storeHostSecret(sessionCode, rawSecret);
     hashSecret(secret).then((h) => setHostSecretHash(h));
-  }, [sessionSlug, rawSecret]);
+  }, [sessionCode, rawSecret]);
 
   const { fingerprint, votedIds, downvotedIds, addVote, removeVote, addDownvote, removeDownvote } =
-    useFingerprint(sessionSlug);
+    useFingerprint(sessionCode);
 
   const { state, dispatch, sortedQuestions, bannedFingerprints } = useSessionState({
     snippets: initialSnippets,
@@ -65,10 +65,10 @@ export function SessionLiveHostPage({
     questionsRef.current = state.questions;
   }, [state.questions]);
 
-  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionSlug, dispatch);
+  const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionCode, dispatch);
 
   const { handleUpvote, handleDownvote, handleAddQuestion, handleReply } = useSessionMutations({
-    sessionSlug,
+    sessionCode,
     fingerprint,
     authorName,
     dispatch,
@@ -90,7 +90,7 @@ export function SessionLiveHostPage({
     handleBanParticipant,
     handleRestoreQuestion,
   } = useHostMutations({
-    sessionSlug,
+    sessionCode,
     hostSecretHash,
     dispatch,
     questionsRef,
@@ -101,7 +101,7 @@ export function SessionLiveHostPage({
   return (
     <SessionShell
       title={session.title}
-      sessionSlug={sessionSlug}
+      sessionCode={sessionCode}
       isHost
       hostToolbar={hostToolbar}
       snippetCount={state.snippets.length}
@@ -112,7 +112,7 @@ export function SessionLiveHostPage({
       clipboardSlot={
         <ClipboardPanel
           isHost
-          sessionSlug={sessionSlug}
+          sessionCode={sessionCode}
           hostSecretHash={hostSecretHash}
           snippets={state.snippets}
           connectionStatus={connectionStatus}
@@ -123,7 +123,7 @@ export function SessionLiveHostPage({
       qaSlot={
         <QAPanel
           isHost
-          sessionSlug={sessionSlug}
+          sessionCode={sessionCode}
           hostSecretHash={hostSecretHash}
           questions={sortedQuestions}
           replies={state.replies}
