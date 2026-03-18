@@ -28,6 +28,10 @@ export type SessionAction =
   | { type: "ADD_SNIPPET_OPTIMISTIC"; payload: Snippet }
   | { type: "ADD_QUESTION_OPTIMISTIC"; payload: Question }
   | { type: "REMOVE_OPTIMISTIC"; payload: { id: string } }
+  | { type: "SNIPPET_PUSH_FAILED"; payload: { id: string } }
+  | { type: "SNIPPET_RETRY"; payload: { id: string } }
+  | { type: "SNIPPET_EDIT_START"; payload: { id: string } }
+  | { type: "SNIPPET_EDIT_END"; payload: { id: string; content: string } }
   | {
       type: "REACTION_UPDATED";
       payload: {
@@ -49,6 +53,10 @@ interface SessionState {
   replies: Reply[];
   /** Fingerprints of banned participants — used to disable QAInput for banned users. */
   bannedFingerprints: Set<string>;
+  /** Snippet IDs that failed to push to the server. */
+  failedSnippetIds: Set<string>;
+  /** Snippet IDs currently being inline-edited (defers server push). */
+  editingSnippetIds: Set<string>;
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
@@ -56,22 +64,64 @@ interface SessionState {
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
     case "SNIPPET_ADDED": {
+      const s = action.payload;
       let snippets: Snippet[];
+      let nextFailedIds = state.failedSnippetIds;
+
       if (action.optimisticId) {
         // Replace optimistic placeholder if present
-        const replaced = state.snippets.some((s) => s.id === action.optimisticId);
+        const replaced = state.snippets.some((x) => x.id === action.optimisticId);
         snippets = replaced
-          ? state.snippets.map((s) => (s.id === action.optimisticId ? action.payload : s))
-          : [action.payload, ...state.snippets];
+          ? state.snippets.map((x) => (x.id === action.optimisticId ? s : x))
+          : [s, ...state.snippets];
       } else {
         // Deduplicate: avoid adding if already present (e.g. after optimistic update)
-        const exists = state.snippets.some((s) => s.id === action.payload.id);
-        snippets = exists ? state.snippets : [action.payload, ...state.snippets];
+        const exists = state.snippets.some((x) => x.id === s.id);
+        if (exists) {
+          snippets = state.snippets;
+        } else {
+          // Content-fingerprint dedup: replace matching _opt_ placeholder without optimisticId
+          const hasOptimistic = state.snippets.some(
+            (x) =>
+              x.id.startsWith("_opt_") &&
+              x.sessionCode === s.sessionCode &&
+              x.content === s.content &&
+              (x.language ?? null) === (s.language ?? null) &&
+              x.type === s.type,
+          );
+          if (hasOptimistic) {
+            // Find the optimistic ID to remove from failedSnippetIds
+            const optSnippet = state.snippets.find(
+              (x) =>
+                x.id.startsWith("_opt_") &&
+                x.sessionCode === s.sessionCode &&
+                x.content === s.content &&
+                (x.language ?? null) === (s.language ?? null) &&
+                x.type === s.type,
+            );
+            snippets = state.snippets.map((x) =>
+              x.id.startsWith("_opt_") &&
+              x.sessionCode === s.sessionCode &&
+              x.content === s.content &&
+              (x.language ?? null) === (s.language ?? null) &&
+              x.type === s.type
+                ? s
+                : x,
+            );
+            if (optSnippet && state.failedSnippetIds.has(optSnippet.id)) {
+              nextFailedIds = new Set(state.failedSnippetIds);
+              nextFailedIds.delete(optSnippet.id);
+            }
+          } else {
+            snippets = [s, ...state.snippets];
+          }
+        }
       }
       // Sort newest first by createdAt
       return {
         ...state,
         snippets: [...snippets].sort((a, b) => b.createdAt - a.createdAt),
+        failedSnippetIds: nextFailedIds,
       };
     }
 
@@ -189,10 +239,46 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
     }
 
     case "REMOVE_OPTIMISTIC": {
+      const nextFailed = new Set(state.failedSnippetIds);
+      nextFailed.delete(action.payload.id);
+      const nextEditing = new Set(state.editingSnippetIds);
+      nextEditing.delete(action.payload.id);
       return {
         ...state,
         snippets: state.snippets.filter((s) => s.id !== action.payload.id),
         questions: state.questions.filter((q) => q.id !== action.payload.id),
+        failedSnippetIds: nextFailed,
+        editingSnippetIds: nextEditing,
+      };
+    }
+
+    case "SNIPPET_PUSH_FAILED": {
+      const next = new Set(state.failedSnippetIds);
+      next.add(action.payload.id);
+      return { ...state, failedSnippetIds: next };
+    }
+
+    case "SNIPPET_RETRY": {
+      const next = new Set(state.failedSnippetIds);
+      next.delete(action.payload.id);
+      return { ...state, failedSnippetIds: next };
+    }
+
+    case "SNIPPET_EDIT_START": {
+      const next = new Set(state.editingSnippetIds);
+      next.add(action.payload.id);
+      return { ...state, editingSnippetIds: next };
+    }
+
+    case "SNIPPET_EDIT_END": {
+      const next = new Set(state.editingSnippetIds);
+      next.delete(action.payload.id);
+      return {
+        ...state,
+        editingSnippetIds: next,
+        snippets: state.snippets.map((s) =>
+          s.id === action.payload.id ? { ...s, content: action.payload.content } : s,
+        ),
       };
     }
 
@@ -233,6 +319,10 @@ interface SessionStateResult {
   repliesByQuestion: (questionId: string) => Reply[];
   /** Fingerprints of banned participants. */
   bannedFingerprints: Set<string>;
+  /** Snippet IDs that failed to push to the server. */
+  failedSnippetIds: Set<string>;
+  /** Snippet IDs currently being inline-edited (defers server push). */
+  editingSnippetIds: Set<string>;
 }
 
 export function useSessionState(initialData: {
@@ -245,6 +335,8 @@ export function useSessionState(initialData: {
     questions: initialData.questions,
     replies: initialData.replies,
     bannedFingerprints: new Set<string>(),
+    failedSnippetIds: new Set<string>(),
+    editingSnippetIds: new Set<string>(),
   });
 
   // Derived: sorted questions
@@ -270,5 +362,7 @@ export function useSessionState(initialData: {
     sortedQuestions,
     repliesByQuestion,
     bannedFingerprints: state.bannedFingerprints,
+    failedSnippetIds: state.failedSnippetIds,
+    editingSnippetIds: state.editingSnippetIds,
   };
 }
