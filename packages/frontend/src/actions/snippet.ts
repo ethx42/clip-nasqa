@@ -61,12 +61,11 @@ export async function pushSnippetAction(formData: {
   type: string;
   language?: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(PUSH_SNIPPET, formData);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedPushSnippet");
   }
@@ -80,12 +79,11 @@ export async function deleteSnippetAction(args: {
   hostSecretHash: string;
   snippetId: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(DELETE_SNIPPET, args);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedDeleteSnippet");
   }
@@ -98,12 +96,11 @@ export async function clearClipboardAction(args: {
   sessionCode: string;
   hostSecretHash: string;
 }): Promise<ActionResult> {
-  const t = await getTranslations("actionErrors");
-
   try {
     await appsyncMutation(CLEAR_CLIPBOARD, args);
     return { success: true };
   } catch (err) {
+    const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedClearClipboard");
   }

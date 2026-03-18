@@ -18,13 +18,12 @@ function generateNumericCode(): string {
 }
 
 export async function createSession(formData: FormData): Promise<ActionResult | never> {
-  const t = await getTranslations("actionErrors");
-
   const raw = (formData.get("title") as string | null)?.trim().slice(0, 50);
   const title = raw?.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1));
   const locale = await getLocale();
 
   if (!title) {
+    const t = await getTranslations("actionErrors"); // lazy — only on validation error
     return { success: false, error: t("titleRequired") };
   }
 
@@ -61,11 +60,13 @@ export async function createSession(formData: FormData): Promise<ActionResult | 
       if (err instanceof ConditionalCheckFailedException) {
         continue;
       }
+      const t = await getTranslations("actionErrors"); // lazy — only on unexpected error
       return { success: false, error: t("unexpectedError") };
     }
   }
 
   if (!redirectUrl) {
+    const t = await getTranslations("actionErrors"); // lazy — only on code exhaustion
     return { success: false, error: t("slugGenerationFailed") };
   }
 
