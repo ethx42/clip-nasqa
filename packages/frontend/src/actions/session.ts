@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 
 import type { ActionResult } from "@/lib/action-result";
 import { docClient, tableName } from "@/lib/dynamo";
+import { getSession } from "@/lib/session";
 
 const MAX_CODE_RETRIES = 3;
 
@@ -70,4 +71,11 @@ export async function createSession(formData: FormData): Promise<ActionResult | 
 
   // redirect() throws NEXT_REDIRECT internally — must be called outside try/catch
   redirect(redirectUrl);
+}
+
+export async function validateSessionCode(code: string): Promise<"valid" | "invalid" | "ended"> {
+  const session = await getSession(code);
+  if (!session) return "invalid";
+  if (!session.isActive) return "ended";
+  return "valid";
 }

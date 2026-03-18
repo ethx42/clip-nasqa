@@ -149,6 +149,12 @@
     "save": "Save",
     "clear": "Clear identity"
   },
+  "join": {
+    "title": "Join a session",
+    "tagline": "Enter the 6-digit session code",
+    "invalidCode": "Invalid code. Please try again.",
+    "sessionEnded": "This session has ended."
+  },
   "reactions": {
     "addReaction": "Add reaction",
     "emojiLabel": "{emoji}: {count, plural, one {# reaction} other {# reactions}}",

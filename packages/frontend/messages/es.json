@@ -149,6 +149,12 @@
     "save": "Guardar",
     "clear": "Borrar identidad"
   },
+  "join": {
+    "title": "Unirse a una sesion",
+    "tagline": "Ingresa el codigo de sesion de 6 digitos",
+    "invalidCode": "Codigo invalido. Intenta de nuevo.",
+    "sessionEnded": "Esta sesion ha terminado."
+  },
   "reactions": {
     "addReaction": "Reaccionar",
     "emojiLabel": "{emoji}: {count, plural, one {# reacción} other {# reacciones}}",
