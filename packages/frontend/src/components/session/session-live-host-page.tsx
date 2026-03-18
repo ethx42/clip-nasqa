@@ -128,6 +128,7 @@ export function SessionLiveHostPage({
           questions={sortedQuestions}
           replies={state.replies}
           fingerprint={fingerprint}
+          authorName={authorName}
           votedQuestionIds={votedIds}
           downvotedQuestionIds={downvotedIds}
           isUserBanned={isUserBanned}

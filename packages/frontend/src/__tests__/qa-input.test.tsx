@@ -8,13 +8,25 @@ import { QAInput } from "@/components/session/qa-input";
 import messages from "../../messages/en.json";
 
 function renderInput(
-  props: { onSubmit?: (text: string) => void; disabled?: boolean; isBanned?: boolean } = {},
+  props: {
+    onSubmit?: (text: string) => void;
+    disabled?: boolean;
+    isBanned?: boolean;
+    fingerprint?: string;
+    authorName?: string;
+  } = {},
 ) {
   const onSubmit = props.onSubmit ?? vi.fn<(text: string) => void>();
 
   const result = render(
     <NextIntlClientProvider locale="en" messages={messages}>
-      <QAInput onSubmit={onSubmit} disabled={props.disabled} isBanned={props.isBanned} />
+      <QAInput
+        onSubmit={onSubmit}
+        disabled={props.disabled}
+        isBanned={props.isBanned}
+        fingerprint={props.fingerprint}
+        authorName={props.authorName}
+      />
     </NextIntlClientProvider>,
   );
 
@@ -97,5 +109,20 @@ describe("QAInput", () => {
 
     const submitButton = screen.getByRole("button", { name: /send question/i });
     expect(submitButton).toBeDisabled();
+  });
+
+  it("renders identity row with Anonymous when fingerprint provided but no authorName", () => {
+    renderInput({ fingerprint: "test-fp" });
+    expect(screen.getByText("Anonymous")).toBeInTheDocument();
+  });
+
+  it("renders identity row with author name when fingerprint and authorName provided", () => {
+    renderInput({ fingerprint: "test-fp", authorName: "Santiago" });
+    expect(screen.getByText("Santiago")).toBeInTheDocument();
+  });
+
+  it("does not render identity row when isBanned is true", () => {
+    renderInput({ isBanned: true, fingerprint: "test-fp" });
+    expect(screen.queryByText("Anonymous")).not.toBeInTheDocument();
   });
 });

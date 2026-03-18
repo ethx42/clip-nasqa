@@ -20,6 +20,7 @@ interface QAPanelProps {
   questions: Question[];
   replies: Reply[];
   fingerprint: string;
+  authorName?: string;
   votedQuestionIds: Set<string>;
   downvotedQuestionIds: Set<string>;
   isUserBanned: boolean;
@@ -42,6 +43,7 @@ export function QAPanel({
   questions,
   replies,
   fingerprint,
+  authorName,
   votedQuestionIds,
   downvotedQuestionIds,
   isUserBanned,
@@ -194,7 +196,12 @@ export function QAPanel({
       </div>
 
       {/* Sticky Q&A input at bottom */}
-      <QAInput onSubmit={onAddQuestion} isBanned={isUserBanned} />
+      <QAInput
+        onSubmit={onAddQuestion}
+        isBanned={isUserBanned}
+        fingerprint={fingerprint}
+        authorName={authorName}
+      />
     </div>
   );
 }

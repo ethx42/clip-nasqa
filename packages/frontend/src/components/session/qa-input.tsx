@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { PixelAvatar } from "./pixel-avatar";
+
 const CHAR_LIMIT = 500;
 const COUNTER_THRESHOLD = Math.floor(CHAR_LIMIT * 0.8); // 400
 
@@ -13,11 +15,20 @@ interface QAInputProps {
   onSubmit: (text: string) => void;
   disabled?: boolean;
   isBanned?: boolean;
+  fingerprint?: string;
+  authorName?: string;
 }
 
-export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInputProps) {
+export function QAInput({
+  onSubmit,
+  disabled = false,
+  isBanned = false,
+  fingerprint,
+  authorName,
+}: QAInputProps) {
   const t = useTranslations("moderation");
   const tSession = useTranslations("session");
+  const tIdentity = useTranslations("identity");
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,6 +76,15 @@ export function QAInput({ onSubmit, disabled = false, isBanned = false }: QAInpu
 
   return (
     <div className="border-t border-border bg-card px-5 py-4">
+      {/* Identity row — always visible, purely informational */}
+      {fingerprint && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <PixelAvatar seed={fingerprint} size={20} className="rounded-full shrink-0" />
+          <span className="text-xs text-muted-foreground truncate">
+            {authorName || tIdentity("anonymous")}
+          </span>
+        </div>
+      )}
       <div className="flex items-end gap-3">
         <div className="relative min-w-0 flex-1">
           <textarea
