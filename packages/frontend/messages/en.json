@@ -157,7 +157,12 @@
     "clientFailedQuestion": "Failed to submit question",
     "clientFailedUpvote": "Failed to register vote",
     "clientFailedDownvote": "Failed to register vote",
-    "clientFailedReply": "Failed to submit reply"
+    "clientFailedReply": "Failed to submit reply",
+    "failedEditQuestion": "Failed to edit question",
+    "failedDeleteQuestion": "Failed to delete question",
+    "failedEditReply": "Failed to edit reply",
+    "failedDeleteReply": "Failed to delete reply",
+    "failedEditSnippet": "Failed to edit snippet"
   },
   "identity": {
     "whatsYourName": "What's your name?",

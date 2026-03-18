@@ -4,7 +4,12 @@ import { getTranslations } from "next-intl/server";
 
 import type { ActionResult } from "@/lib/action-result";
 import { appsyncMutation } from "@/lib/appsync-server";
-import { CLEAR_CLIPBOARD, DELETE_SNIPPET, PUSH_SNIPPET } from "@/lib/graphql/mutations";
+import {
+  CLEAR_CLIPBOARD,
+  DELETE_SNIPPET,
+  EDIT_SNIPPET,
+  PUSH_SNIPPET,
+} from "@/lib/graphql/mutations";
 import { reportError } from "@/lib/report-error";
 
 function parseRateLimitOrBan(
@@ -14,6 +19,7 @@ function parseRateLimitOrBan(
     failedPushSnippet: string;
     failedDeleteSnippet: string;
     failedClearClipboard: string;
+    failedEditSnippet: string;
   },
 ): { success: false; error: string } {
   const message = err instanceof Error ? err.message : String(err);
@@ -80,5 +86,25 @@ export async function clearClipboardAction(args: {
     const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedClearClipboard");
+  }
+}
+
+/**
+ * Edits an existing snippet's content and optionally its language.
+ */
+export async function editSnippetAction(args: {
+  sessionCode: string;
+  snippetId: string;
+  content: string;
+  language?: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(EDIT_SNIPPET, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedEditSnippet");
   }
 }

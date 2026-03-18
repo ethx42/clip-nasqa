@@ -157,7 +157,12 @@
     "clientFailedQuestion": "Erro ao enviar a pergunta",
     "clientFailedUpvote": "Erro ao registrar o voto",
     "clientFailedDownvote": "Erro ao registrar o voto",
-    "clientFailedReply": "Erro ao enviar a resposta"
+    "clientFailedReply": "Erro ao enviar a resposta",
+    "failedEditQuestion": "Falha ao editar a pergunta",
+    "failedDeleteQuestion": "Falha ao excluir a pergunta",
+    "failedEditReply": "Falha ao editar a resposta",
+    "failedDeleteReply": "Falha ao excluir a resposta",
+    "failedEditSnippet": "Falha ao editar o trecho"
   },
   "identity": {
     "whatsYourName": "Qual é o seu nome?",

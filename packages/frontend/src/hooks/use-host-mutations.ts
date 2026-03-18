@@ -4,15 +4,19 @@ import { useTranslations } from "next-intl";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
-import type { Question } from "@nasqa/core";
+import type { Question, Reply, Snippet } from "@nasqa/core";
 
 import {
   banParticipantAction,
   banQuestionAction,
+  deleteQuestionAction,
+  deleteReplyAction,
+  editQuestionAction,
+  editReplyAction,
   focusQuestionAction,
   restoreQuestionAction,
 } from "@/actions/moderation";
-import { clearClipboardAction, deleteSnippetAction } from "@/actions/snippet";
+import { clearClipboardAction, deleteSnippetAction, editSnippetAction } from "@/actions/snippet";
 import type { SessionAction } from "@/hooks/use-session-state";
 import { safeAction } from "@/lib/safe-action";
 
@@ -22,6 +26,10 @@ interface UseHostMutationsParams {
   dispatch: React.Dispatch<SessionAction>;
   /** For reading current questions without stale closures. */
   questionsRef: React.RefObject<Question[]>;
+  /** For reading current replies without stale closures (needed for edit/delete reply rollback). */
+  repliesRef?: React.RefObject<Reply[]>;
+  /** For reading current snippets without stale closures (needed for edit snippet rollback). */
+  snippetsRef?: React.RefObject<Snippet[]>;
 }
 
 interface HostMutations {
@@ -31,6 +39,11 @@ interface HostMutations {
   handleBanQuestion: (questionId: string) => Promise<void>;
   handleBanParticipant: (participantFingerprint: string) => Promise<void>;
   handleRestoreQuestion: (questionId: string) => Promise<void>;
+  handleHostEditQuestion: (questionId: string, text: string) => Promise<void>;
+  handleHostDeleteQuestion: (questionId: string) => Promise<void>;
+  handleHostEditReply: (replyId: string, text: string) => Promise<void>;
+  handleHostDeleteReply: (replyId: string) => Promise<void>;
+  handleEditSnippet: (snippetId: string, content: string, language?: string) => Promise<void>;
 }
 
 export function useHostMutations({
@@ -38,6 +51,8 @@ export function useHostMutations({
   hostSecretHash,
   dispatch,
   questionsRef,
+  repliesRef,
+  snippetsRef,
 }: UseHostMutationsParams): HostMutations {
   const tErrors = useTranslations("actionErrors");
 
@@ -139,6 +154,128 @@ export function useHostMutations({
     [sessionCode, hostSecretHash, dispatch, tErrors],
   );
 
+  const handleHostEditQuestion = useCallback(
+    async (questionId: string, text: string) => {
+      const originalQuestion = questionsRef.current.find((q) => q.id === questionId);
+      const originalText = originalQuestion?.text ?? "";
+      const originalEditedAt = originalQuestion?.editedAt;
+
+      const editedAt = Math.floor(Date.now() / 1000);
+      dispatch({ type: "QUESTION_EDITED", payload: { questionId, text, editedAt } });
+
+      const result = await safeAction(
+        editQuestionAction({ sessionCode, questionId, text, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        dispatch({
+          type: "QUESTION_EDITED",
+          payload: { questionId, text: originalText, editedAt: originalEditedAt ?? 0 },
+        });
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, questionsRef, tErrors],
+  );
+
+  const handleHostDeleteQuestion = useCallback(
+    async (questionId: string) => {
+      const originalQuestion = questionsRef.current.find((q) => q.id === questionId);
+
+      dispatch({ type: "QUESTION_DELETED", payload: { questionId } });
+
+      const result = await safeAction(
+        deleteQuestionAction({ sessionCode, questionId, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        if (originalQuestion) {
+          dispatch({ type: "QUESTION_ADDED", payload: originalQuestion });
+        }
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, questionsRef, tErrors],
+  );
+
+  const handleHostEditReply = useCallback(
+    async (replyId: string, text: string) => {
+      const originalReply = repliesRef?.current.find((r) => r.id === replyId);
+      const originalText = originalReply?.text ?? "";
+      const originalEditedAt = originalReply?.editedAt;
+
+      const editedAt = Math.floor(Date.now() / 1000);
+      dispatch({ type: "REPLY_EDITED", payload: { replyId, text, editedAt } });
+
+      const result = await safeAction(
+        editReplyAction({ sessionCode, replyId, text, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        if (originalReply) {
+          dispatch({
+            type: "REPLY_EDITED",
+            payload: { replyId, text: originalText, editedAt: originalEditedAt ?? 0 },
+          });
+        }
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, repliesRef, tErrors],
+  );
+
+  const handleHostDeleteReply = useCallback(
+    async (replyId: string) => {
+      dispatch({ type: "REPLY_DELETED", payload: { replyId } });
+
+      const result = await safeAction(
+        deleteReplyAction({ sessionCode, replyId, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, tErrors],
+  );
+
+  const handleEditSnippet = useCallback(
+    async (snippetId: string, content: string, language?: string) => {
+      const originalSnippet = snippetsRef?.current.find((s) => s.id === snippetId);
+      const originalContent = originalSnippet?.content ?? "";
+      const originalLanguage = originalSnippet?.language;
+      const originalEditedAt = originalSnippet?.editedAt;
+
+      const editedAt = Math.floor(Date.now() / 1000);
+      dispatch({ type: "SNIPPET_EDITED", payload: { snippetId, content, language, editedAt } });
+
+      const result = await safeAction(
+        editSnippetAction({ sessionCode, snippetId, content, language, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        if (originalSnippet) {
+          dispatch({
+            type: "SNIPPET_EDITED",
+            payload: {
+              snippetId,
+              content: originalContent,
+              language: originalLanguage,
+              editedAt: originalEditedAt ?? 0,
+            },
+          });
+        }
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, snippetsRef, tErrors],
+  );
+
   return {
     handleDeleteSnippet,
     handleClearClipboard,
@@ -146,5 +283,10 @@ export function useHostMutations({
     handleBanQuestion,
     handleBanParticipant,
     handleRestoreQuestion,
+    handleHostEditQuestion,
+    handleHostDeleteQuestion,
+    handleHostEditReply,
+    handleHostDeleteReply,
+    handleEditSnippet,
   };
 }

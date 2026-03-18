@@ -7,6 +7,10 @@ import { appsyncMutation } from "@/lib/appsync-server";
 import {
   BAN_PARTICIPANT,
   BAN_QUESTION,
+  DELETE_QUESTION,
+  DELETE_REPLY,
+  EDIT_QUESTION,
+  EDIT_REPLY,
   FOCUS_QUESTION,
   RESTORE_QUESTION,
 } from "@/lib/graphql/mutations";
@@ -20,6 +24,10 @@ function parseRateLimitOrBan(
     failedBanParticipant: string;
     failedFocusQuestion: string;
     failedRestore: string;
+    failedEditQuestion: string;
+    failedDeleteQuestion: string;
+    failedEditReply: string;
+    failedDeleteReply: string;
   },
 ): { success: false; error: string } {
   const message = err instanceof Error ? err.message : String(err);
@@ -91,5 +99,67 @@ export async function restoreQuestionAction(args: {
     const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedRestore");
+  }
+}
+
+export async function editQuestionAction(args: {
+  sessionCode: string;
+  questionId: string;
+  text: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(EDIT_QUESTION, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedEditQuestion");
+  }
+}
+
+export async function deleteQuestionAction(args: {
+  sessionCode: string;
+  questionId: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(DELETE_QUESTION, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedDeleteQuestion");
+  }
+}
+
+export async function editReplyAction(args: {
+  sessionCode: string;
+  replyId: string;
+  text: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(EDIT_REPLY, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedEditReply");
+  }
+}
+
+export async function deleteReplyAction(args: {
+  sessionCode: string;
+  replyId: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(DELETE_REPLY, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedDeleteReply");
   }
 }

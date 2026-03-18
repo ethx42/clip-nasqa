@@ -157,7 +157,12 @@
     "clientFailedQuestion": "Error al enviar la pregunta",
     "clientFailedUpvote": "Error al registrar el voto",
     "clientFailedDownvote": "Error al registrar el voto",
-    "clientFailedReply": "Error al enviar la respuesta"
+    "clientFailedReply": "Error al enviar la respuesta",
+    "failedEditQuestion": "No se pudo editar la pregunta",
+    "failedDeleteQuestion": "No se pudo eliminar la pregunta",
+    "failedEditReply": "No se pudo editar la respuesta",
+    "failedDeleteReply": "No se pudo eliminar la respuesta",
+    "failedEditSnippet": "No se pudo editar el fragmento"
   },
   "identity": {
     "whatsYourName": "¿Cuál es tu nombre?",

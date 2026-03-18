@@ -11,7 +11,11 @@ import { graphqlMutation } from "@/lib/appsync-client";
 import {
   ADD_QUESTION,
   ADD_REPLY,
+  DELETE_QUESTION,
+  DELETE_REPLY,
   DOWNVOTE_QUESTION,
+  EDIT_QUESTION,
+  EDIT_REPLY,
   UPVOTE_QUESTION,
 } from "@/lib/graphql/mutations";
 import { reportError } from "@/lib/report-error";
@@ -42,6 +46,10 @@ interface SessionMutations {
   handleDownvote: (questionId: string, remove: boolean) => Promise<void>;
   handleAddQuestion: (text: string) => Promise<void>;
   handleReply: (questionId: string, text: string) => Promise<void>;
+  handleEditQuestion: (questionId: string, text: string) => Promise<void>;
+  handleDeleteQuestion: (questionId: string) => Promise<void>;
+  handleEditReply: (replyId: string, text: string) => Promise<void>;
+  handleDeleteReply: (replyId: string) => Promise<void>;
   isPending: boolean;
   restoredText: string;
 }
@@ -337,5 +345,150 @@ export function useSessionMutations({
     [sessionCode, fingerprint, authorName, isHostReply, dispatch, onReplySuccess, tErrors],
   );
 
-  return { handleUpvote, handleDownvote, handleAddQuestion, handleReply, isPending, restoredText };
+  const handleEditQuestion = useCallback(
+    async (questionId: string, text: string) => {
+      // Read original text for rollback via ref
+      const originalQuestion = questionsRef.current.find((q) => q.id === questionId);
+      const originalText = originalQuestion?.text ?? "";
+      const originalEditedAt = originalQuestion?.editedAt;
+
+      // Optimistic update
+      const editedAt = Math.floor(Date.now() / 1000);
+      dispatch({ type: "QUESTION_EDITED", payload: { questionId, text, editedAt } });
+
+      const result = await safeClientMutation(
+        () =>
+          graphqlMutation("editQuestion", EDIT_QUESTION, {
+            sessionCode,
+            questionId,
+            text,
+            fingerprint,
+          }),
+        {
+          rateLimitMessage: tErrors("clientRateLimited"),
+          bannedMessage: tErrors("clientBanned"),
+          networkMessage: tErrors("clientNetworkOffline"),
+          serverMessage: tErrors("clientFailedQuestion"),
+        },
+      );
+
+      if (!result.success) {
+        // Rollback to original text
+        dispatch({
+          type: "QUESTION_EDITED",
+          payload: {
+            questionId,
+            text: originalText,
+            editedAt: originalEditedAt ?? 0,
+          },
+        });
+        toast.error(tErrors("clientFailedQuestion"), { duration: 4000 });
+      }
+    },
+    [sessionCode, fingerprint, dispatch, questionsRef, tErrors],
+  );
+
+  const handleDeleteQuestion = useCallback(
+    async (questionId: string) => {
+      // Save original question for rollback
+      const originalQuestion = questionsRef.current.find((q) => q.id === questionId);
+
+      // Optimistic removal
+      dispatch({ type: "QUESTION_DELETED", payload: { questionId } });
+
+      const result = await safeClientMutation(
+        () =>
+          graphqlMutation("deleteQuestion", DELETE_QUESTION, {
+            sessionCode,
+            questionId,
+            fingerprint,
+          }),
+        {
+          rateLimitMessage: tErrors("clientRateLimited"),
+          bannedMessage: tErrors("clientBanned"),
+          networkMessage: tErrors("clientNetworkOffline"),
+          serverMessage: tErrors("clientFailedQuestion"),
+        },
+      );
+
+      if (!result.success) {
+        // Rollback — re-add the question
+        if (originalQuestion) {
+          dispatch({ type: "QUESTION_ADDED", payload: originalQuestion });
+        }
+        toast.error(tErrors("clientFailedQuestion"), { duration: 4000 });
+      }
+    },
+    [sessionCode, fingerprint, dispatch, questionsRef, tErrors],
+  );
+
+  const handleEditReply = useCallback(
+    async (replyId: string, text: string) => {
+      // We don't have a repliesRef, so we can only do forward optimistic (no rollback text)
+      // The subscription echo will correct if server has different value
+      const editedAt = Math.floor(Date.now() / 1000);
+      dispatch({ type: "REPLY_EDITED", payload: { replyId, text, editedAt } });
+
+      const result = await safeClientMutation(
+        () =>
+          graphqlMutation("editReply", EDIT_REPLY, {
+            sessionCode,
+            replyId,
+            text,
+            fingerprint,
+          }),
+        {
+          rateLimitMessage: tErrors("clientRateLimited"),
+          bannedMessage: tErrors("clientBanned"),
+          networkMessage: tErrors("clientNetworkOffline"),
+          serverMessage: tErrors("clientFailedReply"),
+        },
+      );
+
+      if (!result.success) {
+        toast.error(tErrors("clientFailedReply"), { duration: 4000 });
+      }
+    },
+    [sessionCode, fingerprint, dispatch, tErrors],
+  );
+
+  const handleDeleteReply = useCallback(
+    async (replyId: string) => {
+      // Optimistic removal
+      dispatch({ type: "REPLY_DELETED", payload: { replyId } });
+
+      const result = await safeClientMutation(
+        () =>
+          graphqlMutation("deleteReply", DELETE_REPLY, {
+            sessionCode,
+            replyId,
+            fingerprint,
+          }),
+        {
+          rateLimitMessage: tErrors("clientRateLimited"),
+          bannedMessage: tErrors("clientBanned"),
+          networkMessage: tErrors("clientNetworkOffline"),
+          serverMessage: tErrors("clientFailedReply"),
+        },
+      );
+
+      if (!result.success) {
+        toast.error(tErrors("clientFailedReply"), { duration: 4000 });
+      }
+    },
+    [sessionCode, fingerprint, dispatch, tErrors],
+  );
+
+  return {
+    handleUpvote,
+    handleDownvote,
+    handleAddQuestion,
+    handleReply,
+    handleEditQuestion,
+    handleDeleteQuestion,
+    handleEditReply,
+    handleDeleteReply,
+    isPending,
+    restoredText,
+  };
 }
