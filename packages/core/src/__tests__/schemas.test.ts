@@ -49,7 +49,7 @@ describe("createSessionInputSchema", () => {
 
 describe("createSnippetInputSchema", () => {
   const validSnippet = {
-    sessionSlug: "my-session-abc",
+    sessionCode: "482913",
     type: "text" as const,
     content: "Hello world",
   };
@@ -96,7 +96,7 @@ describe("createSnippetInputSchema", () => {
 
 describe("createQuestionInputSchema", () => {
   const validQuestion = {
-    sessionSlug: "my-session-abc",
+    sessionCode: "482913",
     text: "What is your name?",
     fingerprint: "123e4567-e89b-12d3-a456-426614174000",
   };
@@ -149,8 +149,8 @@ describe("createQuestionInputSchema", () => {
     expect("extra" in result).toBe(false);
   });
 
-  it("rejects missing required sessionSlug", () => {
-    const { sessionSlug: _removed, ...rest } = validQuestion;
+  it("rejects missing required sessionCode", () => {
+    const { sessionCode: _removed, ...rest } = validQuestion;
     expect(() => createQuestionInputSchema.parse(rest)).toThrow();
   });
 });

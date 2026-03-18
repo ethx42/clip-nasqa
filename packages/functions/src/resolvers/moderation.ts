@@ -18,13 +18,13 @@ function tableName(): string {
   return name;
 }
 
-async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Promise<void> {
+async function verifyHostSecret(sessionCode: string, hostSecretHash: string): Promise<void> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
-        SK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
+        SK: `SESSION#${sessionCode}`,
       },
     }),
   );
@@ -40,8 +40,8 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
  * Broadcasts QUESTION_UPDATED.
  */
 export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash, questionId } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash, questionId } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   const now = Math.floor(Date.now() / 1000);
   const banTTL = now + 86400; // 24h
@@ -51,7 +51,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
     new GetCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `QUESTION#${questionId}`,
       },
     }),
@@ -68,7 +68,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
     new UpdateCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `QUESTION#${questionId}`,
       },
       UpdateExpression: "SET isBanned = :true, isHidden = :true",
@@ -84,7 +84,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
     new UpdateCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `BAN#${fingerprint}`,
       },
       UpdateExpression:
@@ -110,7 +110,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
       new UpdateCommand({
         TableName: tableName(),
         Key: {
-          PK: `SESSION#${sessionSlug}`,
+          PK: `SESSION#${sessionCode}`,
           SK: `BAN#${fingerprint}`,
         },
         UpdateExpression: "SET isBanned = :true",
@@ -129,7 +129,7 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
 
   return {
     eventType: "QUESTION_UPDATED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       questionId,
       isBanned: attrs.isBanned ?? true,
@@ -146,8 +146,8 @@ export async function handleBanQuestion(args: BanQuestionArgs): Promise<SessionU
  * Broadcasts PARTICIPANT_BANNED.
  */
 export async function handleBanParticipant(args: BanParticipantArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash, fingerprint } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash, fingerprint } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   const now = Math.floor(Date.now() / 1000);
   const banTTL = now + 86400; // 24h
@@ -156,7 +156,7 @@ export async function handleBanParticipant(args: BanParticipantArgs): Promise<Se
     new UpdateCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `BAN#${fingerprint}`,
       },
       UpdateExpression:
@@ -175,7 +175,7 @@ export async function handleBanParticipant(args: BanParticipantArgs): Promise<Se
 
   return {
     eventType: "PARTICIPANT_BANNED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({ fingerprint }),
   };
 }
@@ -187,7 +187,7 @@ export async function handleBanParticipant(args: BanParticipantArgs): Promise<Se
  * Broadcasts QUESTION_UPDATED.
  */
 export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, questionId, fingerprint, remove } = args;
+  const { sessionCode, questionId, fingerprint, remove } = args;
 
   let result;
   try {
@@ -197,7 +197,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
         new UpdateCommand({
           TableName: tableName(),
           Key: {
-            PK: `SESSION#${sessionSlug}`,
+            PK: `SESSION#${sessionCode}`,
             SK: `QUESTION#${questionId}`,
           },
           UpdateExpression: "ADD downvoteCount :negOne DELETE downvoters :fpSet",
@@ -217,7 +217,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
         new UpdateCommand({
           TableName: tableName(),
           Key: {
-            PK: `SESSION#${sessionSlug}`,
+            PK: `SESSION#${sessionCode}`,
             SK: `QUESTION#${questionId}`,
           },
           UpdateExpression: "ADD downvoteCount :one, downvoters :fpSet",
@@ -237,7 +237,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
           new UpdateCommand({
             TableName: tableName(),
             Key: {
-              PK: `SESSION#${sessionSlug}`,
+              PK: `SESSION#${sessionCode}`,
               SK: `QUESTION#${questionId}`,
             },
             UpdateExpression: "ADD upvoteCount :negOne DELETE voters :fpSet",
@@ -278,7 +278,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
       new UpdateCommand({
         TableName: tableName(),
         Key: {
-          PK: `SESSION#${sessionSlug}`,
+          PK: `SESSION#${sessionCode}`,
           SK: `QUESTION#${questionId}`,
         },
         UpdateExpression: "SET isHidden = :hidden",
@@ -291,7 +291,7 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
 
   return {
     eventType: "QUESTION_UPDATED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       questionId,
       downvoteCount,
@@ -306,14 +306,14 @@ export async function handleDownvoteQuestion(args: DownvoteQuestionArgs): Promis
  * Broadcasts QUESTION_UPDATED.
  */
 export async function handleRestoreQuestion(args: RestoreQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash, questionId } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash, questionId } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   const result = await docClient.send(
     new UpdateCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `QUESTION#${questionId}`,
       },
       UpdateExpression: "SET isHidden = :false",
@@ -328,7 +328,7 @@ export async function handleRestoreQuestion(args: RestoreQuestionArgs): Promise<
 
   return {
     eventType: "QUESTION_UPDATED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       questionId,
       isHidden: attrs.isHidden ?? false,

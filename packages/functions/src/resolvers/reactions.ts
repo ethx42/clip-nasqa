@@ -19,7 +19,7 @@ function itemSK(targetType: "QUESTION" | "REPLY", targetId: string): string {
 }
 
 export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
-  const { sessionSlug, targetId, targetType, emoji, fingerprint } = args;
+  const { sessionCode, targetId, targetType, emoji, fingerprint } = args;
 
   // Validate emoji against the canonical palette
   const parseResult = emojiKeySchema.safeParse(emoji);
@@ -29,7 +29,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
   const emojiKey = parseResult.data as EmojiKey;
 
   // Enforce ban check and rate limit (separate reaction# namespace from question submissions)
-  await checkNotBanned(sessionSlug, fingerprint);
+  await checkNotBanned(sessionCode, fingerprint);
   await checkRateLimit(`reaction#${fingerprint}`, 30, 60);
 
   const countAttr = `rxn_${emojiKey}_count`;
@@ -44,7 +44,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
     result = await docClient.send(
       new UpdateCommand({
         TableName: tableName(),
-        Key: { PK: `SESSION#${sessionSlug}`, SK },
+        Key: { PK: `SESSION#${sessionCode}`, SK },
         UpdateExpression: `ADD ${countAttr} :one, ${reactorsAttr} :fpSet`,
         ConditionExpression: `NOT contains(${reactorsAttr}, :fp) OR attribute_not_exists(${reactorsAttr})`,
         ExpressionAttributeValues: {
@@ -64,7 +64,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
       result = await docClient.send(
         new UpdateCommand({
           TableName: tableName(),
-          Key: { PK: `SESSION#${sessionSlug}`, SK },
+          Key: { PK: `SESSION#${sessionCode}`, SK },
           UpdateExpression: `ADD ${countAttr} :negOne DELETE ${reactorsAttr} :fpSet`,
           ConditionExpression: `contains(${reactorsAttr}, :fp)`,
           ExpressionAttributeValues: {
@@ -121,7 +121,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
     .send(
       new UpdateCommand({
         TableName: tableName(),
-        Key: { PK: `SESSION#${sessionSlug}`, SK },
+        Key: { PK: `SESSION#${sessionCode}`, SK },
         UpdateExpression: "SET reactionOrder = :order",
         ExpressionAttributeValues: { ":order": reactionOrder },
       }),
@@ -130,7 +130,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
 
   logger.info(
     {
-      sessionSlug,
+      sessionCode,
       targetId,
       targetType,
       emoji: emojiKey,
@@ -142,7 +142,7 @@ export async function handleReact(args: ReactArgs): Promise<SessionUpdate> {
 
   return {
     eventType: "REACTION_UPDATED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       targetId,
       targetType,

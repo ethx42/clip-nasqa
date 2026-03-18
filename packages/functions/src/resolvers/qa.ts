@@ -20,13 +20,13 @@ function tableName(): string {
   return name;
 }
 
-async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Promise<void> {
+async function verifyHostSecret(sessionCode: string, hostSecretHash: string): Promise<void> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
-        SK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
+        SK: `SESSION#${sessionCode}`,
       },
     }),
   );
@@ -36,10 +36,10 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
 }
 
 export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, text, fingerprint, authorName } = args;
+  const { sessionCode, text, fingerprint, authorName } = args;
 
   // Enforce ban and rate limit before any write
-  await checkNotBanned(sessionSlug, fingerprint);
+  await checkNotBanned(sessionCode, fingerprint);
   await checkRateLimit(fingerprint, 3, 60);
 
   if (text.length > 500) {
@@ -51,10 +51,10 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
   const ttl = now + 24 * 60 * 60;
 
   const question: Record<string, unknown> = {
-    PK: `SESSION#${sessionSlug}`,
+    PK: `SESSION#${sessionCode}`,
     SK: `QUESTION#${id}`,
     id,
-    sessionSlug,
+    sessionCode,
     text,
     fingerprint,
     upvoteCount: 0,
@@ -79,10 +79,10 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
 
   return {
     eventType: "QUESTION_ADDED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       id,
-      sessionSlug,
+      sessionCode,
       text,
       fingerprint,
       authorName: authorName ?? null,
@@ -98,7 +98,7 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
 }
 
 export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, questionId, fingerprint, remove } = args;
+  const { sessionCode, questionId, fingerprint, remove } = args;
 
   const upvoteDelta = remove ? -1 : 1;
   const incrementValue = remove ? -1 : 1;
@@ -118,7 +118,7 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
       new UpdateCommand({
         TableName: tableName(),
         Key: {
-          PK: `SESSION#${sessionSlug}`,
+          PK: `SESSION#${sessionCode}`,
           SK: `QUESTION#${questionId}`,
         },
         UpdateExpression: updateExpression,
@@ -139,18 +139,21 @@ export async function upvoteQuestion(args: UpvoteQuestionArgs): Promise<SessionU
     throw err;
   }
 
+  // suppress unused variable warning
+  void upvoteDelta;
+
   return {
     eventType: "QUESTION_UPDATED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({ questionId, upvoteCount: newUpvoteCount }),
   };
 }
 
 export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
-  const { sessionSlug, questionId, text, fingerprint, isHostReply, authorName } = args;
+  const { sessionCode, questionId, text, fingerprint, isHostReply, authorName } = args;
 
   // Enforce ban before any write (no rate limit on replies per requirements)
-  await checkNotBanned(sessionSlug, fingerprint);
+  await checkNotBanned(sessionCode, fingerprint);
 
   if (text.length > 500) {
     throw new Error("Reply text exceeds 500 character limit");
@@ -161,11 +164,11 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
   const ttl = now + 24 * 60 * 60;
 
   const reply: Record<string, unknown> = {
-    PK: `SESSION#${sessionSlug}`,
+    PK: `SESSION#${sessionCode}`,
     SK: `REPLY#${id}`,
     id,
     questionId,
-    sessionSlug,
+    sessionCode,
     text,
     isHostReply,
     fingerprint,
@@ -186,11 +189,11 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
 
   return {
     eventType: "REPLY_ADDED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       id,
       questionId,
-      sessionSlug,
+      sessionCode,
       text,
       isHostReply,
       fingerprint,
@@ -202,8 +205,8 @@ export async function addReply(args: AddReplyArgs): Promise<SessionUpdate> {
 }
 
 export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash, questionId } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash, questionId } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   // Find all currently focused questions and unfocus them
   const queryResult = await docClient.send(
@@ -212,7 +215,7 @@ export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpd
       KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
       FilterExpression: "isFocused = :true",
       ExpressionAttributeValues: {
-        ":pk": `SESSION#${sessionSlug}`,
+        ":pk": `SESSION#${sessionCode}`,
         ":prefix": "QUESTION#",
         ":true": true,
       },
@@ -238,7 +241,7 @@ export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpd
       new UpdateCommand({
         TableName: tableName(),
         Key: {
-          PK: `SESSION#${sessionSlug}`,
+          PK: `SESSION#${sessionCode}`,
           SK: `QUESTION#${questionId}`,
         },
         UpdateExpression: "SET isFocused = :true",
@@ -249,7 +252,7 @@ export async function focusQuestion(args: FocusQuestionArgs): Promise<SessionUpd
 
   return {
     eventType: "QUESTION_UPDATED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({ questionId: questionId ?? null, isFocused: !!questionId }),
   };
 }

@@ -35,14 +35,14 @@ function deduplicateReactionOrder(rawOrder: string[], counts: Record<string, num
 }
 
 async function getSessionData(args: GetSessionDataArgs) {
-  const { sessionSlug } = args;
+  const { sessionCode } = args;
 
   const result = await docClient.send(
     new QueryCommand({
       TableName: tableName(),
       KeyConditionExpression: "PK = :pk",
       ExpressionAttributeValues: {
-        ":pk": `SESSION#${sessionSlug}`,
+        ":pk": `SESSION#${sessionCode}`,
       },
     }),
   );
@@ -54,7 +54,7 @@ async function getSessionData(args: GetSessionDataArgs) {
     .filter((item) => (item.SK as string).startsWith("SNIPPET#"))
     .map((item) => ({
       id: item.id,
-      sessionSlug: item.sessionSlug,
+      sessionCode: item.sessionCode,
       type: item.type,
       content: item.content,
       language: item.language ?? null,
@@ -66,7 +66,7 @@ async function getSessionData(args: GetSessionDataArgs) {
     .filter((item) => (item.SK as string).startsWith("QUESTION#"))
     .map((item) => ({
       id: item.id,
-      sessionSlug: item.sessionSlug,
+      sessionCode: item.sessionCode,
       text: item.text,
       fingerprint: item.fingerprint,
       authorName: item.authorName ?? null,
@@ -101,7 +101,7 @@ async function getSessionData(args: GetSessionDataArgs) {
     .map((item) => ({
       id: item.id,
       questionId: item.questionId,
-      sessionSlug: item.sessionSlug,
+      sessionCode: item.sessionCode,
       text: item.text,
       isHostReply: item.isHostReply ?? false,
       fingerprint: item.fingerprint,
@@ -139,7 +139,7 @@ export const handler = async (event: AppSyncResolverContext): Promise<unknown> =
 
   const log = logger.child({
     operation: fieldName,
-    sessionSlug: args?.sessionSlug ?? "unknown",
+    sessionCode: args?.sessionCode ?? "unknown",
   });
 
   const start = Date.now();

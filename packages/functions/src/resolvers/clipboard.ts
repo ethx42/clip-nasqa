@@ -24,13 +24,13 @@ function tableName(): string {
   return name;
 }
 
-async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Promise<void> {
+async function verifyHostSecret(sessionCode: string, hostSecretHash: string): Promise<void> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
-        SK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
+        SK: `SESSION#${sessionCode}`,
       },
     }),
   );
@@ -40,8 +40,8 @@ async function verifyHostSecret(sessionSlug: string, hostSecretHash: string): Pr
 }
 
 export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash, content, type, language } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash, content, type, language } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   // Rate limit: 10 snippets per minute per hostSecretHash
   await checkRateLimit(hostSecretHash, 10, 60);
@@ -51,10 +51,10 @@ export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate>
   const ttl = now + 24 * 60 * 60; // 24 hours
 
   const snippet = {
-    PK: `SESSION#${sessionSlug}`,
+    PK: `SESSION#${sessionCode}`,
     SK: `SNIPPET#${id}`,
     id,
-    sessionSlug,
+    sessionCode,
     type,
     content,
     language: language ?? null,
@@ -71,10 +71,10 @@ export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate>
 
   return {
     eventType: "SNIPPET_ADDED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({
       id,
-      sessionSlug,
+      sessionCode,
       type,
       content,
       language: language ?? null,
@@ -85,14 +85,14 @@ export async function pushSnippet(args: PushSnippetArgs): Promise<SessionUpdate>
 }
 
 export async function deleteSnippet(args: DeleteSnippetArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash, snippetId } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash, snippetId } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   await docClient.send(
     new DeleteCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `SNIPPET#${snippetId}`,
       },
     }),
@@ -100,14 +100,14 @@ export async function deleteSnippet(args: DeleteSnippetArgs): Promise<SessionUpd
 
   return {
     eventType: "SNIPPET_DELETED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({ snippetId }),
   };
 }
 
 export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionUpdate> {
-  const { sessionSlug, hostSecretHash } = args;
-  await verifyHostSecret(sessionSlug, hostSecretHash);
+  const { sessionCode, hostSecretHash } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
 
   // Query all SNIPPET# items for this session
   const queryResult = await docClient.send(
@@ -115,7 +115,7 @@ export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionU
       TableName: tableName(),
       KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
       ExpressionAttributeValues: {
-        ":pk": `SESSION#${sessionSlug}`,
+        ":pk": `SESSION#${sessionCode}`,
         ":prefix": "SNIPPET#",
       },
     }),
@@ -141,7 +141,7 @@ export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionU
 
   return {
     eventType: "CLIPBOARD_CLEARED" as SessionEventType,
-    sessionSlug,
+    sessionCode,
     payload: JSON.stringify({}),
   };
 }

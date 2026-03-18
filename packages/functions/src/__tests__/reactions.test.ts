@@ -53,9 +53,9 @@ beforeEach(() => {
 });
 
 describe("handleReact — toggle on", () => {
-  it("returns REACTION_UPDATED event type and correct sessionSlug", async () => {
+  it("returns REACTION_UPDATED event type and correct sessionCode", async () => {
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -63,12 +63,12 @@ describe("handleReact — toggle on", () => {
     });
 
     expect(result.eventType).toBe("REACTION_UPDATED");
-    expect(result.sessionSlug).toBe("my-session");
+    expect(result.sessionCode).toBe("482913");
   });
 
   it("payload contains counts object with all 6 emoji keys", async () => {
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -87,7 +87,7 @@ describe("handleReact — toggle on", () => {
 
   it("payload contains reactedByMe with toggled emoji set to true", async () => {
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -101,7 +101,7 @@ describe("handleReact — toggle on", () => {
 
   it("payload contains targetId, targetType, and emoji", async () => {
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -116,7 +116,7 @@ describe("handleReact — toggle on", () => {
 
   it("works for targetType QUESTION — SK is QUESTION#id", async () => {
     await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-abc",
       targetType: "QUESTION",
       emoji: "heart",
@@ -135,7 +135,7 @@ describe("handleReact — toggle on", () => {
 
   it("works for targetType REPLY — SK is REPLY#id", async () => {
     await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "r-xyz",
       targetType: "REPLY",
       emoji: "party",
@@ -166,7 +166,7 @@ describe("handleReact — toggle off", () => {
       .resolvesOnce({ Attributes: TOGGLE_OFF_ATTRIBUTES });
 
     await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -190,7 +190,7 @@ describe("handleReact — toggle off", () => {
       .resolvesOnce({ Attributes: TOGGLE_OFF_ATTRIBUTES });
 
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -211,7 +211,7 @@ describe("handleReact — toggle off", () => {
 
     // Should resolve without throwing
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -229,7 +229,7 @@ describe("handleReact — validation", () => {
   it("rejects invalid emoji key with INVALID_EMOJI error", async () => {
     await expect(
       handleReact({
-        sessionSlug: "my-session",
+        sessionCode: "482913",
         targetId: "q-123",
         targetType: "QUESTION",
         emoji: "fire",
@@ -243,7 +243,7 @@ describe("handleReact — validation", () => {
 
     await expect(
       handleReact({
-        sessionSlug: "my-session",
+        sessionCode: "482913",
         targetId: "q-123",
         targetType: "QUESTION",
         emoji: "thumbsup",
@@ -259,7 +259,7 @@ describe("handleReact — validation", () => {
     ddbMock.on(UpdateCommand).resolves({ Attributes: TOGGLE_ON_ATTRIBUTES });
 
     await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -278,7 +278,7 @@ describe("handleReact — validation", () => {
 describe("handleReact — privacy", () => {
   it("response payload does not contain any key matching 'reactors' or 'rxn_*_reactors'", async () => {
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",
@@ -307,7 +307,7 @@ describe("handleReact — privacy", () => {
     });
 
     const result = await handleReact({
-      sessionSlug: "my-session",
+      sessionCode: "482913",
       targetId: "q-123",
       targetType: "QUESTION",
       emoji: "thumbsup",

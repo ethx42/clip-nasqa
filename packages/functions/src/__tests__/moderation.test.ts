@@ -68,13 +68,13 @@ describe("handleBanQuestion", () => {
       .resolvesOnce({ Attributes: { bannedPostCount: 1, isBanned: false } }); // ban item update
 
     const result = await handleBanQuestion({
-      sessionSlug: "test-session",
+      sessionCode: "482913",
       hostSecretHash: VALID_HOST_SECRET_HASH,
       questionId: "q-id-123",
     });
 
     expect(result.eventType).toBe("QUESTION_UPDATED");
-    expect(result.sessionSlug).toBe("test-session");
+    expect(result.sessionCode).toBe("482913");
   });
 
   it("includes correct fields in payload", async () => {
@@ -84,7 +84,7 @@ describe("handleBanQuestion", () => {
       .resolvesOnce({ Attributes: { bannedPostCount: 1, isBanned: false } });
 
     const result = await handleBanQuestion({
-      sessionSlug: "test-session",
+      sessionCode: "482913",
       hostSecretHash: VALID_HOST_SECRET_HASH,
       questionId: "q-id-123",
     });
@@ -112,7 +112,7 @@ describe("handleBanQuestion", () => {
 
     await expect(
       handleBanQuestion({
-        sessionSlug: "test-session",
+        sessionCode: "482913",
         hostSecretHash: VALID_HOST_SECRET_HASH,
         questionId: "q-id-123",
       }),
@@ -131,7 +131,7 @@ describe("handleBanQuestion", () => {
 
     await expect(
       handleBanQuestion({
-        sessionSlug: "test-session",
+        sessionCode: "482913",
         hostSecretHash: VALID_HOST_SECRET_HASH,
         questionId: "q-id-123",
       }),
@@ -150,7 +150,7 @@ describe("handleBanQuestion", () => {
 
     await expect(
       handleBanQuestion({
-        sessionSlug: "test-session",
+        sessionCode: "482913",
         hostSecretHash: VALID_HOST_SECRET_HASH,
         questionId: "q-missing",
       }),
@@ -165,7 +165,7 @@ describe("handleBanQuestion", () => {
       .resolvesOnce({}); // auto-ban update
 
     const result = await handleBanQuestion({
-      sessionSlug: "test-session",
+      sessionCode: "482913",
       hostSecretHash: VALID_HOST_SECRET_HASH,
       questionId: "q-id-123",
     });
@@ -178,18 +178,18 @@ describe("handleBanQuestion", () => {
 describe("handleBanParticipant", () => {
   it("returns PARTICIPANT_BANNED event", async () => {
     const result = await handleBanParticipant({
-      sessionSlug: "test-session",
+      sessionCode: "482913",
       hostSecretHash: VALID_HOST_SECRET_HASH,
       fingerprint: VALID_FINGERPRINT,
     });
 
     expect(result.eventType).toBe("PARTICIPANT_BANNED");
-    expect(result.sessionSlug).toBe("test-session");
+    expect(result.sessionCode).toBe("482913");
   });
 
   it("includes fingerprint in payload", async () => {
     const result = await handleBanParticipant({
-      sessionSlug: "test-session",
+      sessionCode: "482913",
       hostSecretHash: VALID_HOST_SECRET_HASH,
       fingerprint: VALID_FINGERPRINT,
     });
@@ -212,7 +212,7 @@ describe("handleBanParticipant", () => {
 
     await expect(
       handleBanParticipant({
-        sessionSlug: "test-session",
+        sessionCode: "482913",
         hostSecretHash: VALID_HOST_SECRET_HASH,
         fingerprint: VALID_FINGERPRINT,
       }),
@@ -221,7 +221,7 @@ describe("handleBanParticipant", () => {
 
   it("writes BAN item to DynamoDB with isBanned=true", async () => {
     await handleBanParticipant({
-      sessionSlug: "test-session",
+      sessionCode: "482913",
       hostSecretHash: VALID_HOST_SECRET_HASH,
       fingerprint: VALID_FINGERPRINT,
     });

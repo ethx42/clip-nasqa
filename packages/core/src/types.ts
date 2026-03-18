@@ -1,9 +1,9 @@
 // DynamoDB item interfaces (as stored in the table)
 
 export interface SessionItem {
-  PK: string; // SESSION#slug
-  SK: string; // SESSION#slug
-  slug: string;
+  PK: string; // SESSION#code
+  SK: string; // SESSION#code
+  code: string;
   title: string;
   isActive: boolean;
   createdAt: number; // Unix epoch seconds
@@ -11,10 +11,10 @@ export interface SessionItem {
 }
 
 export interface SnippetItem {
-  PK: string; // SESSION#slug
+  PK: string; // SESSION#code
   SK: string; // SNIPPET#ulid
   id: string;
-  sessionSlug: string;
+  sessionCode: string;
   type: string;
   content: string;
   language?: string;
@@ -23,10 +23,10 @@ export interface SnippetItem {
 }
 
 export interface QuestionItem {
-  PK: string; // SESSION#slug
+  PK: string; // SESSION#code
   SK: string; // QUESTION#ulid
   id: string;
-  sessionSlug: string;
+  sessionCode: string;
   text: string;
   fingerprint: string;
   authorName?: string;
@@ -40,11 +40,11 @@ export interface QuestionItem {
 }
 
 export interface ReplyItem {
-  PK: string; // SESSION#slug
+  PK: string; // SESSION#code
   SK: string; // REPLY#ulid
   id: string;
   questionId: string;
-  sessionSlug: string;
+  sessionCode: string;
   text: string;
   isHostReply: boolean;
   fingerprint: string;
@@ -55,7 +55,7 @@ export interface ReplyItem {
 // Application interfaces (used in resolvers — no DynamoDB internals)
 
 export interface Session {
-  slug: string;
+  code: string;
   title: string;
   isActive: boolean;
   createdAt: number;
@@ -64,7 +64,7 @@ export interface Session {
 
 export interface Snippet {
   id: string;
-  sessionSlug: string;
+  sessionCode: string;
   type: string;
   content: string;
   language?: string;
@@ -74,7 +74,7 @@ export interface Snippet {
 
 export interface Question {
   id: string;
-  sessionSlug: string;
+  sessionCode: string;
   text: string;
   fingerprint: string;
   authorName?: string;
@@ -92,7 +92,7 @@ export interface Question {
 export interface Reply {
   id: string;
   questionId: string;
-  sessionSlug: string;
+  sessionCode: string;
   text: string;
   isHostReply: boolean;
   fingerprint: string;
@@ -117,7 +117,7 @@ export enum SessionEventType {
 // SessionUpdate tagged union — mirrors the GraphQL SessionUpdate type
 export interface SessionUpdate {
   eventType: SessionEventType;
-  sessionSlug: string;
+  sessionCode: string;
   payload: unknown;
 }
 
@@ -129,35 +129,35 @@ export interface AppSyncResolverContext<TArgs = Record<string, unknown>> {
 
 // Mutation argument interfaces
 export interface PushSnippetArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   content: string;
   type: string;
   language?: string;
 }
 export interface DeleteSnippetArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   snippetId: string;
 }
 export interface ClearClipboardArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
 }
 export interface AddQuestionArgs {
-  sessionSlug: string;
+  sessionCode: string;
   text: string;
   fingerprint: string;
   authorName?: string;
 }
 export interface UpvoteQuestionArgs {
-  sessionSlug: string;
+  sessionCode: string;
   questionId: string;
   fingerprint: string;
   remove?: boolean;
 }
 export interface AddReplyArgs {
-  sessionSlug: string;
+  sessionCode: string;
   questionId: string;
   text: string;
   fingerprint: string;
@@ -165,40 +165,40 @@ export interface AddReplyArgs {
   authorName?: string;
 }
 export interface FocusQuestionArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   questionId?: string;
 }
 export interface GetSessionDataArgs {
-  sessionSlug: string;
+  sessionCode: string;
 }
 
 // Moderation mutation argument interfaces
 export interface BanQuestionArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   questionId: string;
 }
 export interface BanParticipantArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   fingerprint: string;
 }
 export interface DownvoteQuestionArgs {
-  sessionSlug: string;
+  sessionCode: string;
   questionId: string;
   fingerprint: string;
   remove?: boolean;
 }
 export interface RestoreQuestionArgs {
-  sessionSlug: string;
+  sessionCode: string;
   hostSecretHash: string;
   questionId: string;
 }
 
 // BAN item interface
 export interface BanItem {
-  PK: string; // SESSION#slug
+  PK: string; // SESSION#code
   SK: string; // BAN#fingerprint
   fingerprint: string;
   isBanned: boolean;
@@ -208,7 +208,7 @@ export interface BanItem {
 
 // Reaction mutation argument interface
 export interface ReactArgs {
-  sessionSlug: string;
+  sessionCode: string;
   targetId: string;
   targetType: "QUESTION" | "REPLY";
   emoji: string; // validated against emojiKeySchema in the resolver

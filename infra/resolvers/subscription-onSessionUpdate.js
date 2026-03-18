@@ -5,12 +5,12 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
-  if (!ctx.args.sessionSlug) {
-    util.error("sessionSlug is required", "Unauthorized");
+  if (!ctx.args.sessionCode) {
+    util.error("sessionCode is required", "Unauthorized");
   }
   extensions.setSubscriptionFilter(
     util.transform.toSubscriptionFilter({
-      sessionSlug: { eq: ctx.args.sessionSlug }
+      sessionCode: { eq: ctx.args.sessionCode }
     })
   );
   return null;

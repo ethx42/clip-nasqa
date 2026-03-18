@@ -5,7 +5,7 @@ schema {
 }
 
 type Session {
-  slug: String!
+  code: String!
   title: String!
   isActive: Boolean!
   createdAt: AWSTimestamp!
@@ -14,7 +14,7 @@ type Session {
 
 type Snippet {
   id: String!
-  sessionSlug: String!
+  sessionCode: String!
   type: String!
   content: String!
   language: String
@@ -24,7 +24,7 @@ type Snippet {
 
 type Question {
   id: String!
-  sessionSlug: String!
+  sessionCode: String!
   text: String!
   fingerprint: String!
   authorName: String
@@ -42,7 +42,7 @@ type Question {
 type Reply {
   id: String!
   questionId: String!
-  sessionSlug: String!
+  sessionCode: String!
   text: String!
   isHostReply: Boolean!
   fingerprint: String!
@@ -70,7 +70,7 @@ enum SessionEventType {
 
 type SessionUpdate {
   eventType: SessionEventType!
-  sessionSlug: String!
+  sessionCode: String!
   payload: AWSJSON!
 }
 
@@ -82,26 +82,26 @@ type SessionData {
 
 type Query {
   _empty: String
-  getSessionData(sessionSlug: String!): SessionData!
+  getSessionData(sessionCode: String!): SessionData!
 }
 
 type Mutation {
   _stub: SessionUpdate
-  pushSnippet(sessionSlug: String!, hostSecretHash: String!, content: String!, type: String!, language: String): SessionUpdate!
-  deleteSnippet(sessionSlug: String!, hostSecretHash: String!, snippetId: String!): SessionUpdate!
-  clearClipboard(sessionSlug: String!, hostSecretHash: String!): SessionUpdate!
-  addQuestion(sessionSlug: String!, text: String!, fingerprint: String!, authorName: String): SessionUpdate!
-  upvoteQuestion(sessionSlug: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
-  addReply(sessionSlug: String!, questionId: String!, text: String!, fingerprint: String!, isHostReply: Boolean!, authorName: String): SessionUpdate!
-  focusQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String): SessionUpdate!
-  banQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
-  banParticipant(sessionSlug: String!, hostSecretHash: String!, fingerprint: String!): SessionUpdate!
-  downvoteQuestion(sessionSlug: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
-  restoreQuestion(sessionSlug: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
-  react(sessionSlug: String!, targetId: String!, targetType: ReactionTargetType!, emoji: String!, fingerprint: String!): SessionUpdate!
+  pushSnippet(sessionCode: String!, hostSecretHash: String!, content: String!, type: String!, language: String): SessionUpdate!
+  deleteSnippet(sessionCode: String!, hostSecretHash: String!, snippetId: String!): SessionUpdate!
+  clearClipboard(sessionCode: String!, hostSecretHash: String!): SessionUpdate!
+  addQuestion(sessionCode: String!, text: String!, fingerprint: String!, authorName: String): SessionUpdate!
+  upvoteQuestion(sessionCode: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
+  addReply(sessionCode: String!, questionId: String!, text: String!, fingerprint: String!, isHostReply: Boolean!, authorName: String): SessionUpdate!
+  focusQuestion(sessionCode: String!, hostSecretHash: String!, questionId: String): SessionUpdate!
+  banQuestion(sessionCode: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
+  banParticipant(sessionCode: String!, hostSecretHash: String!, fingerprint: String!): SessionUpdate!
+  downvoteQuestion(sessionCode: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
+  restoreQuestion(sessionCode: String!, hostSecretHash: String!, questionId: String!): SessionUpdate!
+  react(sessionCode: String!, targetId: String!, targetType: ReactionTargetType!, emoji: String!, fingerprint: String!): SessionUpdate!
 }
 
 type Subscription {
-  onSessionUpdate(sessionSlug: String!): SessionUpdate
+  onSessionUpdate(sessionCode: String!): SessionUpdate
     @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion", "react"])
 }

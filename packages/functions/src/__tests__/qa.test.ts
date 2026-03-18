@@ -30,13 +30,13 @@ beforeEach(() => {
 describe("addQuestion", () => {
   it("returns QUESTION_ADDED event with correct shape", async () => {
     const result = await addQuestion({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       text: "What is this?",
       fingerprint: VALID_FINGERPRINT,
     });
 
     expect(result.eventType).toBe("QUESTION_ADDED");
-    expect(result.sessionSlug).toBe("test-slug");
+    expect(result.sessionCode).toBe("482913");
 
     const payload = JSON.parse(result.payload as string);
     expect(payload.text).toBe("What is this?");
@@ -52,7 +52,7 @@ describe("addQuestion", () => {
 
   it("includes optional authorName in payload", async () => {
     const result = await addQuestion({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       text: "Question with author",
       fingerprint: VALID_FINGERPRINT,
       authorName: "Alice",
@@ -64,7 +64,7 @@ describe("addQuestion", () => {
 
   it("sets authorName to null when not provided", async () => {
     const result = await addQuestion({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       text: "Anonymous question",
       fingerprint: VALID_FINGERPRINT,
     });
@@ -76,7 +76,7 @@ describe("addQuestion", () => {
   it("throws when text exceeds 500 chars", async () => {
     await expect(
       addQuestion({
-        sessionSlug: "test-slug",
+        sessionCode: "482913",
         text: "a".repeat(501),
         fingerprint: VALID_FINGERPRINT,
       }),
@@ -89,7 +89,7 @@ describe("addQuestion", () => {
 
     await expect(
       addQuestion({
-        sessionSlug: "test-slug",
+        sessionCode: "482913",
         text: "Banned user question",
         fingerprint: VALID_FINGERPRINT,
       }),
@@ -108,7 +108,7 @@ describe("addQuestion", () => {
 
     await expect(
       addQuestion({
-        sessionSlug: "test-slug",
+        sessionCode: "482913",
         text: "Rate limited question",
         fingerprint: VALID_FINGERPRINT,
       }),
@@ -117,7 +117,7 @@ describe("addQuestion", () => {
 
   it("writes question to DynamoDB", async () => {
     await addQuestion({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       text: "Written to DB?",
       fingerprint: VALID_FINGERPRINT,
     });
@@ -131,14 +131,14 @@ describe("upvoteQuestion", () => {
     ddbMock.on(UpdateCommand).resolves({ Attributes: { upvoteCount: 1 } });
 
     const result = await upvoteQuestion({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       questionId: "q-id-123",
       fingerprint: VALID_FINGERPRINT,
       remove: false,
     });
 
     expect(result.eventType).toBe("QUESTION_UPDATED");
-    expect(result.sessionSlug).toBe("test-slug");
+    expect(result.sessionCode).toBe("482913");
 
     const payload = JSON.parse(result.payload as string);
     expect(payload.questionId).toBe("q-id-123");
@@ -149,7 +149,7 @@ describe("upvoteQuestion", () => {
     ddbMock.on(UpdateCommand).resolves({ Attributes: { upvoteCount: 0 } });
 
     const result = await upvoteQuestion({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       questionId: "q-id-123",
       fingerprint: VALID_FINGERPRINT,
       remove: true,
@@ -170,7 +170,7 @@ describe("upvoteQuestion", () => {
 
     await expect(
       upvoteQuestion({
-        sessionSlug: "test-slug",
+        sessionCode: "482913",
         questionId: "q-id-123",
         fingerprint: VALID_FINGERPRINT,
         remove: false,
@@ -182,7 +182,7 @@ describe("upvoteQuestion", () => {
 describe("addReply", () => {
   it("returns REPLY_ADDED event with correct shape", async () => {
     const result = await addReply({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       questionId: "q-id-123",
       text: "Great question!",
       fingerprint: VALID_FINGERPRINT,
@@ -190,7 +190,7 @@ describe("addReply", () => {
     });
 
     expect(result.eventType).toBe("REPLY_ADDED");
-    expect(result.sessionSlug).toBe("test-slug");
+    expect(result.sessionCode).toBe("482913");
 
     const payload = JSON.parse(result.payload as string);
     expect(payload.questionId).toBe("q-id-123");
@@ -202,7 +202,7 @@ describe("addReply", () => {
 
   it("marks host reply when isHostReply is true", async () => {
     const result = await addReply({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       questionId: "q-id-123",
       text: "Host answer",
       fingerprint: VALID_FINGERPRINT,
@@ -215,7 +215,7 @@ describe("addReply", () => {
 
   it("includes optional authorName when provided", async () => {
     const result = await addReply({
-      sessionSlug: "test-slug",
+      sessionCode: "482913",
       questionId: "q-id-123",
       text: "Reply with author",
       fingerprint: VALID_FINGERPRINT,
@@ -230,7 +230,7 @@ describe("addReply", () => {
   it("throws when text exceeds 500 chars", async () => {
     await expect(
       addReply({
-        sessionSlug: "test-slug",
+        sessionCode: "482913",
         questionId: "q-id-123",
         text: "a".repeat(501),
         fingerprint: VALID_FINGERPRINT,
@@ -244,7 +244,7 @@ describe("addReply", () => {
 
     await expect(
       addReply({
-        sessionSlug: "test-slug",
+        sessionCode: "482913",
         questionId: "q-id-123",
         text: "Banned reply",
         fingerprint: VALID_FINGERPRINT,

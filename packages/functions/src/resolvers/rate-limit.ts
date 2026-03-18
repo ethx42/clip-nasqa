@@ -59,16 +59,16 @@ export async function checkRateLimit(
 
 /**
  * checkNotBanned: verifies a participant is not banned in a session.
- * @param sessionSlug - the session to check
+ * @param sessionCode - the session to check
  * @param fingerprint - participant fingerprint
  * @throws Error('PARTICIPANT_BANNED') if the participant is banned
  */
-export async function checkNotBanned(sessionSlug: string, fingerprint: string): Promise<void> {
+export async function checkNotBanned(sessionCode: string, fingerprint: string): Promise<void> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
       Key: {
-        PK: `SESSION#${sessionSlug}`,
+        PK: `SESSION#${sessionCode}`,
         SK: `BAN#${fingerprint}`,
       },
     }),
@@ -76,7 +76,7 @@ export async function checkNotBanned(sessionSlug: string, fingerprint: string): 
 
   if (result.Item?.isBanned === true) {
     logger.warn(
-      { sessionSlug, fingerprint: fingerprint.slice(0, 8) },
+      { sessionCode, fingerprint: fingerprint.slice(0, 8) },
       "banned participant attempted action",
     );
     throw new Error("PARTICIPANT_BANNED");
