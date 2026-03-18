@@ -129,5 +129,5 @@ Phases execute in numeric order: 14 -> 15 -> 16
 | 12. Component Decomposition                  | v1.3      | 3/3            | Complete    | 2026-03-17 |
 | 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete    | 2026-03-18 |
 | 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete    | 2026-03-18 |
-| 15. Mutation Path and Client Utilities       | v2.0      | 0/2            | Not started | -          |
+| 15. Mutation Path and Client Utilities       | 1/2       | In Progress    |             | -          |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 0/TBD          | Not started | -          |

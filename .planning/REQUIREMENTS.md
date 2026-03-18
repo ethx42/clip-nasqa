@@ -15,10 +15,10 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ### Mutation Path
 
-- [ ] **MUT-01**: Participant mutations (addQuestion, upvoteQuestion, addReply, downvoteQuestion, react) execute directly from client to AppSync without Netlify Server Action hop
-- [ ] **MUT-02**: Host mutations (pushSnippet, deleteSnippet, clearClipboard, focusQuestion, banQuestion, banParticipant, restoreQuestion) remain as Server Actions for hostSecretHash security
-- [ ] **MUT-03**: Shared `graphqlMutation()` client utility handles AppSync HTTP POST with error parsing
-- [ ] **MUT-04**: `safeClientMutation()` wrapper provides consistent error handling with toast feedback
+- [x] **MUT-01**: Participant mutations (addQuestion, upvoteQuestion, addReply, downvoteQuestion, react) execute directly from client to AppSync without Netlify Server Action hop
+- [x] **MUT-02**: Host mutations (pushSnippet, deleteSnippet, clearClipboard, focusQuestion, banQuestion, banParticipant, restoreQuestion) remain as Server Actions for hostSecretHash security
+- [x] **MUT-03**: Shared `graphqlMutation()` client utility handles AppSync HTTP POST with error parsing
+- [x] **MUT-04**: `safeClientMutation()` wrapper provides consistent error handling with toast feedback
 - [ ] **MUT-05**: Remaining Server Actions lazy-load `getTranslations()` only in error paths
 
 ### Optimistic UI
@@ -96,10 +96,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-01    | Phase 14 | Complete |
 | INFRA-02    | Phase 14 | Complete |
 | INFRA-03    | Phase 14 | Complete |
-| MUT-01      | Phase 15 | Pending  |
-| MUT-02      | Phase 15 | Pending  |
-| MUT-03      | Phase 15 | Pending  |
-| MUT-04      | Phase 15 | Pending  |
+| MUT-01      | Phase 15 | Complete |
+| MUT-02      | Phase 15 | Complete |
+| MUT-03      | Phase 15 | Complete |
+| MUT-04      | Phase 15 | Complete |
 | MUT-05      | Phase 15 | Pending  |
 | OPT-01      | Phase 16 | Pending  |
 | OPT-02      | Phase 16 | Pending  |

@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.0 Performance & Instant Operations — Phase 14
+**Current focus:** v2.0 Performance & Instant Operations — Phase 15
 
 ## Current Position
 
-Phase: 14 of 16 (Infrastructure and URL Routing)
-Plan: 5 of TBD in current phase
+Phase: 15 of 16 (Mutation Path and Client Utilities)
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-03-18 — Plan 14-04 complete: /join page with OTP input, branded OG image, and human verification approved (3/3 tasks)
+Last activity: 2026-03-18 — Plan 15-01 complete: direct AppSync participant mutations, graphqlMutation/safeClientMutation utilities, QAInput pending state (2/2 tasks)
 
 Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
@@ -41,6 +41,7 @@ Recent decisions affecting current work:
 - [14-02]: Numeric codes use range 100000-999999 (6-digit, 900000 possibilities) for readability; random-word-slugs dependency removed; route param still named "slug" in filesystem routes until URL restructure (plan 03)
 - [14-03]: 6-digit validation guard (/^\d{6}$/) placed in both generateMetadata and page default export; participantUrl uses /${locale}/${code} flat format; OG image shows formatCode(code) badge; robots.ts disallow rules removed in favor of per-page robots metadata
 - [14-04]: /join page renders inside [locale] layout (nav bar visible) — full standalone requires route group restructure not planned; JoinForm extracted as client component for server generateMetadata; paste handler uses /(\d{6})/ to extract codes from URLs
+- [15-01]: VOTE_CONFLICT silent handling in dedicated callVoteMutation() helper outside safeClientMutation to keep shared utility clean; isPending/restoredText threaded through QAPanel as props (QAPanel stays stateless); focusQuestionAction moved to moderation.ts so qa.ts could be deleted entirely
 
 ### Pending Todos
 
@@ -53,5 +54,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 14-04-PLAN.md — /join page with OTP input fully verified (3/3 tasks)
-Resume at: `/gsd:execute-phase 14` (begin next plan in phase 14)
+Stopped at: Completed 15-01-PLAN.md — direct AppSync participant mutations and client utilities (2/2 tasks)
+Resume at: `/gsd:execute-phase 15` (begin next plan in phase 15)
