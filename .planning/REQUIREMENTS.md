@@ -3,31 +3,67 @@
 **Defined:** 2026-03-17
 **Core Value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
 
-## v1.3 Requirements
+## v2.0 Requirements
 
-Requirements for v1.3 Participant & Host UX Refactor. Each maps to roadmap phases.
+Requirements for Performance & Instant Operations milestone. Each maps to roadmap phases.
 
-### Structure & Reuse
+### Infrastructure
 
-- [x] **STRUC-01**: Shared `formatRelativeTime` utility extracted to common module
-- [x] **STRUC-02**: `useSessionMutations` hook extracted from session-shell
-- [x] **STRUC-03**: SnippetCard extracted as standalone component from clipboard panel
-- [x] **STRUC-04**: QAPanel sort logic deduplicated into shared utility
-- [x] **STRUC-05**: QuestionCard split into host and participant variants
+- [ ] **INFRA-01**: Lambda resolver runs at 256MB memory with arm64 architecture to reduce cold starts
+- [ ] **INFRA-02**: SSR page load deduplicates `getSession` and `getSessionData` calls via `React.cache()` (2 DynamoDB calls instead of 4)
+- [ ] **INFRA-03**: Session page exports `force-dynamic` to prevent accidental cross-request caching
 
-### UX Interactions
+### Mutation Path
 
-- [x] **UXINT-01**: Vote buttons show filled state when user has voted
-- [x] **UXINT-02**: Identity chip displays current device identity
-- [x] **UXINT-03**: Own questions visually distinguished from others
+- [ ] **MUT-01**: Participant mutations (addQuestion, upvoteQuestion, addReply, downvoteQuestion, react) execute directly from client to AppSync without Netlify Server Action hop
+- [ ] **MUT-02**: Host mutations (pushSnippet, deleteSnippet, clearClipboard, focusQuestion, banQuestion, banParticipant, restoreQuestion) remain as Server Actions for hostSecretHash security
+- [ ] **MUT-03**: Shared `graphqlMutation()` client utility handles AppSync HTTP POST with error parsing
+- [ ] **MUT-04**: `safeClientMutation()` wrapper provides consistent error handling with toast feedback
+- [ ] **MUT-05**: Remaining Server Actions lazy-load `getTranslations()` only in error paths
 
-### Accessibility
+### Optimistic UI
 
-- [x] **A11Y-01**: Vote buttons use `aria-pressed` to reflect toggle state
+- [ ] **OPT-01**: Host snippet push appears instantly in clipboard via optimistic dispatch before server confirmation
+- [ ] **OPT-02**: Snippet reducer deduplicates optimistic entries using content-fingerprint matching (mirrors question pattern)
+- [ ] **OPT-03**: Failed snippet push rolls back optimistic entry and restores input content
 
-## Future Requirements
+### URL & Routing
 
-Deferred to future milestone. Tracked but not in current roadmap.
+- [ ] **URL-01**: Session codes are 6-digit numeric (collision-free with 24h TTL, pool of 1M codes)
+- [ ] **URL-02**: Session URL flattened from `/[locale]/session/[slug]` to `/[locale]/[code]` (e.g., `/es/482913`)
+- [ ] **URL-03**: Host URL follows same pattern: `/[locale]/[code]/host#secret`
+- [ ] **URL-04**: Dedicated `/join` page with code entry field for voice-dictation scenarios
+- [ ] **URL-05**: QR code updated to resolve to flat URL format
+- [ ] **URL-06**: DynamoDB key migrated from `SESSION#word-slug` to `SESSION#482913`
+- [ ] **URL-07**: `createSession` Server Action generates 6-digit numeric code with collision check instead of word-pair slug
+
+### Real-time UX
+
+- [ ] **UX-01**: QA panel sort debounce reduced from 1000ms to 300ms for faster perceived ordering
+- [ ] **UX-02**: Question card layout animations remain smooth at 300ms debounce (no teleporting)
+
+### Client Highlighting
+
+- [ ] **SHIKI-01**: Host input syntax preview renders client-side using Shiki core with JavaScript regex engine
+- [ ] **SHIKI-02**: Language grammars load lazily via dynamic import (only languages in SUPPORTED_LANGUAGES)
+- [ ] **SHIKI-03**: Shiki bundle contribution stays under 15kB gzipped (fine-grained imports, no full bundle)
+- [ ] **SHIKI-04**: `renderHighlight` Server Action removed after client-side migration
+- [ ] **SHIKI-05**: Language auto-detection rewritten with stricter heuristics — plain text defaults to "text", URLs not misidentified as YAML, casual text not misidentified as JavaScript; only assigns language when confidence is high (multiple signals required)
+- [ ] **SHIKI-06**: Host can manually override detected language via a dropdown selector (SUPPORTED_LANGUAGES list) when auto-detection is wrong
+- [ ] **SHIKI-07**: Host input clears cleanly after push — no residual "selected text" visual artifact from the transparent textarea/backdrop overlay
+
+## v2.1 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Bundle Optimization
+
+- **BUNDLE-01**: Replace aws-amplify with lighter AppSync WebSocket client (eliminate 68kB)
+- **BUNDLE-02**: Host mutations moved client-side after dedicated security review
+
+### Monitoring
+
+- **MON-01**: Sentry error tracking integration (deferred from v1.1)
 
 ### Accessibility
 
@@ -36,36 +72,61 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ## Out of Scope
 
-| Feature                                | Reason                                                      |
-| -------------------------------------- | ----------------------------------------------------------- |
-| Full component library extraction      | Scope creep — extract only what's needed for this milestone |
-| Storybook or visual regression testing | Adds tooling overhead without shipping user value           |
-| WCAG AAA compliance                    | Level AA is realistic; AAA conflicts with real-time UI      |
-| Mobile native patterns                 | Web-first, responsive design covers mobile                  |
+| Feature                                       | Reason                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------- |
+| Replacing aws-amplify SDK                     | 68kB bundle issue is orthogonal to latency; requires separate evaluation        |
+| Host mutations client-side                    | `hostSecretHash` in Network tab is a security risk; needs dedicated review      |
+| Lambda provisioned concurrency                | Cost-prohibitive for low-traffic app; 256MB memory is sufficient                |
+| Edge functions for SSR                        | Netlify edge would add complexity; current SSR latency is acceptable            |
+| WebSocket connection pooling                  | AppSync manages connections; no user-level optimization available               |
+| Service worker caching                        | Real-time app needs fresh data; SW caching would cause staleness                |
+| Full component library extraction             | Scope creep — extract only what's needed                                        |
+| WCAG AAA compliance                           | Level AA is realistic; AAA conflicts with real-time UI                          |
+| Translated URL paths (`/sesion/`, `/sessao/`) | Enterprise consensus: don't translate functional paths; breaks link sharing     |
+| Localized word slugs                          | Breaks cross-language sharing, URL encoding issues, dictionary maintenance cost |
+| Custom vanity domain                          | Future consideration (e.g., `nasqa.io`); not needed for v2.0                    |
 
 ## Traceability
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase    | Status   |
-| ----------- | -------- | -------- |
-| STRUC-01    | Phase 11 | Complete |
-| STRUC-02    | Phase 11 | Complete |
-| STRUC-03    | Phase 12 | Complete |
-| STRUC-04    | Phase 12 | Complete |
-| STRUC-05    | Phase 12 | Complete |
-| UXINT-01    | Phase 13 | Complete |
-| UXINT-02    | Phase 13 | Complete |
-| UXINT-03    | Phase 13 | Complete |
-| A11Y-01     | Phase 13 | Complete |
+| Requirement | Phase | Status  |
+| ----------- | ----- | ------- |
+| INFRA-01    | TBD   | Pending |
+| INFRA-02    | TBD   | Pending |
+| INFRA-03    | TBD   | Pending |
+| MUT-01      | TBD   | Pending |
+| MUT-02      | TBD   | Pending |
+| MUT-03      | TBD   | Pending |
+| MUT-04      | TBD   | Pending |
+| MUT-05      | TBD   | Pending |
+| OPT-01      | TBD   | Pending |
+| OPT-02      | TBD   | Pending |
+| OPT-03      | TBD   | Pending |
+| UX-01       | TBD   | Pending |
+| UX-02       | TBD   | Pending |
+| SHIKI-01    | TBD   | Pending |
+| SHIKI-02    | TBD   | Pending |
+| SHIKI-03    | TBD   | Pending |
+| SHIKI-04    | TBD   | Pending |
+| SHIKI-05    | TBD   | Pending |
+| SHIKI-06    | TBD   | Pending |
+| SHIKI-07    | TBD   | Pending |
+| URL-01      | TBD   | Pending |
+| URL-02      | TBD   | Pending |
+| URL-03      | TBD   | Pending |
+| URL-04      | TBD   | Pending |
+| URL-05      | TBD   | Pending |
+| URL-06      | TBD   | Pending |
+| URL-07      | TBD   | Pending |
 
 **Coverage:**
 
-- v1.3 requirements: 9 total
-- Mapped to phases: 9
-- Unmapped: 0
+- v2.0 requirements: 27 total
+- Mapped to phases: 0
+- Unmapped: 27
 
 ---
 
 _Requirements defined: 2026-03-17_
-_Last updated: 2026-03-17 after roadmap creation_
+_Last updated: 2026-03-17 after initial definition_
