@@ -25,7 +25,7 @@ export function ReplyList({ replies, sessionCode, fingerprint }: ReplyListProps)
           key={reply.id}
           className={
             reply.isHostReply
-              ? "border-l-2 border-indigo-500 pl-4"
+              ? "border-l-2 border-indigo-500 dark:border-amber-400 pl-4"
               : "border-l-2 border-border pl-4"
           }
         >
