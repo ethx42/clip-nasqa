@@ -136,7 +136,14 @@
     "rateLimited": "Muitas requisições. Tente novamente em {seconds}s",
     "banned": "Você foi bloqueado de publicar nesta sessão.",
     "unexpectedError": "Algo deu errado. Por favor, tente novamente.",
-    "networkError": "Conexao perdida. Verifique sua internet e tente novamente."
+    "networkError": "Conexao perdida. Verifique sua internet e tente novamente.",
+    "clientRateLimited": "Muitas tentativas. Aguarde um momento.",
+    "clientBanned": "Você foi restrito de participar nesta sessão",
+    "clientNetworkOffline": "Sem conexão com a internet",
+    "clientFailedQuestion": "Erro ao enviar a pergunta",
+    "clientFailedUpvote": "Erro ao registrar o voto",
+    "clientFailedDownvote": "Erro ao registrar o voto",
+    "clientFailedReply": "Erro ao enviar a resposta"
   },
   "identity": {
     "whatsYourName": "Qual é o seu nome?",

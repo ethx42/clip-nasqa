@@ -136,7 +136,14 @@
     "rateLimited": "Too many requests. Try again in {seconds}s",
     "banned": "You've been blocked from posting in this session.",
     "unexpectedError": "Something went wrong. Please try again.",
-    "networkError": "Connection lost. Please check your internet and try again."
+    "networkError": "Connection lost. Please check your internet and try again.",
+    "clientRateLimited": "Too many attempts. Wait a moment.",
+    "clientBanned": "You've been restricted from participating in this session",
+    "clientNetworkOffline": "No internet connection",
+    "clientFailedQuestion": "Failed to submit question",
+    "clientFailedUpvote": "Failed to register vote",
+    "clientFailedDownvote": "Failed to register vote",
+    "clientFailedReply": "Failed to submit reply"
   },
   "identity": {
     "whatsYourName": "What's your name?",
