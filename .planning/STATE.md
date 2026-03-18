@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 16-optimistic-snippet-push-and-client-shiki
-Plan: 01 of 2 complete
-Status: Executing phase 16
-Last activity: 2026-03-18 — Plan 16-01 complete: optimistic snippet push, failure state, snippet numbering, pill banner.
+Plan: 02 of 2 complete
+Status: Phase 16 complete
+Last activity: 2026-03-18 — Plan 16-02 complete: client-side Shiki singleton hook, stricter language detection, language dropdown, renderHighlight removed.
 
 Progress: [██░░░░░░░░] 15% (v2.0 milestone)
 
@@ -45,6 +45,9 @@ Recent decisions affecting current work:
 - [15-02]: getTranslations deferred to error paths only in all 8 host Server Actions — happy-path mutations skip i18n resolution entirely; createSession has 3 independent lazy call sites (validation, DynamoDB catch, code exhaustion)
 - [Phase 16-01]: Deferred push via editingSnippetIds check in executeServerPush; push fires when handleEditEnd is called with final edited content
 - [Phase 16-01]: Content-fingerprint dedup in SNIPPET*ADDED matches sessionCode+content+language+type without optimisticId, auto-removes matched \_opt* ID from failedSnippetIds
+- [Phase 16-02]: useShikiHighlight singleton via module-level \_highlighterPromise — highlighter created once, language grammars loaded lazily per-language on first use
+- [Phase 16-02]: All Shiki imports dynamic (inside async functions) — no top-level static import; shiki/core + engine + themes + langs all lazy-loaded
+- [Phase 16-02]: detectLanguage rewritten with multi-signal heuristics; URL-first check before YAML rule; JS requires 2-of-3 signals
 
 ### Pending Todos
 
@@ -57,5 +60,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 16-01-PLAN.md — optimistic snippet push wired end-to-end
-Resume at: `/gsd:execute-phase 16` to run plan 16-02 (client-side Shiki)
+Stopped at: Completed 16-02-PLAN.md — client-side Shiki hook, language dropdown, renderHighlight removed
+Resume at: Phase 16 complete. Next: run phase 17 or milestone audit.

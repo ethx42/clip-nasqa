@@ -45,13 +45,13 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ### Client Highlighting
 
-- [ ] **SHIKI-01**: Host input syntax preview renders client-side using Shiki core with JavaScript regex engine
-- [ ] **SHIKI-02**: Language grammars load lazily via dynamic import (only languages in SUPPORTED_LANGUAGES)
-- [ ] **SHIKI-03**: Shiki bundle contribution stays under 15kB gzipped (fine-grained imports, no full bundle)
-- [ ] **SHIKI-04**: `renderHighlight` Server Action removed after client-side migration
-- [ ] **SHIKI-05**: Language auto-detection rewritten with stricter heuristics — plain text defaults to "text", URLs not misidentified as YAML, casual text not misidentified as JavaScript; only assigns language when confidence is high (multiple signals required)
-- [ ] **SHIKI-06**: Host can manually override detected language via a dropdown selector (SUPPORTED_LANGUAGES list) when auto-detection is wrong
-- [ ] **SHIKI-07**: Host input clears cleanly after push — no residual "selected text" visual artifact from the transparent textarea/backdrop overlay
+- [x] **SHIKI-01**: Host input syntax preview renders client-side using Shiki core with JavaScript regex engine
+- [x] **SHIKI-02**: Language grammars load lazily via dynamic import (only languages in SUPPORTED_LANGUAGES)
+- [x] **SHIKI-03**: Shiki bundle contribution stays under 15kB gzipped (fine-grained imports, no full bundle)
+- [x] **SHIKI-04**: `renderHighlight` Server Action removed after client-side migration
+- [x] **SHIKI-05**: Language auto-detection rewritten with stricter heuristics — plain text defaults to "text", URLs not misidentified as YAML, casual text not misidentified as JavaScript; only assigns language when confidence is high (multiple signals required)
+- [x] **SHIKI-06**: Host can manually override detected language via a dropdown selector (SUPPORTED_LANGUAGES list) when auto-detection is wrong
+- [x] **SHIKI-07**: Host input clears cleanly after push — no residual "selected text" visual artifact from the transparent textarea/backdrop overlay
 
 ## v2.1 Requirements
 
@@ -106,13 +106,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OPT-03      | Phase 16 | Complete |
 | UX-01       | Phase 14 | Complete |
 | UX-02       | Phase 14 | Complete |
-| SHIKI-01    | Phase 16 | Pending  |
-| SHIKI-02    | Phase 16 | Pending  |
-| SHIKI-03    | Phase 16 | Pending  |
-| SHIKI-04    | Phase 16 | Pending  |
-| SHIKI-05    | Phase 16 | Pending  |
-| SHIKI-06    | Phase 16 | Pending  |
-| SHIKI-07    | Phase 16 | Pending  |
+| SHIKI-01    | Phase 16 | Complete |
+| SHIKI-02    | Phase 16 | Complete |
+| SHIKI-03    | Phase 16 | Complete |
+| SHIKI-04    | Phase 16 | Complete |
+| SHIKI-05    | Phase 16 | Complete |
+| SHIKI-06    | Phase 16 | Complete |
+| SHIKI-07    | Phase 16 | Complete |
 | URL-01      | Phase 14 | Complete |
 | URL-02      | Phase 14 | Complete |
 | URL-03      | Phase 14 | Complete |

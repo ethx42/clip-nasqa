@@ -53,7 +53,7 @@
 
 - [x] **Phase 14: Infrastructure and URL Routing** — Lambda memory at 256MB, SSR fetch deduplication, QA sort debounce with layout animations, 6-digit numeric session codes, flat URL structure, /join page (completed 2026-03-18)
 - [x] **Phase 15: Mutation Path and Client Utilities** — `graphqlMutation()` and `safeClientMutation()` client utilities, shared error parser, participant mutations execute directly against AppSync, lazy i18n in surviving Server Actions (completed 2026-03-18)
-- [ ] **Phase 16: Optimistic Snippet Push and Client Shiki** — Host snippet push appears at 0ms via optimistic dispatch with content-fingerprint dedup and rollback, client-side Shiki syntax preview with dynamic import and JS regex engine
+- [x] **Phase 16: Optimistic Snippet Push and Client Shiki** — Host snippet push appears at 0ms via optimistic dispatch with content-fingerprint dedup and rollback, client-side Shiki syntax preview with dynamic import and JS regex engine (completed 2026-03-18)
 
 ## Phase Details
 
@@ -134,4 +134,4 @@ Phases execute in numeric order: 14 -> 15 -> 16
 | 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete   | 2026-03-18 |
 | 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete   | 2026-03-18 |
 | 15. Mutation Path and Client Utilities       | 2/2       | Complete       | 2026-03-18 | -          |
-| 16. Optimistic Snippet Push and Client Shiki | 1/2       | In Progress    |            | -          |
+| 16. Optimistic Snippet Push and Client Shiki | 2/2       | Complete       | 2026-03-18 | -          |
