@@ -131,6 +131,12 @@
 3. After 5 minutes, the edit/delete buttons are no longer visible to the author
 4. The host can edit or delete any question, reply, or snippet at any time regardless of the 5-minute window
 5. A host can edit a clipboard snippet's content and language — the updated snippet appears in real-time for all participants
+   **Plans**: 3 plans
+   Plans:
+
+- [ ] 17-01-PLAN.md — Types, GraphQL schema, SST config, Lambda resolvers (edit/delete with auth + soft-delete filter)
+- [ ] 17-02-PLAN.md — Frontend state wiring: mutation strings, reducer actions, subscription handler, participant + host mutation hooks, Server Actions
+- [ ] 17-03-PLAN.md — Frontend UI: inline edit, delete dialogs, 5-min window auto-hide, edited badges, snippet edit, i18n (en/es/pt)
 
 ## Progress
 
@@ -155,4 +161,4 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17
 | 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete | 2026-03-18 |
 | 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete | 2026-03-18 |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete | 2026-03-18 |
-| 17. Edit & Delete                            | v2.1      | 0/0            | Planning | -          |
+| 17. Edit & Delete                            | v2.1      | 0/3            | Planning | -          |
