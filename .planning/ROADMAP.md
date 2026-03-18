@@ -47,7 +47,7 @@
 
 </details>
 
-### 🚧 v2.0 Performance & Instant Operations (In Progress)
+### v2.0 Performance & Instant Operations (In Progress)
 
 **Milestone Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
 
@@ -73,7 +73,7 @@
    Plans:
 
 - [ ] 14-01-PLAN.md — Lambda 256MB + arm64, React.cache SSR dedup, force-dynamic, QA debounce 300ms with reduced-motion
-- [ ] 14-02-PLAN.md — slug→code rename across types, GraphQL, Lambda resolvers; numeric code generation; remove random-word-slugs
+- [ ] 14-02-PLAN.md — slug->code rename across types, GraphQL, Lambda resolvers; numeric code generation; remove random-word-slugs
 - [ ] 14-03-PLAN.md — Route migration from session/[slug] to [code], OG image relocation, QR URL update
 - [ ] 14-04-PLAN.md — /join page with OTP-style input, validateSessionCode action, branded OG image
 
@@ -106,7 +106,11 @@
 3. Two identical snippets never appear simultaneously in the clipboard panel — the optimistic entry is replaced by the confirmed entry, not duplicated alongside it
 4. Syntax highlighting updates live as the host types in the input — no Server Action round-trip occurs, verifiable by watching the Network tab during typing
 5. The host can open a language dropdown, select from the supported languages list, and see the preview re-highlight immediately with the chosen language
-   **Plans**: TBD
+   **Plans**: 2 plans
+   Plans:
+
+- [ ] 16-01-PLAN.md — Optimistic push hook, reducer extensions (failed state, content-fingerprint dedup), SnippetCard failed variant, snippet numbering, compact pill banner
+- [ ] 16-02-PLAN.md — Client Shiki hook (singleton, lazy langs, JS regex engine), stricter detectLanguage, language dropdown, HostInput live preview, SnippetCard migration, renderHighlight removal
 
 ## Progress
 
@@ -130,4 +134,4 @@ Phases execute in numeric order: 14 -> 15 -> 16
 | 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete    | 2026-03-18 |
 | 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete    | 2026-03-18 |
 | 15. Mutation Path and Client Utilities       | 2/2       | Complete       | 2026-03-18  | -          |
-| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 0/TBD          | Not started | -          |
+| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 0/2            | Not started | -          |
