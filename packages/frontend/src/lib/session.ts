@@ -1,4 +1,5 @@
 import { GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { cache } from "react";
 
 import { EMOJI_KEYS, type Question, type Reply, type Snippet } from "@nasqa/core";
 
@@ -12,7 +13,7 @@ export interface Session {
   expiresAt: number;
 }
 
-export async function getSession(slug: string): Promise<Session | null> {
+export const getSession = cache(async function getSession(slug: string): Promise<Session | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName(),
@@ -43,7 +44,7 @@ export async function getSession(slug: string): Promise<Session | null> {
     createdAt: item.createdAt as number,
     expiresAt: item.TTL as number,
   };
-}
+});
 
 export interface SessionData {
   snippets: Snippet[];
@@ -68,7 +69,9 @@ function buildReactionOrder(rawOrder: string[], counts: Record<string, number>):
   return JSON.stringify(order);
 }
 
-export async function getSessionData(slug: string): Promise<SessionData> {
+export const getSessionData = cache(async function getSessionData(
+  slug: string,
+): Promise<SessionData> {
   const now = Math.floor(Date.now() / 1000);
 
   const result = await docClient.send(
@@ -158,4 +161,4 @@ export async function getSessionData(slug: string): Promise<SessionData> {
   replies.sort((a, b) => a.createdAt - b.createdAt);
 
   return { snippets, questions, replies };
-}
+});

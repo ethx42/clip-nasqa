@@ -5,6 +5,8 @@ import Link from "next/link";
 import { SessionLivePage } from "@/components/session/session-live-page";
 import { getSession, getSessionData } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

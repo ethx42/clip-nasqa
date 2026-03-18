@@ -45,6 +45,8 @@ export default $config({
     // 4. Lambda function for resolvers (created separately to avoid handler bug with inline lambda)
     const resolverFn = new sst.aws.Function("ResolverFn", {
       handler: "packages/functions/src/resolvers/index.handler",
+      memory: "256 MB",
+      architecture: "arm64",
       environment: {
         TABLE_NAME: table.name,
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1",

@@ -6,6 +6,8 @@ import { SessionLiveHostPage } from "@/components/session/session-live-host-page
 import { getBaseUrl } from "@/lib/base-url";
 import { getSession, getSessionData } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function HostPage({
   params,
   searchParams,
