@@ -32,6 +32,8 @@ interface RenderCardOptions {
   replies?: Reply[];
   isHost?: boolean;
   fingerprint?: string;
+  votedQuestionIds?: Set<string>;
+  downvotedQuestionIds?: Set<string>;
 }
 
 function renderCard({
@@ -39,6 +41,8 @@ function renderCard({
   replies = noReplies,
   isHost = false,
   fingerprint = "fp-other",
+  votedQuestionIds = new Set<string>(),
+  downvotedQuestionIds = new Set<string>(),
 }: RenderCardOptions = {}) {
   const q: Question = { ...baseQuestion, ...question };
   const onUpvote = vi.fn();
@@ -53,8 +57,8 @@ function renderCard({
         isHost={isHost}
         fingerprint={fingerprint}
         sessionSlug="test-session"
-        votedQuestionIds={new Set()}
-        downvotedQuestionIds={new Set()}
+        votedQuestionIds={votedQuestionIds}
+        downvotedQuestionIds={downvotedQuestionIds}
         onUpvote={onUpvote}
         onDownvote={onDownvote}
         onReply={onReply}
@@ -145,5 +149,30 @@ describe("QuestionCard", () => {
     renderCard({ isHost: false });
     expect(screen.queryByRole("button", { name: /remove question/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /ban participant/i })).not.toBeInTheDocument();
+  });
+
+  // aria-pressed tests (A11Y-01)
+  it("upvote button has aria-pressed=false when not voted", () => {
+    renderCard({ votedQuestionIds: new Set() });
+    const upvoteButton = screen.getByRole("button", { name: /upvote question/i });
+    expect(upvoteButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("upvote button has aria-pressed=true when voted", () => {
+    renderCard({ votedQuestionIds: new Set(["q1"]) });
+    const upvoteButton = screen.getByRole("button", { name: /remove upvote/i });
+    expect(upvoteButton.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("downvote button has aria-pressed=false when not downvoted", () => {
+    renderCard({ downvotedQuestionIds: new Set() });
+    const downvoteButton = screen.getByRole("button", { name: /downvote question/i });
+    expect(downvoteButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("downvote button has aria-pressed=true when downvoted", () => {
+    renderCard({ downvotedQuestionIds: new Set(["q1"]) });
+    const downvoteButton = screen.getByRole("button", { name: /remove downvote/i });
+    expect(downvoteButton.getAttribute("aria-pressed")).toBe("true");
   });
 });
