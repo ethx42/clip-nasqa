@@ -208,6 +208,7 @@ export function useSessionMutations({
         text,
         isHostReply,
         fingerprint,
+        authorName,
         createdAt: Math.floor(Date.now() / 1000),
         TTL: 0,
       };

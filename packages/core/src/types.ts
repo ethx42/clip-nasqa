@@ -96,6 +96,7 @@ export interface Reply {
   text: string;
   isHostReply: boolean;
   fingerprint: string;
+  authorName?: string;
   reactionCounts?: string; // AWSJSON — JSON.stringify of ReactionCounts
   reactionOrder?: string; // AWSJSON — JSON.stringify of EmojiKey[] (insertion order)
   createdAt: number;

@@ -1,12 +1,15 @@
 "use client";
 
+import { MicVocal } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { Reply } from "@nasqa/core";
 
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { linkifyText } from "@/lib/linkify";
+import { cn } from "@/lib/utils";
 
+import { PixelAvatar } from "./pixel-avatar";
 import { ReactionBar } from "./reaction-bar";
 
 interface ReplyListProps {
@@ -18,6 +21,8 @@ interface ReplyListProps {
 
 export function ReplyList({ replies, sessionCode, fingerprint }: ReplyListProps) {
   const t = useTranslations("session");
+  const tIdentity = useTranslations("identity");
+
   return (
     <div className="space-y-3">
       {replies.map((reply) => (
@@ -29,11 +34,22 @@ export function ReplyList({ replies, sessionCode, fingerprint }: ReplyListProps)
               : "border-l-2 border-border pl-4"
           }
         >
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="mb-1 flex items-center gap-2">
+            <PixelAvatar seed={reply.fingerprint} size={22} className="shrink-0 rounded-full" />
+            <span
+              className={cn(
+                "text-[13px] font-semibold truncate max-w-[10rem]",
+                reply.fingerprint === fingerprint
+                  ? "text-indigo-600 dark:text-amber-400"
+                  : "text-foreground/80",
+              )}
+            >
+              {reply.fingerprint === fingerprint
+                ? t("you")
+                : reply.authorName || tIdentity("anonymous")}
+            </span>
             {reply.isHostReply && (
-              <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-bold text-indigo-500">
-                {t("speaker")}
-              </span>
+              <MicVocal className="h-3.5 w-3.5 text-indigo-500 dark:text-amber-400 shrink-0" />
             )}
             <span className="text-[13px] text-muted-foreground">
               {formatRelativeTime(reply.createdAt, t)}

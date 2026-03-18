@@ -162,6 +162,7 @@ export function QuestionCardHost({
                 "group relative rounded-xl border border-border bg-card p-4 transition-all",
                 question.isFocused &&
                   "ring-2 ring-indigo-500/50 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
+                isOwn && "border-l-[3px] border-l-indigo-500 dark:border-l-amber-400",
               )}
             >
               {question.isFocused && (
@@ -195,7 +196,7 @@ export function QuestionCardHost({
                       className={cn(
                         "text-[13px] font-semibold truncate max-w-[10rem]",
                         isOwn
-                          ? "text-indigo-600 dark:text-indigo-400"
+                          ? "text-indigo-600 dark:text-amber-400"
                           : question.authorName
                             ? "text-foreground/80"
                             : "text-muted-foreground/60",

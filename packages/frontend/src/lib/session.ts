@@ -139,6 +139,7 @@ export const getSessionData = cache(async function getSessionData(
         text: item.text as string,
         isHostReply: (item.isHostReply as boolean) ?? false,
         fingerprint: item.fingerprint as string,
+        authorName: item.authorName as string | undefined,
         reactionCounts: JSON.stringify(
           Object.fromEntries(
             EMOJI_KEYS.map((key) => [key, Math.max(0, (item[`rxn_${key}_count`] as number) ?? 0)]),
