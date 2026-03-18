@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 17-edit-and-delete
-Plan: 01 of 3 complete
+Plan: 02 of 3 complete
 Status: Phase 17 in progress
-Last activity: 2026-03-18 — Plan 17-01 complete: types/schema/SST config + Lambda resolvers for edit/delete (5 mutations, shared verifyHostSecret, soft-delete filter in getSessionData).
+Last activity: 2026-03-18 — Plan 17-02 complete: frontend mutation strings, reducer actions, subscription handler, participant hooks (client-side), host hooks (Server Actions), and editSnippetAction.
 
-Progress: [██░░░░░░░░] 15% (v2.1 milestone)
+Progress: [████░░░░░░] 40% (v2.1 milestone)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 44 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 1)
+- Total plans completed: 45 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 2)
 - Average duration: 5 min
 - Total execution time: ~2.6 hours
 
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - [Phase 17-01]: verifyHostSecret extracted to resolvers/shared.ts — single source of truth; was duplicated in qa.ts and clipboard.ts
 - [Phase 17-01]: Dual-path auth in single mutation — fingerprint+5min-window for participants, verifyHostSecret for host; no time window for host snippet edits (superuser per EDIT-09)
 - [Phase 17-01]: Soft-delete via deletedAt attribute — getSessionData filter extended to exclude deletedAt items; editedAt mapped in all three content-type projections
+- [Phase 17-02]: Participant edit/delete hooks call graphqlMutation directly; host hooks go through Server Actions — transport split preserves hostSecretHash security boundary
+- [Phase 17-02]: handleDeleteReply rollback not attempted for participant path — no repliesRef in useSessionMutations; subscription echo corrects state; repliesRef added as optional param to useHostMutations for Plan 03
 
 ### Pending Todos
 
@@ -63,5 +65,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 17-01-PLAN.md — types/schema/SST config + Lambda resolvers for edit/delete
-Resume at: Phase 17 plan 02 — frontend mutations and reducer for edit/delete events
+Stopped at: Completed 17-02-PLAN.md — frontend mutation strings, reducer, subscription handler, participant hooks, host hooks
+Resume at: Phase 17 plan 03 — UI components for edit and delete

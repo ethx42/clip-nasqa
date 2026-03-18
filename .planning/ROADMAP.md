@@ -161,4 +161,4 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17
 | 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete | 2026-03-18 |
 | 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete | 2026-03-18 |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete | 2026-03-18 |
-| 17. Edit & Delete                            | 1/3       | In Progress    |          | -          |
+| 17. Edit & Delete                            | 2/3       | In Progress    |          | -          |
