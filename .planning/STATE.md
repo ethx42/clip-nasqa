@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.1 Edit & Delete — backend infrastructure complete
+**Current focus:** v2.1 Edit & Delete — COMPLETE (all 3 plans done)
 
 ## Current Position
 
 Phase: 17-edit-and-delete
-Plan: 02 of 3 complete
-Status: Phase 17 in progress
-Last activity: 2026-03-18 — Plan 17-02 complete: frontend mutation strings, reducer actions, subscription handler, participant hooks (client-side), host hooks (Server Actions), and editSnippetAction.
+Plan: 03 of 3 complete
+Status: Phase 17 COMPLETE
+Last activity: 2026-03-18 — Plan 17-03 complete: inline edit/delete UI for questions, replies, snippets; 5-min auto-hide; Dialog confirmations; edited badges; i18n in en/es/pt.
 
-Progress: [████░░░░░░] 40% (v2.1 milestone)
+Progress: [██████████] 100% (v2.1 milestone)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 45 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 2)
+- Total plans completed: 46 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 3)
 - Average duration: 5 min
-- Total execution time: ~2.6 hours
+- Total execution time: ~2.7 hours
 
 _Updated after each plan completion_
 
@@ -53,6 +53,9 @@ Recent decisions affecting current work:
 - [Phase 17-01]: Soft-delete via deletedAt attribute — getSessionData filter extended to exclude deletedAt items; editedAt mapped in all three content-type projections
 - [Phase 17-02]: Participant edit/delete hooks call graphqlMutation directly; host hooks go through Server Actions — transport split preserves hostSecretHash security boundary
 - [Phase 17-02]: handleDeleteReply rollback not attempted for participant path — no repliesRef in useSessionMutations; subscription echo corrects state; repliesRef added as optional param to useHostMutations for Plan 03
+- [Phase 17-03]: useState lazy-init for 5-min window — Date.now() in render body is impure per react-hooks/purity; moved to useState initializer that runs once on mount, expires via setTimeout
+- [Phase 17-03]: ReplyRow extracted from ReplyList — per-reply state (isEditing, deleteConfirmOpen, withinEditWindow) requires component isolation
+- [Phase 17-03]: Confirmed snippet edit coexists with optimistic edit — handleEditSave routes to onEditSnippet or onEditEnd based on isOptimistic; two systems work independently
 
 ### Pending Todos
 
@@ -65,5 +68,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 17-02-PLAN.md — frontend mutation strings, reducer, subscription handler, participant hooks, host hooks
-Resume at: Phase 17 plan 03 — UI components for edit and delete
+Stopped at: Completed 17-03-PLAN.md — inline edit/delete UI, 5-min window, Dialog confirmations, edited badges, i18n
+Resume at: Phase 17 COMPLETE — v2.1 Edit & Delete milestone fully implemented

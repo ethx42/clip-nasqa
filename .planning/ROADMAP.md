@@ -60,7 +60,7 @@
 
 **Milestone Goal:** Authors can edit and delete their own questions, replies, and clipboard snippets within a 5-minute window. The host has superuser powers to edit or delete any post at any time. All changes broadcast in real-time.
 
-- [ ] **Phase 17: Edit & Delete** — Backend mutations + DynamoDB schema, 5-min author window, host superuser, frontend inline editing UI, edited indicators, real-time broadcast
+- [x] **Phase 17: Edit & Delete** — Backend mutations + DynamoDB schema, 5-min author window, host superuser, frontend inline editing UI, edited indicators, real-time broadcast (completed 2026-03-18)
 
 ## Phase Details
 
@@ -143,22 +143,22 @@
 **Execution Order:**
 Phases execute in numeric order: 14 -> 15 -> 16 -> 17
 
-| Phase                                        | Milestone | Plans Complete | Status   | Completed  |
-| -------------------------------------------- | --------- | -------------- | -------- | ---------- |
-| 1. Infrastructure                            | v1.0      | 3/3            | Complete | 2026-03-14 |
-| 2. Session and View Shell                    | v1.0      | 3/3            | Complete | 2026-03-14 |
-| 3. Real-Time Core                            | v1.0      | 6/6            | Complete | 2026-03-14 |
-| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete | 2026-03-14 |
-| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete | 2026-03-15 |
-| 6. Testing and CI                            | v1.1      | 3/3            | Complete | 2026-03-16 |
-| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete | 2026-03-16 |
-| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete | 2026-03-17 |
-| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete | 2026-03-17 |
-| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete | 2026-03-17 |
-| 12. Component Decomposition                  | v1.3      | 3/3            | Complete | 2026-03-17 |
-| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete | 2026-03-18 |
-| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete | 2026-03-18 |
-| 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete | 2026-03-18 |
-| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete | 2026-03-18 |
-| 17. Edit & Delete                            | 2/3       | In Progress    |          | -          |
+| Phase                                        | Milestone | Plans Complete | Status     | Completed  |
+| -------------------------------------------- | --------- | -------------- | ---------- | ---------- |
+| 1. Infrastructure                            | v1.0      | 3/3            | Complete   | 2026-03-14 |
+| 2. Session and View Shell                    | v1.0      | 3/3            | Complete   | 2026-03-14 |
+| 3. Real-Time Core                            | v1.0      | 6/6            | Complete   | 2026-03-14 |
+| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete   | 2026-03-14 |
+| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete   | 2026-03-15 |
+| 6. Testing and CI                            | v1.1      | 3/3            | Complete   | 2026-03-16 |
+| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete   | 2026-03-16 |
+| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete   | 2026-03-17 |
+| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete   | 2026-03-17 |
+| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete   | 2026-03-17 |
+| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete   | 2026-03-17 |
+| 12. Component Decomposition                  | v1.3      | 3/3            | Complete   | 2026-03-17 |
+| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete   | 2026-03-18 |
+| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete   | 2026-03-18 |
+| 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete   | 2026-03-18 |
+| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete   | 2026-03-18 |
+| 17. Edit & Delete                            | 3/3       | Complete       | 2026-03-18 | -          |

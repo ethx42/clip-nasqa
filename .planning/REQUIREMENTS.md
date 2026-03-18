@@ -65,13 +65,13 @@ Requirements for Edit & Delete milestone. Each maps to roadmap phases.
 - [x] **EDIT-04**: Author can delete their own reply within 5 minutes of posting (soft-delete)
 - [x] **EDIT-05**: Host can edit any question or reply at any time (superuser)
 - [x] **EDIT-06**: Host can delete any question or reply at any time (superuser, soft-delete)
-- [ ] **EDIT-07**: Edited posts display an "edited" indicator with timestamp
+- [x] **EDIT-07**: Edited posts display an "edited" indicator with timestamp
 - [x] **EDIT-08**: Edits and deletes broadcast in real-time via AppSync subscription
 
 ### Edit & Delete — Clipboard Snippets
 
 - [x] **EDIT-09**: Host can edit their own clipboard snippets (content and/or language)
-- [ ] **EDIT-10**: Edited snippets display an "edited" indicator
+- [x] **EDIT-10**: Edited snippets display an "edited" indicator
 
 ### Infrastructure
 
