@@ -92,7 +92,11 @@
     "cancelEdit": "Cancelar edição",
     "saveEdit": "Salvar edição",
     "cancel": "Cancelar",
-    "save": "Salvar"
+    "save": "Salvar",
+    "selectLanguage": "Selecionar linguagem",
+    "autoDetect": "Detecção automática",
+    "editMode": "Modo edição",
+    "previewMode": "Visualizar"
   },
   "pages": {
     "sessionNotFound": "Sessão não encontrada ou expirada",
