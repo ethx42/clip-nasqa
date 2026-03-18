@@ -47,15 +47,16 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ### Active
 
-<!-- v2.0 Performance & Instant Operations -->
+<!-- v2.1 Edit & Delete -->
 
-- [ ] Optimistic snippet updates for host push (instant UI feedback)
-- [ ] Direct client-to-AppSync mutations (eliminate Server Action network hop)
-- [ ] Lambda memory optimization (reduce cold starts)
-- [ ] SSR data fetch deduplication (eliminate redundant DynamoDB calls)
-- [ ] QA sort debounce reduction (faster perceived ordering)
-- [ ] Lazy translation loading in Server Actions (only on error paths)
-- [ ] Client-side syntax highlighting (eliminate Shiki Server Action round-trips)
+- [ ] Author can edit own question within 5 minutes of posting
+- [ ] Author can edit own reply within 5 minutes of posting
+- [ ] Author can delete own question within 5 minutes of posting
+- [ ] Author can delete own reply within 5 minutes of posting
+- [ ] Host can edit any question or reply at any time
+- [ ] Host can delete any question or reply at any time
+- [ ] Edited posts display an "edited" indicator
+- [ ] Edits and deletes broadcast in real-time via subscription
 
 ### Out of Scope
 
@@ -70,19 +71,19 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - E2E tests on every PR — 5-15 min; run on main only
 - WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Current Milestone: v2.0 Performance & Instant Operations
+## Current Milestone: v2.1 Edit & Delete
 
-**Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
+**Goal:** Authors can edit and delete their own questions and replies within a 5-minute window. The host has superuser powers to edit or delete any post at any time.
 
 **Target features:**
 
-- Optimistic UI for all mutations (snippets, questions, replies)
-- Direct client-to-AppSync mutations (bypass Netlify Server Action hop)
-- Lambda cold start reduction via memory tuning
-- SSR data fetch deduplication
-- Faster QA sort response
-- Lazy i18n in server actions
-- Client-side Shiki for instant syntax preview
+- Authors can edit their own questions and replies within 5 minutes of posting
+- Authors can delete their own questions and replies within 5 minutes of posting
+- Host can edit any question or reply at any time (superuser)
+- Host can delete any question or reply at any time (superuser)
+- Edits are visible in real-time to all participants
+- Edited posts show an "edited" indicator
+- Deletion is soft-delete with visual feedback
 
 ## Context
 
@@ -132,4 +133,4 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ---
 
-_Last updated: 2026-03-17 after v2.0 milestone started_
+_Last updated: 2026-03-18 after v2.1 milestone started_

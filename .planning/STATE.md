@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.0 Performance & Instant Operations — Phase 15
+**Current focus:** v2.1 Edit & Delete — setting up milestone
 
 ## Current Position
 
-Phase: 15 of 16 (Mutation Path and Client Utilities)
-Plan: 3 of TBD in current phase
-Status: In progress
-Last activity: 2026-03-18 — Plan 15-02 complete: lazy getTranslations in all 8 Server Actions — happy path never touches i18n (2/2 tasks)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-18 — Milestone v2.1 started, PROJECT.md updated. v2.0 Phase 16 still pending.
 
 Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
@@ -55,5 +55,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 15-02-PLAN.md — lazy getTranslations in all Server Actions (2/2 tasks)
-Resume at: `/gsd:execute-phase 15` (begin next plan in phase 15)
+Stopped at: v2.1 milestone setup — PROJECT.md updated, need to finish v2.0 Phase 16, then complete requirements + roadmap for v2.1
+Resume at: `/gsd:new-milestone` to continue v2.1 setup (requirements → roadmap). But first finish v2.0 Phase 16 with `/gsd:execute-phase 16`
