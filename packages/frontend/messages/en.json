@@ -98,7 +98,17 @@
     "selectLanguage": "Select language",
     "autoDetect": "Auto-detect",
     "editMode": "Edit mode",
-    "previewMode": "Preview"
+    "previewMode": "Preview",
+    "editQuestion": "Edit",
+    "deleteQuestion": "Delete",
+    "editReply": "Edit",
+    "deleteReply": "Delete",
+    "edited": "(edited)",
+    "editWindowExpired": "The 5-minute edit window has expired.",
+    "confirmDeleteQuestion": "Delete this question?",
+    "confirmDeleteQuestionDesc": "This cannot be undone.",
+    "confirmDeleteReply": "Delete this reply?",
+    "confirmDeleteReplyDesc": "This cannot be undone."
   },
   "pages": {
     "sessionNotFound": "Session not found or expired",
@@ -162,7 +172,8 @@
     "failedDeleteQuestion": "Failed to delete question",
     "failedEditReply": "Failed to edit reply",
     "failedDeleteReply": "Failed to delete reply",
-    "failedEditSnippet": "Failed to edit snippet"
+    "failedEditSnippet": "Failed to edit snippet",
+    "editWindowExpired": "The 5-minute edit window has expired."
   },
   "identity": {
     "whatsYourName": "What's your name?",

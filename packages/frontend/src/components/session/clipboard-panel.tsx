@@ -25,6 +25,8 @@ interface ClipboardPanelProps {
   onDismissFailed?: (tempId: string) => void;
   onEditStart?: (tempId: string) => void;
   onEditEnd?: (tempId: string, content: string, lang: string) => void;
+  /** Called when the host edits a confirmed (non-optimistic) snippet. */
+  onEditSnippet?: (snippetId: string, content: string, language?: string) => void;
   /** Set of snippet IDs that failed to push. */
   failedSnippetIds?: Set<string>;
 }
@@ -45,6 +47,7 @@ export function ClipboardPanel({
   onDismissFailed,
   onEditStart,
   onEditEnd,
+  onEditSnippet,
   failedSnippetIds,
 }: ClipboardPanelProps) {
   const t = useTranslations("session");
@@ -204,6 +207,12 @@ export function ClipboardPanel({
                         ? (content, lang) => onEditEnd?.(heroSnippet.id, content, lang)
                         : undefined
                     }
+                    onEditSnippet={
+                      onEditSnippet && !heroSnippet.id.startsWith("_opt_")
+                        ? (snippetId, content, language) =>
+                            onEditSnippet(snippetId, content, language)
+                        : undefined
+                    }
                   />
                 </motion.div>
               )}
@@ -250,6 +259,12 @@ export function ClipboardPanel({
                       onEditEnd={
                         snippet.id.startsWith("_opt_")
                           ? (content, lang) => onEditEnd?.(snippet.id, content, lang)
+                          : undefined
+                      }
+                      onEditSnippet={
+                        onEditSnippet && !snippet.id.startsWith("_opt_")
+                          ? (snippetId, content, language) =>
+                              onEditSnippet(snippetId, content, language)
                           : undefined
                       }
                     />

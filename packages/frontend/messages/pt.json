@@ -98,7 +98,17 @@
     "selectLanguage": "Selecionar linguagem",
     "autoDetect": "Detecção automática",
     "editMode": "Modo edição",
-    "previewMode": "Visualizar"
+    "previewMode": "Visualizar",
+    "editQuestion": "Editar",
+    "deleteQuestion": "Excluir",
+    "editReply": "Editar",
+    "deleteReply": "Excluir",
+    "edited": "(editado)",
+    "editWindowExpired": "A janela de edição de 5 minutos expirou.",
+    "confirmDeleteQuestion": "Excluir esta pergunta?",
+    "confirmDeleteQuestionDesc": "Esta ação não pode ser desfeita.",
+    "confirmDeleteReply": "Excluir esta resposta?",
+    "confirmDeleteReplyDesc": "Esta ação não pode ser desfeita."
   },
   "pages": {
     "sessionNotFound": "Sessão não encontrada ou expirada",
@@ -162,7 +172,8 @@
     "failedDeleteQuestion": "Falha ao excluir a pergunta",
     "failedEditReply": "Falha ao editar a resposta",
     "failedDeleteReply": "Falha ao excluir a resposta",
-    "failedEditSnippet": "Falha ao editar o trecho"
+    "failedEditSnippet": "Falha ao editar o trecho",
+    "editWindowExpired": "A janela de edição de 5 minutos expirou."
   },
   "identity": {
     "whatsYourName": "Qual é o seu nome?",

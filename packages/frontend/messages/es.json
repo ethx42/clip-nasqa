@@ -98,7 +98,17 @@
     "selectLanguage": "Seleccionar lenguaje",
     "autoDetect": "Detección automática",
     "editMode": "Modo edición",
-    "previewMode": "Vista previa"
+    "previewMode": "Vista previa",
+    "editQuestion": "Editar",
+    "deleteQuestion": "Eliminar",
+    "editReply": "Editar",
+    "deleteReply": "Eliminar",
+    "edited": "(editado)",
+    "editWindowExpired": "La ventana de edición de 5 minutos ha expirado.",
+    "confirmDeleteQuestion": "¿Eliminar esta pregunta?",
+    "confirmDeleteQuestionDesc": "Esta acción no se puede deshacer.",
+    "confirmDeleteReply": "¿Eliminar esta respuesta?",
+    "confirmDeleteReplyDesc": "Esta acción no se puede deshacer."
   },
   "pages": {
     "sessionNotFound": "Sesión no encontrada o expirada",
@@ -162,7 +172,8 @@
     "failedDeleteQuestion": "No se pudo eliminar la pregunta",
     "failedEditReply": "No se pudo editar la respuesta",
     "failedDeleteReply": "No se pudo eliminar la respuesta",
-    "failedEditSnippet": "No se pudo editar el fragmento"
+    "failedEditSnippet": "No se pudo editar el fragmento",
+    "editWindowExpired": "La ventana de edición de 5 minutos ha expirado."
   },
   "identity": {
     "whatsYourName": "¿Cuál es tu nombre?",

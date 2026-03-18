@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Snippet } from "@nasqa/core";
 
 import { useShikiHighlight } from "@/hooks/use-shiki-highlight";
+import { SUPPORTED_LANGUAGES } from "@/lib/detect-language";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 
 import { CopyButton } from "./copy-button";
@@ -39,6 +40,8 @@ interface SnippetCardProps {
   onEditStart?: () => void;
   /** Called when the host finishes inline-editing; provides final content and lang. */
   onEditEnd?: (content: string, lang: string) => void;
+  /** Called when host edits a confirmed (non-optimistic) snippet. */
+  onEditSnippet?: (snippetId: string, content: string, language?: string) => void;
 }
 
 export function SnippetCard({
@@ -54,6 +57,7 @@ export function SnippetCard({
   onDismiss,
   onEditStart,
   onEditEnd,
+  onEditSnippet,
 }: SnippetCardProps) {
   const t = useTranslations("session");
   const locale = useLocale();
@@ -62,6 +66,7 @@ export function SnippetCard({
   const [expanded, setExpanded] = useState(variant === "hero");
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(snippet.content);
+  const [editLanguage, setEditLanguage] = useState(snippet.language ?? "text");
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -105,17 +110,25 @@ export function SnippetCard({
 
   const handleEditClick = () => {
     setEditContent(snippet.content);
+    setEditLanguage(snippet.language ?? "text");
     setIsEditing(true);
     onEditStart?.();
   };
 
   const handleEditSave = () => {
     setIsEditing(false);
-    onEditEnd?.(editContent, snippet.language ?? "text");
+    if (onEditSnippet && !isOptimistic) {
+      // Confirmed snippet edit — calls host mutation via onEditSnippet
+      onEditSnippet(snippet.id, editContent, editLanguage !== "text" ? editLanguage : undefined);
+    } else {
+      // Optimistic snippet edit — signals useHostSnippetPush to finalize content
+      onEditEnd?.(editContent, editLanguage);
+    }
   };
 
   const handleEditCancel = () => {
     setIsEditing(false);
+    if (!isOptimistic) return;
     // Resume the push with original content since editing is "finished" even if cancelled
     onEditEnd?.(snippet.content, snippet.language ?? "text");
   };
@@ -163,6 +176,15 @@ export function SnippetCard({
           )}
           {/* Relative time */}
           <span className="text-xs text-muted-foreground">{relativeTime}</span>
+          {/* Edited badge */}
+          {snippet.editedAt && (
+            <span
+              className="text-[11px] text-muted-foreground/60"
+              title={new Date(snippet.editedAt * 1000).toLocaleString()}
+            >
+              {t("edited")}
+            </span>
+          )}
           {/* Failed indicator label */}
           {isFailed && (
             <span className="rounded-md bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold text-destructive">
@@ -174,18 +196,21 @@ export function SnippetCard({
           {/* Copy button — hidden for failed snippets (not yet confirmed) */}
           {!isFailed && <CopyButton value={snippet.content} label={t("copy")} />}
 
-          {/* Inline edit button — only for optimistic, non-failed snippets (host-only) */}
-          {isOptimistic && !isFailed && isHost && onEditStart && !isEditing && (
-            <button
-              type="button"
-              title={t("editSnippet")}
-              onClick={handleEditClick}
-              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label={t("editSnippet")}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          )}
+          {/* Inline edit button — optimistic snippets (pre-push) or confirmed snippets (host only) */}
+          {isHost &&
+            !isFailed &&
+            !isEditing &&
+            ((isOptimistic && onEditStart) || (!isOptimistic && onEditSnippet)) && (
+              <button
+                type="button"
+                title={t("editSnippet")}
+                onClick={handleEditClick}
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                aria-label={t("editSnippet")}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
 
           {/* Retry button — only for failed snippets */}
           {isFailed && onRetry && (
@@ -239,27 +264,46 @@ export function SnippetCard({
             spellCheck={false}
             className="w-full resize-none rounded-xl border border-input bg-muted/30 px-4 py-3 font-mono text-[15px] leading-normal text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              title={t("cancelEdit")}
-              onClick={handleEditCancel}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent"
-              aria-label={t("cancelEdit")}
-            >
-              <X className="h-3.5 w-3.5" />
-              {t("cancel")}
-            </button>
-            <button
-              type="button"
-              title={t("saveEdit")}
-              onClick={handleEditSave}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-600"
-              aria-label={t("saveEdit")}
-            >
-              <Check className="h-3.5 w-3.5" />
-              {t("save")}
-            </button>
+          <div className="flex items-center justify-between gap-2">
+            {/* Language selector — only for confirmed snippet edits */}
+            {!isOptimistic && onEditSnippet ? (
+              <select
+                value={editLanguage}
+                onChange={(e) => setEditLanguage(e.target.value)}
+                className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                aria-label={t("selectLanguage")}
+              >
+                {SUPPORTED_LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.value === "text" ? t("text") : l.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                title={t("cancelEdit")}
+                onClick={handleEditCancel}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent"
+                aria-label={t("cancelEdit")}
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("cancel")}
+              </button>
+              <button
+                type="button"
+                title={t("saveEdit")}
+                onClick={handleEditSave}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-600"
+                aria-label={t("saveEdit")}
+              >
+                <Check className="h-3.5 w-3.5" />
+                {t("save")}
+              </button>
+            </div>
           </div>
         </div>
       ) : (
