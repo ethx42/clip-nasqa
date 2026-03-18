@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
 
+import { formatCode } from "@/lib/format-code";
 import { getSession, getSessionData } from "@/lib/session";
 
 export const alt = "clip session — join and ask questions live";
@@ -25,12 +27,20 @@ function LogoMark({ size: s, color }: { size: number; color: string }) {
   );
 }
 
-export default async function SessionOGImage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function SessionOGImage({
+  params,
+}: {
+  params: Promise<{ locale: string; code: string }>;
+}) {
+  const { locale, code } = await params;
+
+  if (!/^\d{6}$/.test(code)) {
+    notFound();
+  }
 
   let session: Awaited<ReturnType<typeof getSession>> = null;
   try {
-    session = await getSession(slug);
+    session = await getSession(code);
   } catch {
     /* DynamoDB or network error — fall through to fallback card */
   }
@@ -253,7 +263,7 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
 
   let questionCount = 0;
   try {
-    const { questions } = await getSessionData(slug);
+    const { questions } = await getSessionData(code);
     questionCount = questions.length;
   } catch {
     /* best-effort — show 0 if data fetch fails */
@@ -261,7 +271,7 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
   const statusLabel = session.isActive ? "LIVE" : "ENDED";
   const statusDot = session.isActive ? "#22c55e" : "#71717a";
   const statusText = session.isActive ? "#4ade80" : "#a1a1aa";
-  const qrUrl = `https://clip.nasqa.io/session/${slug}`;
+  const qrUrl = `https://clip.nasqa.io/${locale}/${code}`;
 
   return new ImageResponse(
     <div
@@ -413,6 +423,17 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
               {questionCount} {questionCount === 1 ? "Question" : "Questions"}
             </span>
           </div>
+          <span
+            style={{
+              fontFamily: "sans-serif",
+              fontSize: 22,
+              color: "#6366f1",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+            }}
+          >
+            {formatCode(code)}
+          </span>
         </div>
 
         {/* CTA + domain */}
