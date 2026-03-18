@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MessageSquarePlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +57,7 @@ export function QAPanel({
   onRestore,
 }: QAPanelProps) {
   const t = useTranslations("session");
+  const prefersReduced = useReducedMotion();
   const [showNewBanner, setShowNewBanner] = useState(false);
   const [newQuestionCount, setNewQuestionCount] = useState(0);
   const [announcement, setAnnouncement] = useState("");
@@ -76,7 +77,7 @@ export function QAPanel({
   const [debouncedQuestions, setDebouncedQuestions] = useState(questions);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuestions(questions), 1000);
+    const timer = setTimeout(() => setDebouncedQuestions(questions), 300);
     return () => clearTimeout(timer);
   }, [questions]);
 
@@ -162,13 +163,13 @@ export function QAPanel({
               {sortedQuestions.map((question) => (
                 <motion.div
                   key={question.id}
-                  layout
-                  initial={{ opacity: 0, y: -8 }}
+                  layout={!prefersReduced}
+                  initial={prefersReduced ? false : { opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                   transition={{
-                    duration: 0.3,
-                    layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                    duration: prefersReduced ? 0 : 0.3,
+                    layout: { duration: prefersReduced ? 0 : 0.3, ease: [0.4, 0, 0.2, 1] },
                   }}
                 >
                   <QuestionCard
