@@ -1653,3 +1653,257 @@ visually noisy and potentially triggering scroll position issues.
 
 _Stack research for: Nasqa Live — participant & host UX refactor (v1.3)_
 _Researched: 2026-03-16_
+
+---
+
+---
+
+## Part 5: v2.0 Performance & Instant Operations Additions
+
+**Researched:** 2026-03-17
+**Confidence:** HIGH (all four areas verified against official docs and installed package dist)
+
+### Context
+
+This section covers only the new capabilities needed for v2.0. The following are validated and must NOT be re-researched:
+
+- Next.js 16.1.6, React 19.2.3
+- aws-amplify 6.16.3 + @aws-amplify/api-graphql 4.8.5
+- shiki 4.0.2 (already installed — all fine-grained APIs confirmed in local `node_modules`)
+- SST Ion (sst.aws.Function)
+- DynamoDB via @aws-sdk/lib-dynamodb, AppSync via API key auth
+- @tanstack/react-query 5.90.21
+
+**No new npm packages are required for any of the four v2.0 features.** All capabilities are in existing installed dependencies.
+
+---
+
+### Feature 1: Client-Side AppSync Mutations
+
+**Goal:** Replace Server Action round-trips for mutations with direct `client.graphql()` calls from client components. Eliminates one full network hop (client → Netlify/Next.js → AppSync → Lambda).
+
+**What exists and what to use:**
+
+`appsync-client.ts` already exports `appsyncClient = generateClient()` from `aws-amplify/api`, configured with the API key. The `client.graphql()` method accepts `{ query, variables }` and works for mutations.
+
+| API                                    | Import              | Notes                                                        |
+| -------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `generateClient()`                     | `aws-amplify/api`   | Already configured in `appsync-client.ts` — no change needed |
+| `client.graphql({ query, variables })` | via `appsyncClient` | Returns `{ data, errors }` — check `result.errors?.length`   |
+
+**Pattern (in client component hooks):**
+
+```typescript
+import { appsyncClient } from "@/lib/appsync-client";
+import { PUSH_SNIPPET } from "@/lib/graphql/mutations";
+
+const result = await appsyncClient.graphql({
+  query: PUSH_SNIPPET,
+  variables: { sessionSlug, hostSecretHash, content, type, language },
+});
+if (result.errors?.length) {
+  throw new Error(result.errors.map((e) => e.message).join("; "));
+}
+```
+
+**Migration constraint:** Validation currently in Server Actions (`getTranslations("actionErrors")` calls) must move to client-side. Use `useTranslations()` instead of `getTranslations()` since these run in `'use client'` components.
+
+`appsync-server.ts` (plain fetch) stays for any remaining server-side mutations that legitimately need server execution (e.g., session creation which touches `random-word-slugs` and requires server-only environment).
+
+---
+
+### Feature 2: Client-Side Shiki Highlighting
+
+**Goal:** Replace `renderHighlight` Server Action round-trip in `HostInput` with in-browser highlighting using `createHighlighterCore` + `createJavaScriptRegexEngine`. `ShikiBlock` (SSR Server Component rendering pushed snippets) stays unchanged.
+
+**No new packages.** Shiki 4.0.2 ships all required entry points.
+
+| Entry Point                   | Import Path                    | Bundle cost                                         |
+| ----------------------------- | ------------------------------ | --------------------------------------------------- |
+| `createHighlighterCore`       | `shiki/core`                   | Core only — no bundled langs/themes                 |
+| `createJavaScriptRegexEngine` | `shiki/engine/javascript`      | ~4.5 KB total (confirmed via local dist inspection) |
+| Language grammars             | `shiki/langs/{name}`           | Lazy dynamic import per language                    |
+| `github-light` theme          | `@shikijs/themes/github-light` | Loaded once at init                                 |
+| `github-dark` theme           | `@shikijs/themes/github-dark`  | Loaded once at init                                 |
+
+**Engine choice — `createJavaScriptRegexEngine` not `createOnigurumaEngine`:**
+
+| Engine                        | Bundle cost                          | Limitation                                                |
+| ----------------------------- | ------------------------------------ | --------------------------------------------------------- |
+| `createOnigurumaEngine`       | ~622 KB (WASM inlined in `wasm.mjs`) | None — full Oniguruma                                     |
+| `createJavaScriptRegexEngine` | ~4.5 KB                              | Requires RegExp `v` flag (all modern browsers since 2023) |
+
+The JS engine is correct for this use case. The project's `SUPPORTED_LANGUAGES` list (TypeScript, JavaScript, Python, etc.) all work with the JS engine. The RegExp `v` flag requirement is satisfied by Chrome 112+ / Firefox 116+ / Safari 17+ — all browsers from 2023. Bundle budget is already exceeded by `aws-amplify`; adding 622 KB for WASM is not acceptable.
+
+**Singleton pattern (new file: `lib/client-highlighter.ts`):**
+
+```typescript
+import { createHighlighterCore } from "shiki/core";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+
+let _promise: ReturnType<typeof createHighlighterCore> | null = null;
+const _loadedLangs = new Set<string>();
+
+export function getClientHighlighter() {
+  if (!_promise) {
+    _promise = createHighlighterCore({
+      themes: [import("@shikijs/themes/github-light"), import("@shikijs/themes/github-dark")],
+      langs: [],
+      engine: createJavaScriptRegexEngine(),
+    });
+  }
+  return _promise;
+}
+
+export async function ensureLang(lang: string) {
+  const h = await getClientHighlighter();
+  if (!_loadedLangs.has(lang)) {
+    try {
+      await h.loadLanguage((await import(`shiki/langs/${lang}`)).default);
+      _loadedLangs.add(lang);
+    } catch {
+      // Unsupported language — caller falls back to plain text
+    }
+  }
+  return h;
+}
+```
+
+This replaces the `renderHighlight` Server Action call in `HostInput`. The debounce ref pattern already in `HostInput` is reused — only the call site changes from `await renderHighlight(code, lang)` to `await ensureLang(lang).then(h => h.codeToHtml(code, { lang, themes: { light: "github-light", dark: "github-dark" } }))`.
+
+---
+
+### Feature 3: Lambda Memory and Cold-Start Optimization
+
+**Goal:** Reduce cold-start duration and invocation cost by tuning `ResolverFn` in `sst.config.ts`.
+
+**No new packages.** SST Ion's `sst.aws.Function` accepts `memory` and `architecture` natively.
+
+| Property       | SST type              | Current (implicit)        | Recommended | Rationale                                                                                                                                                          |
+| -------------- | --------------------- | ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `memory`       | `"${number} MB"`      | `"1024 MB"` (SST default) | `"512 MB"`  | Lambda CPU scales with memory; 512 MB is sufficient for DynamoDB-bound Node.js resolvers. Halves memory cost. Raise to `"1024 MB"` if P99 > 100ms after measuring. |
+| `architecture` | `"x86_64" \| "arm64"` | `"x86_64"`                | `"arm64"`   | Graviton2: ~20% cheaper per-invocation, equal/better performance for Node.js. Single property change.                                                              |
+| `timeout`      | `"${number} seconds"` | `"20 seconds"`            | Keep as-is  | Already generous. Do not reduce — leave headroom for DDB cold reads.                                                                                               |
+
+**Diff to `sst.config.ts`:**
+
+```typescript
+const resolverFn = new sst.aws.Function("ResolverFn", {
+  handler: "packages/functions/src/resolvers/index.handler",
+  memory: "512 MB", // explicitly set (was implicit 1024 MB)
+  architecture: "arm64", // was implicit x86_64
+  environment: {
+    TABLE_NAME: table.name,
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1",
+  },
+  link: [table],
+});
+```
+
+**Other cold-start mitigations already in place:**
+
+- esbuild tree-shaking via SST (reduces zip size automatically)
+- `AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"` (reuses DynamoDB SDK TCP connections)
+- Pino initialized at module level (avoids re-init on warm starts — v1.1)
+
+**Do not add:** Lambda SnapStart (Java/Python only as of 2026), Lambda Powertools (~40 KB bundle, unnecessary with Pino).
+
+---
+
+### Feature 4: SSR Fetch Deduplication with React `cache()`
+
+**Goal:** Eliminate duplicate DynamoDB calls caused by `generateMetadata` and `SessionPage` both calling `getSession(slug)` and `getSessionData(slug)` in the same render pass.
+
+**No new packages.** `cache` is part of React 19 (already installed).
+
+**The problem in `session/[slug]/page.tsx`:**
+
+```
+generateMetadata → getSession(slug)    ← DynamoDB GetItem
+generateMetadata → getSessionData(slug) ← DynamoDB Query
+SessionPage      → getSession(slug)    ← DynamoDB GetItem (duplicate)
+SessionPage      → getSessionData(slug) ← DynamoDB Query (duplicate)
+```
+
+Four DynamoDB calls per page load; should be two.
+
+| API                   | Import       | Scope                                          | Use for session data?                              |
+| --------------------- | ------------ | ---------------------------------------------- | -------------------------------------------------- |
+| `cache()`             | `react`      | Request-scoped (per render pass)               | YES — request-scoped is correct for real-time data |
+| `unstable_cache()`    | `next/cache` | Cross-request (persists across users/requests) | NO — would serve stale data to participants        |
+| `use cache` directive | Next.js 15+  | Cross-request                                  | NO — same problem as `unstable_cache`              |
+
+**Pattern (minimal change to `lib/session.ts`):**
+
+```typescript
+import { cache } from "react";
+
+// Wrap both exports — implementation bodies are unchanged
+export const getSession = cache(async (slug: string): Promise<Session | null> => {
+  // ... existing implementation ...
+});
+
+export const getSessionData = cache(async (slug: string): Promise<SessionData> => {
+  // ... existing implementation ...
+});
+```
+
+After this change, both `generateMetadata` and `SessionPage` call `getSession(slug)` but DynamoDB is only hit once. The `cache()` wrapper is transparent to call sites — no changes to `page.tsx`.
+
+---
+
+### No New Packages Required
+
+```bash
+# All four v2.0 features use existing installed packages.
+# No npm installs needed.
+#
+# Capabilities used:
+#   aws-amplify 6.16.3          → client.graphql() mutations
+#   shiki 4.0.2                 → shiki/core + shiki/engine/javascript
+#   react 19.2.3                → cache() for SSR deduplication
+#   SST Ion (sst.config.ts)     → memory + architecture properties
+```
+
+---
+
+### What NOT to Use (v2.0)
+
+| Avoid                                           | Why                                                                        | Use Instead                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `shiki/wasm` (base64 inlined)                   | `wasm.mjs` is 622 KB — adds ~400 KB to client bundle                       | `shiki/engine/javascript` — ~4.5 KB                                |
+| `shiki/bundle/full` or `shiki/bundle/web`       | Eager-loads all grammars (3.8–6.4 MB minified)                             | `createHighlighterCore` with dynamic per-language imports          |
+| `unstable_cache` / `use cache` for session data | Cross-request cache serves stale data to live participants                 | `react cache()` — request-scoped only                              |
+| Server Action path for `renderHighlight`        | Full network round-trip (client → server → client) for every debounce tick | `createHighlighterCore` + `createJavaScriptRegexEngine` in browser |
+| `generateServerClientUsingCookies`              | For Cognito/cookie auth; this project uses API key auth                    | `generateClient()` already in `appsync-client.ts`                  |
+| Lambda SnapStart                                | Java/Python only — not available for Node.js as of 2026                    | `arm64` architecture + memory tuning                               |
+
+---
+
+### Version Compatibility (v2.0 Additions)
+
+| Package                       | Version     | API Used                                       | Compatibility Notes                                                                                                              |
+| ----------------------------- | ----------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| shiki                         | 4.0.2       | `shiki/core`, `shiki/engine/javascript`        | Confirmed in local `node_modules/shiki/dist/` exports. `createHighlighterCore` + `createJavaScriptRegexEngine` are stable in v4. |
+| react                         | 19.2.3      | `cache()`                                      | `cache` is stable in React 19. Request-scoped deduplication.                                                                     |
+| aws-amplify                   | 6.16.3      | `generateClient()`, `client.graphql()`         | Gen 1 API. `appsync-client.ts` already configures this.                                                                          |
+| `createJavaScriptRegexEngine` | shiki 4.0.2 | Requires RegExp `v` flag                       | Supported: Chrome 112+ (Apr 2023), Firefox 116+ (Aug 2023), Safari 17+ (Sep 2023).                                               |
+| SST Ion                       | current     | `memory`, `architecture` on `sst.aws.Function` | Property names verified in SST docs.                                                                                             |
+
+---
+
+### Sources (v2.0 Additions)
+
+- [SST Function component docs](https://sst.dev/docs/component/aws/function/) — `memory`, `architecture`, `timeout` property names and types — HIGH confidence
+- [Next.js 16.1.7 fetching data docs](https://nextjs.org/docs/app/getting-started/fetching-data) — `react cache()` for ORM/DynamoDB deduplication — HIGH confidence (docs version 16.1.7 confirmed in page metadata)
+- [Next.js 16.1.7 caching docs](https://nextjs.org/docs/app/getting-started/caching-and-revalidating) — `unstable_cache` vs `use cache` distinction — HIGH confidence
+- [Shiki regex engines docs](https://shiki.style/guide/regex-engines) — JS vs Oniguruma engine, RegExp `v` flag requirement — HIGH confidence
+- [Shiki bundles docs](https://shiki.style/guide/bundles) — bundle sizes, fine-grained API overview — HIGH confidence
+- [Amplify mutate-data docs](https://docs.amplify.aws/gen1/javascript/build-a-backend/graphqlapi/mutate-data/) — `client.graphql()` mutation pattern with custom query strings — HIGH confidence
+- Local package inspection — `node_modules/shiki/dist/` (onig.wasm: 466 KB, wasm.mjs: 622 KB inlined, engine-javascript dist total: ~4.5 KB), `node_modules/shiki/package.json` exports map — HIGH confidence (source of truth)
+- [Shiki v3 blog](https://shiki.style/blog/v3) — `engine` field replacing `loadWasm` in v3; still current in v4 — HIGH confidence
+
+---
+
+_Stack research for: Nasqa Live — v2.0 Performance & Instant Operations_
+_Researched: 2026-03-17_

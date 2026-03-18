@@ -1,16 +1,30 @@
 # Feature Research
 
-**Domain:** Real-time audience participation Q&A — UX refactor (participant & host, Nasqa Live v1.3)
-**Researched:** 2026-03-16
-**Confidence:** MEDIUM — Competitor internals (Slido, Vevox, Pigeonhole, Mentimeter) are not publicly documented at interaction-design granularity. Patterns derived from official help documentation, community forums, and UX literature. Core findings corroborated across multiple sources. Implementation specifics against the existing codebase are HIGH confidence (components read directly).
+**Domain:** Performance optimization — real-time session tool (Next.js + AppSync + DynamoDB)
+**Researched:** 2026-03-17
+**Confidence:** HIGH (codebase directly inspected; claims verified against current sources)
 
 ---
 
-## Context: Scope of This Refactor
+## Context: What Is Already Built
 
-This research supports v1.3: a structural and interaction-quality refactor of already-shipped session pages. The question is not "will we build this?" but rather "what interaction quality does the ecosystem demand, and what separates good from great in this domain?"
+Before classifying features, the existing architecture must be understood to avoid recommending what already exists.
 
-Existing components studied in full: `SessionShell`, `ClipboardPanel`, `QAPanel`, `QuestionCard`, `QAInput`, `IdentityEditor`, `SessionLiveHostPage` (270-line orchestrator), `ReplyList`, `NewContentBanner`, `PixelAvatar`.
+**Already complete (do not rebuild):**
+
+- Optimistic updates for questions, votes, downvotes, replies, reactions — all with rollback
+- `ADD_SNIPPET_OPTIMISTIC` / `REMOVE_OPTIMISTIC` reducer actions exist in `use-session-state.ts`
+- Server Actions via `appsyncMutation` (plain `fetch` HTTP POST — not Amplify client)
+- `aws-amplify` used only for WebSocket subscriptions (not mutations)
+- Shiki runs server-side via `renderHighlight` Server Action, absent from client bundle
+- QA sort debounce set at 1000ms (`setTimeout(..., 1000)` in `qa-panel.tsx`)
+- Highlight debounce set at 200ms (`scheduleHighlight` in `host-input.tsx`)
+- `getTranslations()` called at the top of every Server Action — including error-only paths
+- `getSession` and `getSessionData` called independently in both `page.tsx` and `generateMetadata` — same render, same slug, two DynamoDB round-trips each
+
+**Gap identified in code review:**
+
+- `pushSnippetAction` does NOT dispatch `ADD_SNIPPET_OPTIMISTIC` before firing. The host types, presses push, the form clears, then waits for the AppSync subscription round-trip before the card appears in the clipboard. Questions have optimistic insertion; snippets do not.
 
 ---
 
@@ -18,185 +32,198 @@ Existing components studied in full: `SessionShell`, `ClipboardPanel`, `QAPanel`
 
 ### Table Stakes (Users Expect These)
 
-Features users assume exist in any live Q&A tool. Missing these = product feels broken or amateur.
+Features that a production real-time tool at this quality level must provide. Missing these creates a perceived regression from what already works.
 
-| Feature                                                       | Why Expected                                                                                                                                                                                                                                                                              | Complexity | Existing State                                                                                                                                                                                   | Notes                                                                                                                                                                                                    |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vote button active-state color fill                           | Every upvote system (Reddit, Stack Overflow, Slido) visually fills or highlights the button when the user has voted. An icon that only changes hue without fill or scale feedback reads as unresponsive.                                                                                  | LOW        | Partial — icon turns emerald on vote, but no background fill, no press animation                                                                                                                 | Need `active:scale-95` press animation + filled icon background when in voted state                                                                                                                      |
-| Mutual-exclusion vote visual feedback with transition         | When upvote is active and user clicks downvote, the upvote must visually clear in the same gesture. Logic already exists; the missing piece is a smooth color transition on the swap so it reads as intentional, not glitchy.                                                             | LOW        | Logic correct; swap is instant but has no animated transition                                                                                                                                    | Add `transition-all duration-150` to vote button class so the color/fill swap animates                                                                                                                   |
-| "You" / own-question structural indicator                     | Slido shows "Waiting for review" on your own moderated questions; Vevox shows the participant's profile icon next to their own comments. Users need to locate their own contribution spatially in the feed — not just by text color.                                                      | LOW        | Partial — author name renders as "You" in emerald text. No structural left-border or other spatial signal.                                                                                       | Add a left-border or accent strip to own-question cards so ownership reads at a glance, not just by reading the name                                                                                     |
-| Identity chip at the submission point                         | Participants need to know what name will appear on their question before posting. Discovering they posted anonymously after the fact (when they wanted a name attached) is a persistent frustration in Q&A tools.                                                                         | MEDIUM     | Missing — `QAInput` has no identity display. `IdentityEditor` is only reachable from the header, two taps away from the input.                                                                   | Add avatar + truncated name chip inline in `QAInput`; clicking the chip opens `IdentityEditor` popover                                                                                                   |
-| Contextual empty state copy                                   | NNGroup guideline: empty states must communicate system status AND provide a learning cue AND enable a direct action. A generic muted icon with "No questions yet" leaves participants unsure whether they should wait, refresh, or act.                                                  | LOW        | Partial — `QAPanel` has generic `noQuestions` key. `ClipboardPanel` already has connection-aware copy ("Speaker is live" vs "Waiting for speaker"). QAPanel does not receive `connectionStatus`. | QAPanel empty state should be connection-aware. Participant view (connected): "Be the first to ask — questions appear here in real time". Host view: "No questions yet — share the link to get started". |
-| Replies collapsed by default (focused question auto-expanded) | GetStream research on livestream chat UX: always-visible replies dominate the viewport and kill conversational flow in live events. Collapsed-by-default is the universal pattern. The focused question is the exception — it is the "current topic" and should show replies immediately. | LOW        | Mostly correct — `showReplies` defaults to `question.isFocused`. But if `isFocused` changes while the card is already mounted, the local `showReplies` state does not follow the prop change.    | Fix the stale-state bug with a `useEffect` that syncs `showReplies` whenever `isFocused` changes                                                                                                         |
-| ARIA semantics for mobile tab bar                             | Mobile tab bar uses plain `<button>` elements with no `role="tablist"` / `role="tab"` / `aria-selected`. Screen readers announce them as buttons without panel context; keyboard users cannot navigate tabs correctly per WCAG 4.1.2.                                                     | LOW        | Missing — `SessionShell` tab bar has no ARIA tablist semantics                                                                                                                                   | Wrap tabs in `role="tablist"`, set `role="tab"` and `aria-selected` on each button, associate panels with `aria-controls` / `id`                                                                         |
-| `aria-live` on new-content banner                             | Screen reader users do not hear the "N new questions" banner when it appears while they are reading the list. This is a polite live region announcement — universally expected in any real-time feed UI.                                                                                  | LOW        | Missing — `NewContentBanner` has no `aria-live` attribute                                                                                                                                        | Add `aria-live="polite"` and `aria-atomic="true"` to the banner container                                                                                                                                |
+| Feature                                        | Why Expected                                                                                                                                                                                                                      | Complexity | Notes                                                                                                                                        |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Optimistic snippet push                        | Questions already have it — the gap is jarring to the host who sees instant Q feedback but delayed snippet feedback                                                                                                               | MEDIUM     | Needs `ADD_SNIPPET_OPTIMISTIC` dispatch before `pushSnippetAction` fires; rollback on failure; dedup guard in `SNIPPET_ADDED` already exists |
+| QA sort debounce tuned down                    | 1000ms feels sluggish after a fast upvote; 300ms is perceptually immediate without card-jump chaos                                                                                                                                | LOW        | Change one constant in `qa-panel.tsx` line 79; no logic change                                                                               |
+| Lambda memory locked at minimum effective size | Default SST Lambda `sst.config.ts` has no explicit `memory` set — default is 1024MB. Node.js + DynamoDB SDK resolvers are I/O-bound; 512MB is the proven cost-efficient floor (comparable cold start to 1024MB for I/O workloads) | LOW        | Add `memory: "512 MB"` to `ResolverFn` in `sst.config.ts`; requires redeploy                                                                 |
+| SSR fetch deduplication                        | `getSession` and `getSessionData` each called independently in `generateMetadata` and the page component for the same slug. Four DynamoDB round-trips per page render where two would suffice                                     | LOW        | Wrap both functions with `cache()` from React — deduplicates within single render pass without persistent cross-request caching              |
 
 ### Differentiators (Competitive Advantage)
 
-Features that set the product apart. Not required by convention, but valued when present and not found in comparable tools.
+Features that go beyond correctness and meaningfully improve perceived latency or developer ergonomics.
 
-| Feature                                                     | Value Proposition                                                                                                                                                                                                                                                         | Complexity | Existing State                                                                            | Notes                                                                                                               |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Vote button press micro-animation (`active:scale-95`)       | Slido, Vevox, Pigeonhole all have static vote buttons with no tactile press feedback. A subtle scale-down + color fill on press makes voting feel satisfying and responsive — it differentiates on perceived quality without adding any bundle weight.                    | LOW        | Missing — vote buttons have `transition-colors hover:bg-accent` but no `active:` state    | Add `active:scale-95 transition-transform` to both upvote and downvote buttons                                      |
-| Separate upvote and downvote counts displayed independently | Slido hides downvotes inside a combined net score by default; showing both separately ("5 up / 2 down") is behind a Labs feature flag. Transparent dual-count display lets participants understand community sentiment more completely.                                   | LOW        | Already exists — both counts shown in the vote column                                     | No change needed; protect from regression during refactor                                                           |
-| Speaker reply visual distinction (emerald border + badge)   | Vimeo allows host replies and distinguishes them with styling; Microsoft Teams distinguishes "Organizer" posting. Most audience Q&A tools do not distinguish host replies at all. The emerald border + "Speaker" badge differentiates Nasqa on host reply signal clarity. | LOW        | Exists — `ReplyList` uses emerald border + "Speaker" badge                                | Protect from regression. No behavior change.                                                                        |
-| Focused question pulsing glow                               | No surveyed competitor shows a "currently active / speaker is addressing this" visual state on a specific question card. The emerald glow distinguishes the live moment in a way that is genuinely useful for large sessions.                                             | LOW        | Exists — `ring-2 ring-emerald-500/50 shadow-[0_0_12px...]` is static. No pulse animation. | Optionally add a slow `animate-pulse` on the ring, or leave static glow. Low priority; current state is functional. |
-| Debounced question re-sorting (sort stabilization)          | Vote spikes during live sessions cause "musical chairs" — cards jump positions with every vote, breaking reading flow. A 1-second debounce on sort order (while showing latest counts immediately) is not a pattern found in any surveyed competitor.                     | MEDIUM     | Exists — `debouncedQuestions` logic in `QAPanel`. Correct behavior.                       | Protect from regression. Do not remove during QAPanel refactor.                                                     |
+| Feature                            | Value Proposition                                                                                                                                                                                                                                                                 | Complexity | Notes                                                                                                                                                                                                                                                                                               |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lazy i18n in Server Actions        | `getTranslations("actionErrors")` is called at the top of every action even on the success path where it is never used. Deferring it to the error branch removes one async call from the hot path for all 15 action call sites                                                    | LOW        | Move `const t = await getTranslations(...)` inside the `catch` block in `snippet.ts`, `qa.ts`, `moderation.ts`, `reactions.ts`. No behavior change on success paths                                                                                                                                 |
+| Direct client-to-AppSync mutations | Eliminates the Netlify edge function network hop: browser → Netlify → AppSync becomes browser → AppSync. Saves 100–200ms on every host mutation. The API key is already public (`NEXT_PUBLIC_APPSYNC_API_KEY`) — this is an accepted tradeoff for an anonymous public-facing tool | HIGH       | Create `lib/appsync-client.ts` mirroring `lib/appsync-server.ts` using the same plain `fetch` pattern. Replace `safeAction(pushSnippetAction(...))` calls with direct fetch. Scope initially to host mutations (`pushSnippet`, `deleteSnippet`, `clearClipboard`)                                   |
+| Client-side syntax highlighting    | Removes the `renderHighlight` Server Action round-trip from the host's live typing preview. Currently: type → 200ms debounce → Server Action → Netlify edge → Shiki on server → response → display. With client Shiki: type → 200ms debounce → Shiki in-browser → display         | HIGH       | Shiki supports `createHighlighter` with on-demand language loading. Lazy-import only the languages in `SUPPORTED_LANGUAGES` (~10 languages). Cost: ~50–80kB gzipped additional bundle on the host page only. Requires aws-amplify bundle issue resolved first or host page dynamic import isolation |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-| Feature                                          | Why Requested                                           | Why Problematic                                                                                                                                                                                                                                                                              | Alternative                                                                                                 |
-| ------------------------------------------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Multi-level reply threading                      | Users expect Discord/Slack-style nested replies         | One additional level adds meaningful complexity to the DynamoDB schema (REPLY# of REPLY#), significantly increases rendering complexity, and kills conversational momentum in a live presentation context (GetStream research is unambiguous). Out of scope for v1.3 and likely permanently. | One-level threading is the correct scope for real-time Q&A. Host replies auto-expand for focused questions. |
-| Emoji reactions on vote buttons                  | Feels expressive; Slack does it                         | v1.2 is the correct scope for emoji reactions. Adding them during a structural refactor conflates two concerns, risks violating the 80kB bundle budget, and requires DynamoDB schema changes.                                                                                                | Defer to v1.2.                                                                                              |
-| Real-time animated card reordering on every vote | "Show winning questions rising" feels engaging          | Causes layout thrash and reading disruption. If you are reading a question and it jumps position mid-read, you lose your place. Slido, notably, debounces sort updates for this exact reason.                                                                                                | The existing 1-second debounce with Framer Motion `layout` transitions is the correct pattern.              |
-| Persistent identity / user accounts              | "I want my history"                                     | Directly contradicts the no-accounts, ephemeral-by-design core value. All data TTLs in 24 hours.                                                                                                                                                                                             | localStorage-based optional name/email via `IdentityEditor` is the correct ceiling.                         |
-| Dedicated "My Questions" tab                     | Vevox-style filter to own questions                     | At 50–500 participants, the Q&A list is manageable without a separate tab. A tab adds navigation complexity, needs an additional route or state layer, and solves a problem that a left-border + "You" label already solves at zero navigation cost.                                         | Structural own-question indicator (left-border + "You" label) is sufficient.                                |
-| Upvote count preview on submission input         | "Show how many upvotes my question has before it posts" | No competitor does this; creates false urgency before submission; the optimistic card insertion with `upvoteCount: 0` is the correct model — the question appears immediately and counts start from zero honestly.                                                                           | Optimistic card insertion with `upvoteCount: 0` is the right pattern.                                       |
+| Feature                                              | Why Requested                                                  | Why Problematic                                                                                                                                                                                                                                                          | Alternative                                                                                                                                          |
+| ---------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provisioned concurrency for Lambda                   | Eliminates cold starts entirely                                | Bills 24/7 even when sessions are idle. Nasqa sessions are bursty — 500 participants for 45 minutes, then zero. Provisioned concurrency would bill for 23+ idle hours per session                                                                                        | Memory tuning at 512MB+ with ARM64 architecture gets cold start to ~200–375ms at near-zero ongoing cost. Accept the first-invocation cold start      |
+| Replacing aws-amplify with a custom WebSocket client | Amplify is 68kB gzipped — exceeds the 80kB bundle target alone | AppSync's WebSocket protocol is undocumented. Subscription filter semantics, reconnection logic, and dedup are all handled by Amplify. Building a replacement risks missing reconnect and filter edge cases                                                              | Scope Amplify import to the subscription hook only via dynamic import (`next/dynamic`). This is a separate bundle-budget milestone, not part of v2.0 |
+| Persistent cross-request cache for session data      | Eliminates DynamoDB reads after first load                     | Session data changes in real-time (votes, new questions). A stale cross-request cache would show wrong counts. WebSocket subscriptions handle delta updates but do not restore full state after reconnect                                                                | Keep `cache()` deduplication within a single render pass only (request memoization). Do not add a TTL-based persistent cache                         |
+| Aggressive highlight debounce reduction below 150ms  | Feels more responsive                                          | Below ~150ms the Server Action round-trip is still slower than the debounce delay — reducing it only increases server action invocations without improving perceived responsiveness. If client-side Shiki is implemented, 0ms debounce becomes viable                    | Keep 200ms for the server path. Once client-side Shiki lands, debounce becomes irrelevant                                                            |
+| `useOptimistic` hook (React 19 API)                  | Cleaner API than manual `useReducer` dispatch                  | The existing reducer pattern in `use-session-state.ts` handles multi-source deduplication — it replaces optimistic `_opt_` IDs when the real subscription arrives. `useOptimistic` only reverts on error; it does not merge incoming subscription payloads with temp IDs | Continue with `useReducer` + `_opt_` ID pattern. The existing pattern is correct and more capable                                                    |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Vote button active-state fill + animation]
-    └──requires──> votedQuestionIds Set prop — already wired into QuestionCard
+Optimistic snippet push
+    └──requires──> ADD_SNIPPET_OPTIMISTIC already in reducer (exists — no schema change)
+    └──requires──> Dedup guard in SNIPPET_ADDED for optimisticId (exists — line 60-68)
+    └──requires──> REMOVE_OPTIMISTIC dispatch on pushSnippetAction failure (add inline)
+    └──note──> Logic should move into useHostMutations as handlePushSnippet
+               to match the pattern used by handleAddQuestion in useSessionMutations
 
-[Identity chip in QAInput]
-    └──requires──> useIdentity hook — already exists
-    └──requires──> IdentityEditor popover — already exists
-    └──enhances──> [Own question indicator] (name at submission = name on card)
+SSR fetch deduplication
+    └──requires──> React.cache() wrapper on getSession and getSessionData in lib/session.ts
+    └──note──> Must be request-scoped (no TTL arg) — persistent cache would serve stale data
 
-[Contextual QAPanel empty state]
-    └──requires──> connectionStatus prop — NOT currently passed to QAPanel
-                   (only passed to ClipboardPanel)
-    └──blocks──> connection-aware copy until prop is threaded through
+Lazy i18n in Server Actions
+    └──independent──> No dependencies; pure error-path refactor of 4 files
+    └──note──> Only applies when error message is actually surfaced (catch blocks)
 
-[Auto-expand replies on isFocused change]
-    └──requires──> useEffect sync of local showReplies state to isFocused prop changes
-    └──fixes──> stale-state bug in current QuestionCard
+QA sort debounce reduction
+    └──independent──> One-line change in qa-panel.tsx line 79
 
-[ARIA tablist semantics]
-    └──requires──> no new props; pure markup change in SessionShell
-    └──requires──> panel elements assigned id attributes for aria-controls
+Lambda memory tuning
+    └──independent──> SST config change only; redeploy required
 
-[aria-live on NewContentBanner]
-    └──requires──> no new props; pure markup change in NewContentBanner
+Direct client mutations
+    └──requires──> lib/appsync-client.ts (client-side fetch to AppSync)
+    └──requires──> Error propagation without reportError (server-only utility)
+    └──conflicts with──> Server Action safeAction wrapper (does not apply to client fetch)
+    └──note──> Host mutations first (pushSnippet, deleteSnippet, clearClipboard);
+               participant mutations (addQuestion, upvoteQuestion) follow once pattern proven
+    └──enhances──> Optimistic snippet push (mutation is faster so roundtrip completes sooner)
 
-[QuestionCard state variant extraction]
-    └──no behavior change — internal refactor only
-    └──enhances──> testability; each variant becomes independently testable
-
-[useSessionMutations hook extraction]
-    └──requires──> SessionLiveHostPage (currently 270-line God Orchestrator)
-    └──unblocks──> all mutation-related unit tests (handlers are currently anonymous closures)
-    └──no behavior change
-
-[formatRelativeTime deduplication]
-    └──currently duplicated in: ClipboardPanel (inline), QuestionCard (inline)
-    └──extract to: packages/frontend/src/lib/format-time.ts
-    └──no behavior change
-
-[Remove duplicate sort from QAPanel]
-    └──requires──> caller (SessionLiveHostPage) to pass pre-sorted questions
-    └──QAPanel owns only debounced visual stability (debounce remains)
-    └──simplifies QAPanel props contract
+Client-side Shiki
+    └──requires──> Dynamic import scoped to host page (next/dynamic or lazy())
+    └──requires──> Bundle budget headroom — currently consumed by aws-amplify (68kB)
+    └──requires──> SUPPORTED_LANGUAGES list from detect-language.ts to scope grammar imports
+    └──note──> Does NOT replace shiki-block.tsx SSR rendering — participant view stays server-rendered
+    └──enhances──> Optimistic snippet push (highlight available instantly during typing)
 ```
 
 ### Dependency Notes
 
-- **`connectionStatus` not wired to QAPanel:** `ClipboardPanel` receives `connectionStatus` from `SessionLiveHostPage`; `QAPanel` does not. Adding contextual empty-state copy to QAPanel requires threading this prop. It is a one-line prop addition in both `QAPanel` and `SessionLiveHostPage`. Do this early — it unblocks the empty-state copy.
-- **`useSessionMutations` extraction is the highest-value structural change:** All mutation handlers in `SessionLiveHostPage` are anonymous async closures that are impossible to test in isolation. Extracting them to a named hook with a stable interface is the prerequisite for any mutation-level unit tests. It does not change observable behavior.
-- **Identity chip and own-question indicator are independent but complementary:** The chip solves "before posting" identity awareness; the left-border solves "after posting" ownership recognition. Both use `useIdentity` as their data source. They can be built independently.
-- **Reply auto-expand fix is a bug fix, not a feature:** If a question gains focus while the QuestionCard is already mounted, `showReplies` stays false (it initialized to `question.isFocused` at mount time only). A `useEffect` syncing the local state to the prop is the minimal fix.
+- **Optimistic snippet push is the highest value, lowest risk item.** The reducer already supports it via `ADD_SNIPPET_OPTIMISTIC` and `REMOVE_OPTIMISTIC`. The missing piece is dispatching `ADD_SNIPPET_OPTIMISTIC` before `pushSnippetAction` fires, and `REMOVE_OPTIMISTIC` on failure. The `SNIPPET_ADDED` case already handles `optimisticId` replacement.
+- **Direct client mutations conflict with the server-side error pipeline.** `reportError` is a server-only utility. Client-side fetch errors must be caught locally and surfaced via `toast.error`. This is already the pattern for vote rollbacks — the same approach applies.
+- **Client-side Shiki should follow optimistic snippet push.** With optimistic push, the snippet card appears immediately on submit. The live highlight preview during typing is a secondary concern. Reversing the order adds bundle risk before the core UX fix ships.
+- **SSR deduplication and lazy i18n are independent and low-risk.** Both can ship in the first wave without dependencies on the other items.
 
 ---
 
-## MVP Definition (for v1.3 Refactor)
+## MVP Definition
 
-### Must Ship (blocking quality and accessibility bar)
+This is a subsequent milestone on an already-shipped product. MVP means: the minimum set of changes that delivers the v2.0 goal ("every user action must feel instantaneous") with acceptable risk.
 
-- [ ] Vote button `active:scale-95` press animation + visual fill on voted state — interaction honesty baseline
-- [ ] Identity chip inside `QAInput` (avatar + name, click to edit) — participants must know posting identity before posting
-- [ ] Auto-expand replies when `isFocused` prop changes while card is mounted — bug fix, not a feature
-- [ ] ARIA tablist semantics on `SessionShell` mobile tab bar — accessibility baseline
-- [ ] `aria-live` on `NewContentBanner` — screen reader accessibility
+### Ship First (v2.0 core — low risk, high clarity)
 
-### Ship After Core (high value, low risk)
+- [ ] Optimistic snippet push — closes the largest perceived-latency gap for the host
+- [ ] QA sort debounce reduction (1000ms to 300ms) — instant UX improvement, zero risk
+- [ ] Lazy i18n in Server Actions — removes hidden async overhead from every hot-path action
+- [ ] SSR fetch deduplication via `React.cache()` — eliminates duplicate DynamoDB reads per render
 
-- [ ] Thread `connectionStatus` to `QAPanel` and implement contextual empty state copy (participant vs host variant)
-- [ ] Own question left-border structural indicator (color alone is insufficient for spatial recognition)
-- [ ] Extract `useSessionMutations` hook from `SessionLiveHostPage`
-- [ ] Extract `QuestionCard` state variants (normal / hidden / banned) into separate small components
-- [ ] Extract shared `formatRelativeTime` utility (currently duplicated in `ClipboardPanel` and `QuestionCard`)
-- [ ] Remove duplicate sort logic from `QAPanel` (accept pre-sorted; retain debounce)
+### Ship After Core (v2.0 polish — higher complexity, needs scoping)
 
-### Defer to Future Milestones
+- [ ] Lambda memory explicitly set to 512MB in `sst.config.ts` — verify default, lock for cost efficiency
+- [ ] Direct client-to-AppSync mutations for host snippet push — measured latency improvement
+- [ ] Client-side Shiki for host input preview — requires bundle budget resolution first
 
-- [ ] Emoji reactions — v1.2 scope, do not conflate with v1.3 structural refactor
-- [ ] Multi-level reply threading — permanently out of scope for this product
-- [ ] Animated per-vote card reordering — anti-feature
-- [ ] "My Questions" tab — anti-feature at current scale
+### Defer (v2.1+)
+
+- [ ] Direct client mutations for participant Q&A — lower value than snippet path, higher risk surface
+- [ ] aws-amplify dynamic import splitting — bundle size fix; separate milestone, does not affect latency
 
 ---
 
 ## Feature Prioritization Matrix
 
-| Feature                                             | User Value           | Implementation Cost | Priority |
-| --------------------------------------------------- | -------------------- | ------------------- | -------- |
-| Vote button active-state fill + press animation     | HIGH                 | LOW                 | P1       |
-| Identity chip in QAInput                            | HIGH                 | MEDIUM              | P1       |
-| ARIA tablist semantics                              | HIGH (a11y)          | LOW                 | P1       |
-| `aria-live` on NewContentBanner                     | HIGH (a11y)          | LOW                 | P1       |
-| Auto-expand replies on `isFocused` change (bug fix) | MEDIUM               | LOW                 | P1       |
-| Contextual QAPanel empty state                      | MEDIUM               | LOW                 | P2       |
-| Own question left-border indicator                  | MEDIUM               | LOW                 | P2       |
-| `useSessionMutations` hook extraction               | LOW (DX/testability) | MEDIUM              | P2       |
-| `QuestionCard` state variant extraction             | LOW (DX/testability) | MEDIUM              | P2       |
-| `formatRelativeTime` deduplication                  | LOW (DX)             | LOW                 | P2       |
-| Remove duplicate sort from QAPanel                  | LOW (DX)             | MEDIUM              | P2       |
-| Focused question pulsing glow animation             | LOW                  | LOW                 | P3       |
+| Feature                     | User Value                                                | Implementation Cost                                    | Priority |
+| --------------------------- | --------------------------------------------------------- | ------------------------------------------------------ | -------- |
+| Optimistic snippet push     | HIGH — host primary action has no instant feedback        | LOW — reducer already supports it                      | P1       |
+| QA sort debounce 300ms      | MEDIUM — prevents jarring 1s reorder delay                | LOW — one-line change                                  | P1       |
+| Lazy i18n in Server Actions | LOW-MEDIUM — removes hidden async overhead from hot path  | LOW — move getTranslations inside catch                | P1       |
+| SSR fetch deduplication     | LOW-MEDIUM — halves DynamoDB read count per page load     | LOW — React.cache() wrapper                            | P1       |
+| Lambda memory tuning        | MEDIUM — reduces cold start for burst sessions            | LOW — SST config + redeploy                            | P2       |
+| Direct client mutations     | HIGH — eliminates ~150ms network hop on every host action | HIGH — new client fetch pattern, error handling rework | P2       |
+| Client-side Shiki           | MEDIUM — removes round-trip latency from host preview     | HIGH — bundle budget risk, dynamic import complexity   | P2       |
 
 **Priority key:**
 
-- P1: Must have for this milestone
-- P2: Should have; add after P1 items are complete
-- P3: Nice to have; future consideration
+- P1: Include in v2.0 first wave — low cost, high clarity
+- P2: Include in v2.0 second wave — higher complexity, needs scoping
+- P3: Future milestone
 
 ---
 
-## Competitor Feature Analysis
+## Technical Details Per Feature
 
-| Interaction Pattern              | Slido                                                        | Vevox                                                           | Pigeonhole Live                                    | Mentimeter                          | Nasqa Live (current)                                            | Nasqa Live (v1.3 target)                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Vote button active state         | Color fill on voted (standard)                               | Vote button visually highlighted when active                    | Upvote count increments; no documented button fill | N/A (no participant upvotes in Q&A) | Icon color changes to emerald; no fill or scale                 | Filled icon + emerald background fill + `active:scale-95` press animation                                                              |
-| Upvote/downvote mutual exclusion | Yes — switching removes prior vote                           | Yes (per 2024 update adding optional downvotes)                 | Upvote only                                        | Upvote only, no downvote            | Yes — logic correct; no animated transition on swap             | Add `transition-all duration-150` to make the swap visually smooth                                                                     |
-| Score display                    | Combined net score by default; separate counts via Labs flag | Combined by default                                             | Upvote count only                                  | N/A                                 | Separate upvote + downvote counts (already differentiated)      | Protect from regression; keep separate                                                                                                 |
-| Own question indicator           | "Waiting for review" label in moderated sessions             | Profile icon next to own comment                                | Not documented                                     | Not visible to participant          | "You" in emerald text in author row                             | "You" + left-border accent strip for spatial recognition                                                                               |
-| Identity at submission point     | No inline chip; anonymous by default                         | Name shown in Q&A board after submission                        | Not documented                                     | Anonymous only                      | No identity chip in input field                                 | Identity chip (pixel avatar + name) inline in `QAInput`; click to open `IdentityEditor`                                                |
-| Reply threading visibility       | No threading in core Q&A (comment feature separate)          | Replies visible; participant-to-participant replies not allowed | Comments visible                                   | Not available                       | Collapsed by default; auto-expand for focused question at mount | Same — plus fix stale-state: sync `showReplies` to `isFocused` prop changes                                                            |
-| Empty state (no questions)       | Not publicly documented                                      | Not publicly documented                                         | Not publicly documented                            | Not publicly documented             | Generic icon + "no questions" key string                        | Connection-aware: "Be the first to ask" (participant, connected) / "Waiting for connection" (disconnected) / "No questions yet" (host) |
-| Host reply distinction           | Host answers verbally; no in-thread reply UI                 | Moderator answers visible; no visual badge                      | Not documented                                     | N/A                                 | Emerald border + "Speaker" badge on host replies                | Protect from regression; no change                                                                                                     |
-| Tab bar accessibility            | Not applicable (single panel)                                | Not applicable                                                  | Not applicable                                     | Not applicable                      | `<button>` elements, no ARIA tablist semantics                  | `role="tablist"` + `role="tab"` + `aria-selected` + `aria-controls`                                                                    |
-| Live region for new content      | Not applicable                                               | Not applicable                                                  | Not applicable                                     | Not applicable                      | `NewContentBanner` has no `aria-live`                           | `aria-live="polite"` + `aria-atomic="true"` on banner container                                                                        |
+### Optimistic Snippet Push
+
+**Current flow:** host types → presses push → `handlePush` clears input → fires `pushSnippetAction` → waits for AppSync subscription → `SNIPPET_ADDED` dispatched → card appears.
+
+**Target flow:** host types → presses push → `handlePush` dispatches `ADD_SNIPPET_OPTIMISTIC` with `_opt_${Date.now()}` ID → clears input → fires `pushSnippetAction` → on failure, dispatches `REMOVE_OPTIMISTIC` and restores input → on success, subscription arrives with real ID → `SNIPPET_ADDED` with `optimisticId` replaces the placeholder.
+
+The optimistic snippet must be shaped correctly: `type`, `language`, `content`, and `sessionSlug` must match the real item. The `createdAt` can be `Math.floor(Date.now() / 1000)`. The `TTL` is irrelevant for the optimistic placeholder.
+
+Logic recommendation: move push handling into `useHostMutations` as a `handlePushSnippet` function, accepting the same arguments as `pushSnippetAction`. This matches the pattern used by `handleAddQuestion` in `useSessionMutations`.
+
+### SSR Fetch Deduplication
+
+**Current problem in `page.tsx` and `host/page.tsx`:**
+
+```
+generateMetadata:  getSession(slug) + getSessionData(slug)   // 2 DynamoDB reads
+SessionPage:       getSession(slug) + getSessionData(slug)   // 2 DynamoDB reads
+                                                             // = 4 reads per page load
+```
+
+**Fix:** Wrap `getSession` and `getSessionData` in `lib/session.ts` with `cache` from `react`. React's `cache()` deduplicates by function reference + serialized arguments within one render pass. Result: 2 DynamoDB reads per page load regardless of how many server components call the functions. No persistent cache — request lifetime only.
+
+### QA Sort Debounce
+
+Current: `setTimeout(..., 1000)` in `qa-panel.tsx` line 79.
+Target: `setTimeout(..., 300)`.
+
+At 300ms, re-sorting happens fast enough to feel responsive while still batching rapid vote bursts (multiple participants voting in the same second). The 200–500ms range is the well-established sweet spot for list UX; 1000ms is empirically too slow for a live session.
+
+### Lambda Memory
+
+The `ResolverFn` in `sst.config.ts` has no `memory` property. SST Ion's default for `sst.aws.Function` is 1024MB. This is already within the optimal range for cold starts. The optimization is to add an explicit `memory: "512 MB"` declaration for cost efficiency, since AppSync resolvers are DynamoDB I/O-bound — they are not CPU-constrained and do not benefit from the extra vCPU headroom at 1024MB. Node.js 22 + DynamoDB SDK cold start at 512MB: ~375ms. At 1024MB: ~280ms. The 95ms difference is not worth 2x the compute cost for an I/O-bound resolver.
+
+### Direct Client Mutations
+
+**Mechanism:** `NEXT_PUBLIC_APPSYNC_URL` and `NEXT_PUBLIC_APPSYNC_API_KEY` are already exposed to the browser by naming convention. `lib/appsync-server.ts` is a plain `fetch` POST — this pattern is browser-compatible. `lib/appsync-client.ts` is an identical utility usable in client components and hooks.
+
+**Security posture:** API key authentication for an anonymous, public-facing, 24-hour TTL tool is an accepted decision already made and documented in `PROJECT.md`. Resolver-level rate limiting and host secret validation still apply — these run inside Lambda regardless of where the mutation originates.
+
+**Scope:** Start with host mutations (`pushSnippet`, `deleteSnippet`, `clearClipboard`) in `useHostMutations`. These have the highest latency impact and the most contained error handling. Participant mutations (`addQuestion`, `upvoteQuestion`) can follow once the pattern is validated.
+
+### Client-Side Shiki
+
+**Bundle cost:** `createHighlighter` with only the languages in `SUPPORTED_LANGUAGES` (~10 languages) + 2 themes loads approximately 50–80kB gzipped. The current aws-amplify subscription client is ~68kB gzipped and already exceeds the 80kB bundle target. Client-side Shiki cannot ship until either: (a) aws-amplify is replaced or dynamically imported, or (b) client-side Shiki is itself dynamically imported and excluded from the initial JS bundle.
+
+**Scope boundary:** Client-side Shiki is only for the `HostInput` live typing preview. The `shiki-block.tsx` component used by the participant clipboard panel remains server-rendered. This is correct — participants never need interactive highlight feedback.
+
+**API pattern:** Use `createHighlighter` with an explicit language list (not `bundledLanguages` which loads everything). Expose a singleton highlighter initialized once on first use.
 
 ---
 
 ## Sources
 
-- Slido community — downvote display: https://community.slido.com/audience-q-a-42/enable-downvotes-for-your-q-a-440 (MEDIUM confidence — help article, no interaction screenshots)
-- Slido new interface feature continuity: https://community.slido.com/new-slido-interface-125/new-slido-interface-feature-continuity-3845 (MEDIUM)
-- Slido Q&A features page: https://www.slido.com/features-live-qa (MEDIUM — marketing copy)
-- Mentimeter Q&A audience perspective: https://help.mentimeter.com/en/articles/1501608-questions-from-audience-the-audience-perspective (MEDIUM — confirms anonymous model, no ownership indicator)
-- Vevox upvotes and downvotes in Q&A board: https://help.vevox.com/hc/en-us/articles/21397841414941 (MEDIUM — 403 on direct fetch; confirmed by search result snippet)
-- Vevox participant user manual (profile icon ownership): https://help.vevox.com/hc/en-us/articles/360014327757-Participant-user-manual (MEDIUM)
-- Pigeonhole Live Q&A features: https://pigeonholelive.com/features-qna/ (LOW — marketing page, no UX detail)
-- GetStream — livestream chat threading UX: https://getstream.io/blog/exploring-livestream-chat-ux-threads-and-replies/ (HIGH — engineering blog with design rationale)
-- Nielsen Norman Group — empty state design: https://www.nngroup.com/articles/empty-state-interface-design/ (HIGH — authoritative UX research)
-- UI Patterns — Vote to Promote: https://ui-patterns.com/patterns/VoteToPromote (MEDIUM — design pattern library)
-- Vevox product update September 2024: https://www.vevox.com/blog/vevox-product-update-september-2024 (MEDIUM — confirms optional downvotes added)
+- Codebase inspection: `packages/frontend/src/hooks/use-session-state.ts`, `use-host-mutations.ts`, `use-session-mutations.ts`, `components/session/host-input.tsx`, `components/session/qa-panel.tsx`, `lib/session.ts`, `lib/appsync-server.ts`, `actions/snippet.ts`, `sst.config.ts`
+- [React cache() and SSR deduplication — Next.js caching guide](https://nextjs.org/docs/app/guides/caching)
+- [AWS Lambda cold start optimization in 2025 — what actually works](https://zircon.tech/blog/aws-lambda-cold-start-optimization-in-2025-what-actually-works/)
+- [AWS Lambda cold starts in 2025: cost and performance data](https://edgedelta.com/company/knowledge-center/aws-lambda-cold-start-cost)
+- [Lambda cold start benchmark across runtimes — maxday](https://maxday.github.io/lambda-perf/)
+- [Fastest Node 22 Lambda coldstart configuration — Speedrun blog](https://speedrun.nobackspacecrew.com/blog/2025/07/21/the-fastest-node-22-lambda-coldstart-configuration.html)
+- [Shiki Next.js integration — official shiki.style docs](https://shiki.style/packages/next)
+- [Shiki performance optimization — on-demand language loading — innei blog](http://blog.innei.ren/shiki-dynamic-load-language?locale=en)
+- [AppSync security and authorization — AWS official docs](https://docs.aws.amazon.com/appsync/latest/devguide/security-authz.html)
+- [next-intl server/client component guidance — next-intl.dev](https://next-intl.dev/docs/environments/server-client-components)
+- [Debounce vs throttle timing — kettanaito.com visual guide](https://kettanaito.com/blog/debounce-vs-throttle)
 
 ---
 
-_Feature research for: Nasqa Live v1.3 participant & host UX refactor_
-_Researched: 2026-03-16_
+_Feature research for: v2.0 Performance and Instant Operations — nasqa-live_
+_Researched: 2026-03-17_
