@@ -9,9 +9,9 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: Lambda resolver runs at 256MB memory with arm64 architecture to reduce cold starts
-- [ ] **INFRA-02**: SSR page load deduplicates `getSession` and `getSessionData` calls via `React.cache()` (2 DynamoDB calls instead of 4)
-- [ ] **INFRA-03**: Session page exports `force-dynamic` to prevent accidental cross-request caching
+- [x] **INFRA-01**: Lambda resolver runs at 256MB memory with arm64 architecture to reduce cold starts
+- [x] **INFRA-02**: SSR page load deduplicates `getSession` and `getSessionData` calls via `React.cache()` (2 DynamoDB calls instead of 4)
+- [x] **INFRA-03**: Session page exports `force-dynamic` to prevent accidental cross-request caching
 
 ### Mutation Path
 
@@ -40,8 +40,8 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 
 ### Real-time UX
 
-- [ ] **UX-01**: QA panel sort debounce reduced from 1000ms to 300ms for faster perceived ordering
-- [ ] **UX-02**: Question card layout animations remain smooth at 300ms debounce (no teleporting)
+- [x] **UX-01**: QA panel sort debounce reduced from 1000ms to 300ms for faster perceived ordering
+- [x] **UX-02**: Question card layout animations remain smooth at 300ms debounce (no teleporting)
 
 ### Client Highlighting
 
@@ -91,36 +91,36 @@ Deferred to future release. Tracked but not in current roadmap.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase    | Status  |
-| ----------- | -------- | ------- |
-| INFRA-01    | Phase 14 | Pending |
-| INFRA-02    | Phase 14 | Pending |
-| INFRA-03    | Phase 14 | Pending |
-| MUT-01      | Phase 15 | Pending |
-| MUT-02      | Phase 15 | Pending |
-| MUT-03      | Phase 15 | Pending |
-| MUT-04      | Phase 15 | Pending |
-| MUT-05      | Phase 15 | Pending |
-| OPT-01      | Phase 16 | Pending |
-| OPT-02      | Phase 16 | Pending |
-| OPT-03      | Phase 16 | Pending |
-| UX-01       | Phase 14 | Pending |
-| UX-02       | Phase 14 | Pending |
-| SHIKI-01    | Phase 16 | Pending |
-| SHIKI-02    | Phase 16 | Pending |
-| SHIKI-03    | Phase 16 | Pending |
-| SHIKI-04    | Phase 16 | Pending |
-| SHIKI-05    | Phase 16 | Pending |
-| SHIKI-06    | Phase 16 | Pending |
-| SHIKI-07    | Phase 16 | Pending |
-| URL-01      | Phase 14 | Pending |
-| URL-02      | Phase 14 | Pending |
-| URL-03      | Phase 14 | Pending |
-| URL-04      | Phase 14 | Pending |
-| URL-05      | Phase 14 | Pending |
-| URL-06      | Phase 14 | Pending |
-| URL-07      | Phase 14 | Pending |
-| URL-08      | Phase 14 | Pending |
+| Requirement | Phase    | Status   |
+| ----------- | -------- | -------- |
+| INFRA-01    | Phase 14 | Complete |
+| INFRA-02    | Phase 14 | Complete |
+| INFRA-03    | Phase 14 | Complete |
+| MUT-01      | Phase 15 | Pending  |
+| MUT-02      | Phase 15 | Pending  |
+| MUT-03      | Phase 15 | Pending  |
+| MUT-04      | Phase 15 | Pending  |
+| MUT-05      | Phase 15 | Pending  |
+| OPT-01      | Phase 16 | Pending  |
+| OPT-02      | Phase 16 | Pending  |
+| OPT-03      | Phase 16 | Pending  |
+| UX-01       | Phase 14 | Complete |
+| UX-02       | Phase 14 | Complete |
+| SHIKI-01    | Phase 16 | Pending  |
+| SHIKI-02    | Phase 16 | Pending  |
+| SHIKI-03    | Phase 16 | Pending  |
+| SHIKI-04    | Phase 16 | Pending  |
+| SHIKI-05    | Phase 16 | Pending  |
+| SHIKI-06    | Phase 16 | Pending  |
+| SHIKI-07    | Phase 16 | Pending  |
+| URL-01      | Phase 14 | Pending  |
+| URL-02      | Phase 14 | Pending  |
+| URL-03      | Phase 14 | Pending  |
+| URL-04      | Phase 14 | Pending  |
+| URL-05      | Phase 14 | Pending  |
+| URL-06      | Phase 14 | Pending  |
+| URL-07      | Phase 14 | Pending  |
+| URL-08      | Phase 14 | Pending  |
 
 **Coverage:**
 

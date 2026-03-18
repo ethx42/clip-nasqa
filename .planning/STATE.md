@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 14 of 16 (Infrastructure and URL Routing)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-17 — v2.0 roadmap created, phases 14-16 defined
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-03-17 — Plan 14-01 complete: Lambda arm64/256MB, React.cache SSR dedup, QA 300ms debounce
 
-Progress: [░░░░░░░░░░] 0% (v2.0 milestone)
+Progress: [█░░░░░░░░░] 10% (v2.0 milestone)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 37 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6)
+- Total plans completed: 38 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 1)
 - Average duration: 5 min
 - Total execution time: ~2.5 hours
 
@@ -37,6 +37,7 @@ Recent decisions affecting current work:
 - [v2.0 research]: Lambda memory target is 256MB, not 512MB — AWS August 2025 pricing change bills INIT phase at invocation rate; 512MB doubles cold-start cost vs 128MB
 - [v2.0 research]: QA debounce reduction requires Framer Motion `layout` prop on question cards as a prerequisite — without it, 300ms debounce causes visible card teleporting
 - [v2.0 research]: Client-side Shiki must use `import("shiki/core")` with `createJavaScriptRegexEngine()` inside async callback only — static import adds 695kB gzip to initial bundle
+- [14-01]: React.cache pattern established for server-side DynamoDB fetch deduplication; layout animation duration aligned to 300ms debounce with useReducedMotion gating
 
 ### Pending Todos
 
@@ -44,12 +45,10 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 14]: Verify whether Framer Motion `layout` prop is already on question cards before planning debounce work — if present, no prerequisite animation work needed
-- [Phase 14]: Confirm actual Lambda memory default in `sst.config.ts` before choosing 256MB target (conflicting research: 128MB vs 1024MB default)
 - [Phase 16]: Run `next build` bundle analyzer before implementing client Shiki — confirm it lands in a lazy chunk and initial bundle stays under 100kB gzip
 
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: v2.0 roadmap defined — phases 14-16 created, all 27 requirements mapped
-Resume at: `/gsd:plan-phase 14`
+Stopped at: Completed 14-01-PLAN.md — infrastructure perf baseline (Lambda, React.cache, QA animation)
+Resume at: `/gsd:execute-phase 14` (plan 02: URL routing slug → code rename)
