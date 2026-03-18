@@ -151,6 +151,37 @@ html.dark .shiki span {
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
+/* Snippet highlight animation — pulse ring when navigated via #snippet-N */
+@keyframes snippet-highlight {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.585 0.233 277.117 / 0.4);
+  }
+  30% {
+    box-shadow: 0 0 0 6px oklch(0.585 0.233 277.117 / 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.585 0.233 277.117 / 0);
+  }
+}
+
+/* Force Shiki pre/code backgrounds transparent in the edit backdrop overlay */
+.shiki-backdrop .shiki,
+.shiki-backdrop .shiki pre,
+.shiki-backdrop .shiki code {
+  background-color: transparent !important;
+}
+
+/* Preview mode: Shiki pre fills container, no extra padding/margin */
+.shiki-preview .shiki {
+  margin: 0;
+  padding: 0;
+  background-color: transparent !important;
+  min-height: 100%;
+}
+.shiki-preview .shiki code {
+  background-color: transparent !important;
+}
+
 /* Shiki line numbers via data-line attribute */
 .shiki-line-numbers .shiki code .line::before {
   content: attr(data-line);

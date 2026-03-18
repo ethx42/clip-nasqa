@@ -68,13 +68,13 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
 
   const handleTogglePreview = useCallback(() => {
     if (!showPreview) {
-      // Capture cursor position before switching to preview
       cursorPos.current = textareaRef.current?.selectionStart ?? 0;
       setShowPreview(true);
     } else {
       setShowPreview(false);
-      // Restore cursor position after switching back to edit
+      // After textarea remounts, restore height and cursor
       requestAnimationFrame(() => {
+        resize();
         const ta = textareaRef.current;
         if (ta) {
           ta.focus();
@@ -82,7 +82,7 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
         }
       });
     }
-  }, [showPreview]);
+  }, [showPreview, resize]);
 
   const handlePush = useCallback(async () => {
     const content = value.trim();
@@ -127,31 +127,6 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
-      {/* Language dropdown — only visible when there is text */}
-      {value.trim() && (
-        <div className="flex items-center gap-2">
-          <select
-            value={manualLang}
-            onChange={(e) => setManualLang(e.target.value)}
-            className="rounded-lg border border-border bg-background px-2.5 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            aria-label={t("selectLanguage")}
-          >
-            <option value="auto">
-              {t("autoDetect")} (
-              {activeLang === "text"
-                ? t("text")
-                : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang)}
-              )
-            </option>
-            {SUPPORTED_LANGUAGES.filter((l) => l.value !== "text").map((lang) => (
-              <option key={lang.value} value={lang.value}>
-                {lang.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {/* Editor: preview mode or overlay textarea on top of highlighted backdrop */}
       <div className="relative" style={{ minHeight: "80px", maxHeight: "300px" }}>
         {showPreview ? (
@@ -162,11 +137,11 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
           >
             <div className="overflow-auto" style={{ maxHeight: "300px" }}>
               {shikiHtml ? (
-                <div className="flex">
+                <div className="flex min-h-full">
                   {/* Line numbers gutter */}
                   <div
                     aria-hidden
-                    className="select-none border-r border-border bg-muted/40 px-3 py-3 text-right font-mono text-[13px] leading-normal text-muted-foreground"
+                    className="select-none border-r border-border bg-muted/40 px-3 py-3 text-right font-mono text-[15px] leading-[1.65] text-muted-foreground"
                   >
                     {Array.from({ length: lineCount }, (_, i) => (
                       <div key={i}>{i + 1}</div>
@@ -174,7 +149,7 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
                   </div>
                   {/* Highlighted code */}
                   <div
-                    className="shiki-wrapper flex-1 overflow-x-auto px-4 py-3 font-mono text-[15px] leading-normal"
+                    className="shiki-preview shiki-wrapper flex-1 overflow-x-auto px-4 py-3 font-mono text-[15px] leading-[1.65]"
                     dangerouslySetInnerHTML={{ __html: shikiHtml }}
                   />
                 </div>
@@ -201,7 +176,7 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
             <div
               ref={backdropRef}
               aria-hidden
-              className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl border border-transparent bg-background px-4 py-3"
+              className="shiki-backdrop pointer-events-none absolute inset-0 overflow-hidden rounded-xl border border-transparent bg-background px-4 py-3"
               style={{ minHeight: "80px" }}
             >
               {hasHighlight ? (
@@ -238,14 +213,42 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
       {/* Controls row */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          {/* Language badge when no dropdown shown */}
+          {/* Language selector — styled as a pill badge */}
           {value.trim() ? (
-            <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
-              <span className="h-2 w-2 rounded-full bg-indigo-500" />
-              {activeLang === "text"
-                ? t("text")
-                : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ?? activeLang)}
-            </span>
+            <div className="relative inline-flex items-center">
+              <span className="pointer-events-none absolute left-3 h-2 w-2 rounded-full bg-indigo-500" />
+              <select
+                value={manualLang}
+                onChange={(e) => setManualLang(e.target.value)}
+                className="appearance-none rounded-lg border border-border bg-background py-1.5 pl-7 pr-7 text-sm font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                aria-label={t("selectLanguage")}
+              >
+                <option value="auto">
+                  {activeLang === "text"
+                    ? t("text")
+                    : (SUPPORTED_LANGUAGES.find((l) => l.value === activeLang)?.label ??
+                      activeLang)}
+                </option>
+                {SUPPORTED_LANGUAGES.filter((l) => l.value !== "text").map((lang) => (
+                  <option key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-2 h-3 w-3 text-muted-foreground"
+                viewBox="0 0 12 12"
+                fill="none"
+              >
+                <path
+                  d="M3 5l3 3 3-3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
           ) : (
             <span />
           )}

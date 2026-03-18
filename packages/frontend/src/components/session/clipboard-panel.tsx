@@ -170,6 +170,7 @@ export function ClipboardPanel({
                     snippet={heroSnippet}
                     variant="hero"
                     isHost={isHost}
+                    sessionCode={sessionCode}
                     snippetNumber={snippetNumbers.get(heroSnippet.id)}
                     isFailed={failedSnippetIds?.has(heroSnippet.id) ?? false}
                     isOptimistic={heroSnippet.id.startsWith("_opt_")}
@@ -223,6 +224,7 @@ export function ClipboardPanel({
                       snippet={snippet}
                       variant="compact"
                       isHost={isHost}
+                      sessionCode={sessionCode}
                       snippetNumber={snippetNumbers.get(snippet.id)}
                       isFailed={failedSnippetIds?.has(snippet.id) ?? false}
                       isOptimistic={snippet.id.startsWith("_opt_")}

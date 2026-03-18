@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Pencil, RefreshCw, Trash2, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 
@@ -23,6 +23,8 @@ interface SnippetCardProps {
   variant: "hero" | "compact";
   isHost: boolean;
   onDelete?: () => void;
+  /** Session code for building participant-facing shareable links. */
+  sessionCode?: string;
   /** Persistent creation-order number (#1 = oldest). */
   snippetNumber?: number;
   /** True when the server push for this snippet failed. */
@@ -44,6 +46,7 @@ export function SnippetCard({
   variant,
   isHost,
   onDelete,
+  sessionCode,
   snippetNumber,
   isFailed = false,
   isOptimistic = false,
@@ -53,12 +56,29 @@ export function SnippetCard({
   onEditEnd,
 }: SnippetCardProps) {
   const t = useTranslations("session");
+  const locale = useLocale();
   const { resolvedTheme } = useTheme();
 
   const [expanded, setExpanded] = useState(variant === "hero");
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(snippet.content);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isHighlighted, setIsHighlighted] = useState(false);
+
+  // On mount, check if this card is the hash target and highlight it
+  useEffect(() => {
+    if (snippetNumber === undefined) return;
+    const hash = window.location.hash;
+    if (hash === `#snippet-${snippetNumber}`) {
+      // Scroll into view and pulse
+      requestAnimationFrame(() => {
+        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setIsHighlighted(true);
+        setTimeout(() => setIsHighlighted(false), 2000);
+      });
+    }
+  }, [snippetNumber]);
 
   const lang = snippet.language ?? "text";
   const isCode = lang !== "text";
@@ -66,8 +86,8 @@ export function SnippetCard({
   const lineCount = snippet.content.split("\n").length;
   const isLong = variant === "compact" && lineCount > 3;
 
-  // Client-side Shiki highlighting — only render when expanded or hero
-  const shouldHighlight = variant === "hero" || expanded;
+  // Client-side Shiki highlighting — render when content is visible (hero, expanded, or short compact)
+  const shouldHighlight = variant === "hero" || expanded || !isLong;
   const shikiHtml = useShikiHighlight(
     shouldHighlight ? snippet.content : "",
     lang,
@@ -106,10 +126,13 @@ export function SnippetCard({
 
   return (
     <div
+      ref={cardRef}
       className={`rounded-2xl border bg-card ${padding} transition-all duration-200 ${
-        isFailed
-          ? "border-destructive hover:border-destructive/80"
-          : "border-border hover:border-indigo-500/20"
+        isHighlighted
+          ? "border-indigo-500 ring-2 ring-indigo-500/30 animate-[snippet-highlight_2s_ease-out]"
+          : isFailed
+            ? "border-destructive hover:border-destructive/80"
+            : "border-border hover:border-indigo-500/20"
       }`}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -120,11 +143,23 @@ export function SnippetCard({
           >
             {isCode ? lang : t("text")}
           </span>
-          {/* Snippet number badge */}
+          {/* Snippet number badge — clickable anchor, copies participant-view link */}
           {snippetNumber !== undefined && (
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+            <button
+              type="button"
+              id={`snippet-${snippetNumber}`}
+              onClick={() => {
+                const origin = window.location.origin;
+                const url = sessionCode
+                  ? `${origin}/${locale}/${sessionCode}#snippet-${snippetNumber}`
+                  : `${origin}${window.location.pathname}#snippet-${snippetNumber}`;
+                void navigator.clipboard.writeText(url);
+              }}
+              className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground transition-colors hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
+              title={t("copySnippetLink")}
+            >
               #{snippetNumber}
-            </span>
+            </button>
           )}
           {/* Relative time */}
           <span className="text-xs text-muted-foreground">{relativeTime}</span>
@@ -233,11 +268,21 @@ export function SnippetCard({
           onClick={isLong && !expanded ? () => setExpanded(true) : undefined}
         >
           {expanded || !isLong ? (
-            shikiHtml ? (
-              <div
-                className={`shiki-wrapper overflow-x-auto ${textSize} leading-relaxed`}
-                dangerouslySetInnerHTML={{ __html: shikiHtml }}
-              />
+            shikiHtml && isCode ? (
+              <div className="flex min-h-full">
+                <div
+                  aria-hidden
+                  className={`select-none border-r border-border bg-muted/40 px-2.5 py-3 text-right font-mono ${textSize} leading-[1.65] text-muted-foreground`}
+                >
+                  {Array.from({ length: lineCount }, (_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+                <div
+                  className={`shiki-preview shiki-wrapper flex-1 overflow-x-auto px-3 py-3 font-mono ${textSize} leading-[1.65]`}
+                  dangerouslySetInnerHTML={{ __html: shikiHtml }}
+                />
+              </div>
             ) : (
               <pre
                 className={`whitespace-pre-wrap break-words p-4 ${textSize} leading-relaxed ${isCode ? "font-mono" : "font-sans"} text-foreground`}
@@ -261,7 +306,7 @@ export function SnippetCard({
           onClick={() => setExpanded((v) => !v)}
           className="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
         >
-          {expanded ? t("collapse") : t("showAllLines", { count: lineCount })}
+          {expanded ? t("collapse") : t("showAll")}
         </button>
       )}
     </div>
