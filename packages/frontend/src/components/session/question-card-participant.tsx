@@ -138,6 +138,7 @@ export function QuestionCardParticipant({
               "group relative rounded-xl border border-border bg-card p-4 transition-all",
               question.isFocused &&
                 "ring-2 ring-indigo-500/50 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
+              isOwn && "border-l-[3px] border-l-indigo-500",
             )}
           >
             {question.isFocused && (
