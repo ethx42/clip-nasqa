@@ -47,7 +47,15 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ### Active
 
-(No active requirements — define next milestone)
+<!-- v2.0 Performance & Instant Operations -->
+
+- [ ] Optimistic snippet updates for host push (instant UI feedback)
+- [ ] Direct client-to-AppSync mutations (eliminate Server Action network hop)
+- [ ] Lambda memory optimization (reduce cold starts)
+- [ ] SSR data fetch deduplication (eliminate redundant DynamoDB calls)
+- [ ] QA sort debounce reduction (faster perceived ordering)
+- [ ] Lazy translation loading in Server Actions (only on error paths)
+- [ ] Client-side syntax highlighting (eliminate Shiki Server Action round-trips)
 
 ### Out of Scope
 
@@ -62,10 +70,19 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - E2E tests on every PR — 5-15 min; run on main only
 - WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Current State
+## Current Milestone: v2.0 Performance & Instant Operations
 
-**Shipped:** v1.3 Participant & Host UX Refactor (2026-03-18)
-**Next milestone:** Not yet planned — run `/gsd:new-milestone` to start
+**Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
+
+**Target features:**
+
+- Optimistic UI for all mutations (snippets, questions, replies)
+- Direct client-to-AppSync mutations (bypass Netlify Server Action hop)
+- Lambda cold start reduction via memory tuning
+- SSR data fetch deduplication
+- Faster QA sort response
+- Lazy i18n in server actions
+- Client-side Shiki for instant syntax preview
 
 ## Context
 
@@ -115,4 +132,4 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ---
 
-_Last updated: 2026-03-18 after v1.3 milestone_
+_Last updated: 2026-03-17 after v2.0 milestone started_

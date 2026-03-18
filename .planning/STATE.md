@@ -5,20 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v1.3 Participant & Host UX Refactor
+**Current focus:** v2.0 Performance & Instant Operations
 
 ## Current Position
 
-Phase: 13 — UX Polish and Accessibility
-Plan: 02 of 02 complete
-Status: Phase 13 in progress (plan 02 complete)
-Last activity: 2026-03-17 — Phase 13 plan 02 executed (identity row above QAInput, 3px Indigo left-border accent on own questions)
-
-**Progress bar:** Phase 13 of 13 total (phases 11-13 are v1.3 scope)
-
-```
-v1.3: [###############] 2/3 phases complete (phase 12 complete: 3/3 plans; phase 13: 2/2 plans done)
-```
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-17 — Milestone v2.0 started
 
 ## Performance Metrics
 
@@ -57,5 +51,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 13-02-PLAN.md (identity row above QAInput, 3px Indigo left-border accent on own questions)
-Resume at: `/gsd:execute-phase 13` (check for remaining plans in phase 13)
+Stopped at: Milestone v2.0 initialized — defining requirements
+Resume at: Continue requirements definition
