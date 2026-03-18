@@ -175,6 +175,48 @@ export function useSessionUpdates(
               });
               break;
             }
+            case "QUESTION_EDITED": {
+              const { questionId, text, editedAt } = parsed as {
+                questionId: string;
+                text: string;
+                editedAt: number;
+              };
+              stableDispatch({ type: "QUESTION_EDITED", payload: { questionId, text, editedAt } });
+              break;
+            }
+            case "QUESTION_DELETED": {
+              const { questionId } = parsed as { questionId: string };
+              stableDispatch({ type: "QUESTION_DELETED", payload: { questionId } });
+              break;
+            }
+            case "REPLY_EDITED": {
+              const { replyId, text, editedAt } = parsed as {
+                replyId: string;
+                text: string;
+                editedAt: number;
+              };
+              stableDispatch({ type: "REPLY_EDITED", payload: { replyId, text, editedAt } });
+              break;
+            }
+            case "REPLY_DELETED": {
+              const { replyId } = parsed as { replyId: string };
+              stableDispatch({ type: "REPLY_DELETED", payload: { replyId } });
+              break;
+            }
+            case "SNIPPET_EDITED": {
+              const { snippetId, content, language, editedAt } = parsed as {
+                snippetId: string;
+                content: string;
+                language?: string;
+                editedAt: number;
+              };
+              stableDispatch({
+                type: "SNIPPET_EDITED",
+                payload: { snippetId, content, language, editedAt },
+              });
+              setLastHostActivity(Date.now());
+              break;
+            }
             default:
               console.warn("[useSessionUpdates] Unknown eventType:", eventType);
           }

@@ -118,6 +118,56 @@ export const REACT = `
   }
 `;
 
+export const EDIT_QUESTION = `
+  mutation EditQuestion($sessionCode: String!, $questionId: String!, $text: String!, $fingerprint: String, $hostSecretHash: String) {
+    editQuestion(sessionCode: $sessionCode, questionId: $questionId, text: $text, fingerprint: $fingerprint, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
+export const DELETE_QUESTION = `
+  mutation DeleteQuestion($sessionCode: String!, $questionId: String!, $fingerprint: String, $hostSecretHash: String) {
+    deleteQuestion(sessionCode: $sessionCode, questionId: $questionId, fingerprint: $fingerprint, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
+export const EDIT_REPLY = `
+  mutation EditReply($sessionCode: String!, $replyId: String!, $text: String!, $fingerprint: String, $hostSecretHash: String) {
+    editReply(sessionCode: $sessionCode, replyId: $replyId, text: $text, fingerprint: $fingerprint, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
+export const DELETE_REPLY = `
+  mutation DeleteReply($sessionCode: String!, $replyId: String!, $fingerprint: String, $hostSecretHash: String) {
+    deleteReply(sessionCode: $sessionCode, replyId: $replyId, fingerprint: $fingerprint, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
+export const EDIT_SNIPPET = `
+  mutation EditSnippet($sessionCode: String!, $snippetId: String!, $content: String!, $language: String, $hostSecretHash: String!) {
+    editSnippet(sessionCode: $sessionCode, snippetId: $snippetId, content: $content, language: $language, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
 export const GET_SESSION_DATA = `
   query GetSessionData($sessionCode: String!) {
     getSessionData(sessionCode: $sessionCode) {
@@ -128,6 +178,7 @@ export const GET_SESSION_DATA = `
         content
         language
         createdAt
+        editedAt
         TTL
       }
       questions {
@@ -145,6 +196,7 @@ export const GET_SESSION_DATA = `
         reactionCounts
         reactionOrder
         createdAt
+        editedAt
         TTL
       }
       replies {
@@ -157,6 +209,7 @@ export const GET_SESSION_DATA = `
         reactionCounts
         reactionOrder
         createdAt
+        editedAt
         TTL
       }
     }

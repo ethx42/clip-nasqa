@@ -34,7 +34,11 @@ export type ParticipantMutationName =
   | "upvoteQuestion"
   | "downvoteQuestion"
   | "addReply"
-  | "react";
+  | "react"
+  | "editQuestion"
+  | "editReply"
+  | "deleteQuestion"
+  | "deleteReply";
 
 /**
  * Direct AppSync HTTP POST from the browser — no Netlify Server Action round-trip.

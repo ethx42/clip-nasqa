@@ -40,6 +40,14 @@ export type SessionAction =
         counts: ReactionCounts;
         reactionOrder: string[];
       };
+    }
+  | { type: "QUESTION_EDITED"; payload: { questionId: string; text: string; editedAt: number } }
+  | { type: "QUESTION_DELETED"; payload: { questionId: string } }
+  | { type: "REPLY_EDITED"; payload: { replyId: string; text: string; editedAt: number } }
+  | { type: "REPLY_DELETED"; payload: { replyId: string } }
+  | {
+      type: "SNIPPET_EDITED";
+      payload: { snippetId: string; content: string; language?: string; editedAt: number };
     };
 
 // ── State shape ───────────────────────────────────────────────────────────────
@@ -299,6 +307,53 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
         ...state,
         replies: state.replies.map((r) =>
           r.id === targetId ? { ...r, reactionCounts, reactionOrder: reactionOrderStr } : r,
+        ),
+      };
+    }
+
+    case "QUESTION_EDITED": {
+      const { questionId, text, editedAt } = action.payload;
+      return {
+        ...state,
+        questions: state.questions.map((q) => (q.id === questionId ? { ...q, text, editedAt } : q)),
+      };
+    }
+
+    case "QUESTION_DELETED": {
+      return {
+        ...state,
+        questions: state.questions.filter((q) => q.id !== action.payload.questionId),
+      };
+    }
+
+    case "REPLY_EDITED": {
+      const { replyId, text, editedAt } = action.payload;
+      return {
+        ...state,
+        replies: state.replies.map((r) => (r.id === replyId ? { ...r, text, editedAt } : r)),
+      };
+    }
+
+    case "REPLY_DELETED": {
+      return {
+        ...state,
+        replies: state.replies.filter((r) => r.id !== action.payload.replyId),
+      };
+    }
+
+    case "SNIPPET_EDITED": {
+      const { snippetId, content, language, editedAt } = action.payload;
+      return {
+        ...state,
+        snippets: state.snippets.map((s) =>
+          s.id === snippetId
+            ? {
+                ...s,
+                content,
+                editedAt,
+                ...(language !== undefined ? { language } : {}),
+              }
+            : s,
         ),
       };
     }
