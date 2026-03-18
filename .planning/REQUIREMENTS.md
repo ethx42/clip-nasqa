@@ -19,7 +19,7 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 - [x] **MUT-02**: Host mutations (pushSnippet, deleteSnippet, clearClipboard, focusQuestion, banQuestion, banParticipant, restoreQuestion) remain as Server Actions for hostSecretHash security
 - [x] **MUT-03**: Shared `graphqlMutation()` client utility handles AppSync HTTP POST with error parsing
 - [x] **MUT-04**: `safeClientMutation()` wrapper provides consistent error handling with toast feedback
-- [ ] **MUT-05**: Remaining Server Actions lazy-load `getTranslations()` only in error paths
+- [x] **MUT-05**: Remaining Server Actions lazy-load `getTranslations()` only in error paths
 
 ### Optimistic UI
 
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MUT-02      | Phase 15 | Complete |
 | MUT-03      | Phase 15 | Complete |
 | MUT-04      | Phase 15 | Complete |
-| MUT-05      | Phase 15 | Pending  |
+| MUT-05      | Phase 15 | Complete |
 | OPT-01      | Phase 16 | Pending  |
 | OPT-02      | Phase 16 | Pending  |
 | OPT-03      | Phase 16 | Pending  |
