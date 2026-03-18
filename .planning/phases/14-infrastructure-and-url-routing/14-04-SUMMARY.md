@@ -24,9 +24,9 @@ decisions:
   - "JoinForm extracted to client component so page.tsx can export generateMetadata as a server component"
   - "Paste handler extracts first 6-digit sequence from pasted text via /(\d{6})/ — covers URLs, codes, and mixed content"
 metrics:
-  duration: "~6 min"
+  duration: "~8 min"
   completed: "2026-03-18"
-  tasks_completed: 2
+  tasks_completed: 3
   files_modified: 6
 ---
 
@@ -68,9 +68,18 @@ Voice-friendly session entry via nasqa.io/join with 6-digit OTP input, server-si
   - Consistent visual style with existing home and session OG images
   - Exports `alt`, `size`, `contentType` per Next.js OG route convention
 
-## Checkpoint: Task 3 — Human Verification
+## Task 3: Visual Verification
 
-Plan is paused at `checkpoint:human-verify` (Task 3). The development server must be running for verification.
+Human verified the /join page experience and approved. All 10 verification steps passed:
+
+- Standalone page renders with nasqa branding, tagline, and 6 digit boxes
+- Auto-focus lands on the first digit input on page load
+- Typing 6 invalid digits triggers shake animation, clears inputs, shows "Invalid code" message
+- Valid session code navigates to the session page
+- Paste from URL extracts the 6-digit code and auto-fills
+- Deep-link `/join?code=XXXXXX` auto-fills and submits
+- Dark mode renders correctly
+- OG image accessible at `/en/join/opengraph-image`
 
 ## Deviations from Plan
 
