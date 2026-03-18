@@ -171,6 +171,7 @@ export function useSessionMutations({
         text,
         fingerprint,
         authorName,
+        isHostQuestion: isHostReply,
         upvoteCount: 0,
         downvoteCount: 0,
         isHidden: false,
@@ -183,7 +184,13 @@ export function useSessionMutations({
       dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
       const result = await safeAction(
-        addQuestionAction({ sessionCode, text, fingerprint, authorName }),
+        addQuestionAction({
+          sessionCode,
+          text,
+          fingerprint,
+          authorName,
+          isHostQuestion: isHostReply,
+        }),
         tErrors("networkError"),
       );
 
@@ -194,7 +201,7 @@ export function useSessionMutations({
         onSubmitSuccess?.();
       }
     },
-    [sessionCode, fingerprint, authorName, dispatch, onSubmitSuccess, tErrors],
+    [sessionCode, fingerprint, authorName, isHostReply, dispatch, onSubmitSuccess, tErrors],
   );
 
   const handleReply = useCallback(

@@ -112,6 +112,7 @@ export const getSessionData = cache(async function getSessionData(
         text: item.text as string,
         fingerprint: item.fingerprint as string,
         authorName: item.authorName as string | undefined,
+        isHostQuestion: (item.isHostQuestion as boolean) ?? false,
         upvoteCount: (item.upvoteCount as number) ?? 0,
         downvoteCount: (item.downvoteCount as number) ?? 0,
         isHidden: (item.isHidden as boolean) ?? false,

@@ -33,6 +33,7 @@ describe("addQuestion", () => {
       sessionCode: "482913",
       text: "What is this?",
       fingerprint: VALID_FINGERPRINT,
+      isHostQuestion: false,
     });
 
     expect(result.eventType).toBe("QUESTION_ADDED");
@@ -46,6 +47,7 @@ describe("addQuestion", () => {
     expect(payload.isHidden).toBe(false);
     expect(payload.isFocused).toBe(false);
     expect(payload.isBanned).toBe(false);
+    expect(payload.isHostQuestion).toBe(false);
     expect(typeof payload.id).toBe("string");
     expect(payload.id.length).toBeGreaterThan(0);
   });
@@ -56,6 +58,7 @@ describe("addQuestion", () => {
       text: "Question with author",
       fingerprint: VALID_FINGERPRINT,
       authorName: "Alice",
+      isHostQuestion: false,
     });
 
     const payload = JSON.parse(result.payload as string);
@@ -67,6 +70,7 @@ describe("addQuestion", () => {
       sessionCode: "482913",
       text: "Anonymous question",
       fingerprint: VALID_FINGERPRINT,
+      isHostQuestion: false,
     });
 
     const payload = JSON.parse(result.payload as string);
@@ -79,6 +83,7 @@ describe("addQuestion", () => {
         sessionCode: "482913",
         text: "a".repeat(501),
         fingerprint: VALID_FINGERPRINT,
+        isHostQuestion: false,
       }),
     ).rejects.toThrow("Question text exceeds 500 character limit");
   });
@@ -92,6 +97,7 @@ describe("addQuestion", () => {
         sessionCode: "482913",
         text: "Banned user question",
         fingerprint: VALID_FINGERPRINT,
+        isHostQuestion: false,
       }),
     ).rejects.toThrow("PARTICIPANT_BANNED");
   });
@@ -111,6 +117,7 @@ describe("addQuestion", () => {
         sessionCode: "482913",
         text: "Rate limited question",
         fingerprint: VALID_FINGERPRINT,
+        isHostQuestion: false,
       }),
     ).rejects.toThrow("RATE_LIMIT_EXCEEDED");
   });
@@ -120,6 +127,7 @@ describe("addQuestion", () => {
       sessionCode: "482913",
       text: "Written to DB?",
       fingerprint: VALID_FINGERPRINT,
+      isHostQuestion: false,
     });
 
     expect(ddbMock).toHaveReceivedCommand(PutCommand);

@@ -9,6 +9,7 @@ function makeQuestion(overrides: Partial<Question> & { id: string }): Question {
     sessionCode: "test-session",
     text: "Test question",
     fingerprint: "fp-1",
+    isHostQuestion: false,
     upvoteCount: 0,
     downvoteCount: 0,
     isHidden: false,

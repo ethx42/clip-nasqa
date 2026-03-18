@@ -30,6 +30,7 @@ export interface QuestionItem {
   text: string;
   fingerprint: string;
   authorName?: string;
+  isHostQuestion: boolean;
   upvoteCount: number;
   downvoteCount: number;
   isHidden: boolean;
@@ -78,6 +79,7 @@ export interface Question {
   text: string;
   fingerprint: string;
   authorName?: string;
+  isHostQuestion: boolean;
   upvoteCount: number;
   downvoteCount: number;
   isHidden: boolean;
@@ -150,6 +152,7 @@ export interface AddQuestionArgs {
   text: string;
   fingerprint: string;
   authorName?: string;
+  isHostQuestion: boolean;
 }
 export interface UpvoteQuestionArgs {
   sessionCode: string;

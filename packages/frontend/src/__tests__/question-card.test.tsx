@@ -16,6 +16,7 @@ const baseQuestion: Question = {
   text: "What is the meaning of life?",
   fingerprint: "fp-viewer",
   authorName: undefined,
+  isHostQuestion: false,
   upvoteCount: 5,
   downvoteCount: 1,
   isHidden: false,

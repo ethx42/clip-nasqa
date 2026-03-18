@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, MicVocal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -138,7 +138,6 @@ export function QuestionCardParticipant({
               "group relative rounded-xl border border-border bg-card p-4 transition-all",
               question.isFocused &&
                 "ring-2 ring-indigo-500/50 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
-              isOwn && "border-l-[3px] border-l-indigo-500 dark:border-l-amber-400", // own-question accent
             )}
           >
             {question.isFocused && (
@@ -165,14 +164,18 @@ export function QuestionCardParticipant({
                   <PixelAvatar
                     seed={question.fingerprint}
                     size={28}
-                    className="shrink-0 rounded-full"
+                    className={cn(
+                      "shrink-0 rounded-full",
+                      isOwn &&
+                        "ring-2 ring-indigo-500 dark:ring-amber-400 ring-offset-2 ring-offset-background",
+                    )}
                   />
                   <span
                     title={question.authorName || undefined}
                     className={cn(
                       "text-[13px] font-semibold truncate max-w-[10rem]",
                       isOwn
-                        ? "text-indigo-600 dark:text-amber-400"
+                        ? "text-indigo-600 dark:text-amber-400 pl-1"
                         : question.authorName
                           ? "text-foreground/80"
                           : "text-muted-foreground/60",
@@ -184,6 +187,9 @@ export function QuestionCardParticipant({
                         ? formatDisplayName(question.authorName)
                         : tIdentity("anonymous")}
                   </span>
+                  {question.isHostQuestion && (
+                    <MicVocal className="h-3.5 w-3.5 text-indigo-500 dark:text-amber-400 shrink-0" />
+                  )}
                   <span className="text-[12px] text-muted-foreground/50">
                     {formatRelativeTime(question.createdAt, tSession)}
                   </span>

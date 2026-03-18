@@ -28,6 +28,7 @@ type Question {
   text: String!
   fingerprint: String!
   authorName: String
+  isHostQuestion: Boolean!
   upvoteCount: Int!
   downvoteCount: Int!
   isHidden: Boolean!
@@ -90,7 +91,7 @@ type Mutation {
   pushSnippet(sessionCode: String!, hostSecretHash: String!, content: String!, type: String!, language: String): SessionUpdate!
   deleteSnippet(sessionCode: String!, hostSecretHash: String!, snippetId: String!): SessionUpdate!
   clearClipboard(sessionCode: String!, hostSecretHash: String!): SessionUpdate!
-  addQuestion(sessionCode: String!, text: String!, fingerprint: String!, authorName: String): SessionUpdate!
+  addQuestion(sessionCode: String!, text: String!, fingerprint: String!, authorName: String, isHostQuestion: Boolean!): SessionUpdate!
   upvoteQuestion(sessionCode: String!, questionId: String!, fingerprint: String!, remove: Boolean): SessionUpdate!
   addReply(sessionCode: String!, questionId: String!, text: String!, fingerprint: String!, isHostReply: Boolean!, authorName: String): SessionUpdate!
   focusQuestion(sessionCode: String!, hostSecretHash: String!, questionId: String): SessionUpdate!

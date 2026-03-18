@@ -34,6 +34,7 @@ export async function addQuestionAction(args: {
   text: string;
   fingerprint: string;
   authorName?: string;
+  isHostQuestion: boolean;
 }): Promise<ActionResult> {
   const t = await getTranslations("actionErrors");
 

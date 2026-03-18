@@ -36,7 +36,7 @@ async function verifyHostSecret(sessionCode: string, hostSecretHash: string): Pr
 }
 
 export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate> {
-  const { sessionCode, text, fingerprint, authorName } = args;
+  const { sessionCode, text, fingerprint, authorName, isHostQuestion } = args;
 
   // Enforce ban and rate limit before any write
   await checkNotBanned(sessionCode, fingerprint);
@@ -57,6 +57,7 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
     sessionCode,
     text,
     fingerprint,
+    isHostQuestion: !!isHostQuestion,
     upvoteCount: 0,
     downvoteCount: 0,
     isHidden: false,
@@ -86,6 +87,7 @@ export async function addQuestion(args: AddQuestionArgs): Promise<SessionUpdate>
       text,
       fingerprint,
       authorName: authorName ?? null,
+      isHostQuestion: !!isHostQuestion,
       upvoteCount: 0,
       downvoteCount: 0,
       isHidden: false,

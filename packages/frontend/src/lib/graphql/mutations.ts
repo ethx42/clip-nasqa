@@ -29,8 +29,8 @@ export const CLEAR_CLIPBOARD = `
 `;
 
 export const ADD_QUESTION = `
-  mutation AddQuestion($sessionCode: String!, $text: String!, $fingerprint: String!, $authorName: String) {
-    addQuestion(sessionCode: $sessionCode, text: $text, fingerprint: $fingerprint, authorName: $authorName) {
+  mutation AddQuestion($sessionCode: String!, $text: String!, $fingerprint: String!, $authorName: String, $isHostQuestion: Boolean!) {
+    addQuestion(sessionCode: $sessionCode, text: $text, fingerprint: $fingerprint, authorName: $authorName, isHostQuestion: $isHostQuestion) {
       eventType
       sessionCode
       payload
@@ -136,6 +136,7 @@ export const GET_SESSION_DATA = `
         text
         fingerprint
         authorName
+        isHostQuestion
         upvoteCount
         downvoteCount
         isHidden
