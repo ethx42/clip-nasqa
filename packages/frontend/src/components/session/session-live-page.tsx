@@ -74,6 +74,10 @@ export function SessionLivePage({
     handleDownvote,
     handleAddQuestion,
     handleReply,
+    handleEditQuestion,
+    handleDeleteQuestion,
+    handleEditReply,
+    handleDeleteReply,
     isPending: isMutationPending,
     restoredText: restoredInputText,
   } = useSessionMutations({
@@ -129,6 +133,10 @@ export function SessionLivePage({
             onDownvote={handleDownvote}
             onAddQuestion={handleAddQuestion}
             onReply={handleReply}
+            onEditQuestion={handleEditQuestion}
+            onDeleteQuestion={handleDeleteQuestion}
+            onEditReply={handleEditReply}
+            onDeleteReply={handleDeleteReply}
             isMutationPending={isMutationPending}
             restoredInputText={restoredInputText}
           />

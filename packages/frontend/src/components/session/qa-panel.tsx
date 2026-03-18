@@ -32,6 +32,10 @@ interface QAPanelProps {
   onBanQuestion?: (questionId: string) => void;
   onBanParticipant?: (fingerprint: string) => void;
   onRestore?: (questionId: string) => void;
+  onEditQuestion?: (questionId: string, text: string) => void;
+  onDeleteQuestion?: (questionId: string) => void;
+  onEditReply?: (replyId: string, text: string) => void;
+  onDeleteReply?: (replyId: string) => void;
   /** Whether a question/reply submission is in-flight. Controls QAInput spinner. */
   isMutationPending?: boolean;
   /** Text to restore in QAInput after a failed submission. */
@@ -59,6 +63,10 @@ export function QAPanel({
   onBanQuestion,
   onBanParticipant,
   onRestore,
+  onEditQuestion,
+  onDeleteQuestion,
+  onEditReply,
+  onDeleteReply,
   isMutationPending = false,
   restoredInputText = "",
 }: QAPanelProps) {
@@ -194,6 +202,10 @@ export function QAPanel({
                     onBanQuestion={onBanQuestion}
                     onBanParticipant={onBanParticipant}
                     onRestore={onRestore}
+                    onEdit={onEditQuestion}
+                    onDelete={onDeleteQuestion}
+                    onEditReply={onEditReply}
+                    onDeleteReply={onDeleteReply}
                   />
                 </motion.div>
               ))}

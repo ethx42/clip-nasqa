@@ -2,7 +2,7 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { AnimatePresence, motion } from "framer-motion";
-import { Ban, MessageSquare, MicVocal, ShieldX } from "lucide-react";
+import { Ban, Check, MessageSquare, MicVocal, Pencil, ShieldX, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -44,6 +44,10 @@ export function QuestionCardHost({
   onBanQuestion,
   onBanParticipant,
   onRestore,
+  onEdit,
+  onDelete,
+  onEditReply,
+  onDeleteReply,
 }: QuestionCardHostProps) {
   const t = useTranslations("moderation");
   const tSession = useTranslations("session");
@@ -54,6 +58,9 @@ export function QuestionCardHost({
   const [replyText, setReplyText] = useState("");
   const [showHiddenContent, setShowHiddenContent] = useState(false);
   const [banConfirmOpen, setBanConfirmOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(question.text);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isVoted = votedQuestionIds.has(question.id);
   const isDownvoted = downvotedQuestionIds.has(question.id);
@@ -105,6 +112,23 @@ export function QuestionCardHost({
   function handleConfirmBanParticipant() {
     setBanConfirmOpen(false);
     onBanParticipant?.(question.fingerprint);
+  }
+
+  function handleEditSave() {
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+    onEdit?.(question.id, trimmed);
+    setIsEditing(false);
+  }
+
+  function handleEditCancel() {
+    setEditText(question.text);
+    setIsEditing(false);
+  }
+
+  function handleConfirmDelete() {
+    setDeleteConfirmOpen(false);
+    onDelete?.(question.id);
   }
 
   // Determine visual state key for AnimatePresence
@@ -218,6 +242,16 @@ export function QuestionCardHost({
                       {formatRelativeTime(question.createdAt, tSession)}
                     </span>
 
+                    {/* Edited badge */}
+                    {question.editedAt && (
+                      <span
+                        className="text-[11px] text-muted-foreground/60"
+                        title={new Date(question.editedAt * 1000).toLocaleString()}
+                      >
+                        {tSession("edited")}
+                      </span>
+                    )}
+
                     {/* Hidden badge + collapse button (when expanded) */}
                     {question.isHidden && showHiddenContent && (
                       <>
@@ -236,80 +270,137 @@ export function QuestionCardHost({
                     {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Host inline moderation icons */}
-                    <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={handleFocusToggle}
-                        aria-label={
-                          question.isFocused
-                            ? tSession("unfocusQuestion")
-                            : tSession("focusQuestion")
-                        }
-                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                        title={
-                          question.isFocused
-                            ? tSession("unfocusQuestion")
-                            : tSession("focusQuestion")
-                        }
-                      >
-                        <span className="text-xs font-bold">{question.isFocused ? "●" : "○"}</span>
-                      </button>
-                      <button
-                        onClick={handleBanQuestionClick}
-                        aria-label={t("banQuestion")}
-                        title={t("banQuestion")}
-                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <ShieldX className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setBanConfirmOpen(true)}
-                        aria-label={t("banParticipant")}
-                        title={t("banParticipant")}
-                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Ban className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {/* Host inline moderation icons — edit/delete + existing moderation */}
+                    {!isEditing && (
+                      <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            setEditText(question.text);
+                            setIsEditing(true);
+                          }}
+                          aria-label={tSession("editQuestion")}
+                          title={tSession("editQuestion")}
+                          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmOpen(true)}
+                          aria-label={tSession("deleteQuestion")}
+                          title={tSession("deleteQuestion")}
+                          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={handleFocusToggle}
+                          aria-label={
+                            question.isFocused
+                              ? tSession("unfocusQuestion")
+                              : tSession("focusQuestion")
+                          }
+                          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          title={
+                            question.isFocused
+                              ? tSession("unfocusQuestion")
+                              : tSession("focusQuestion")
+                          }
+                        >
+                          <span className="text-xs font-bold">
+                            {question.isFocused ? "●" : "○"}
+                          </span>
+                        </button>
+                        <button
+                          onClick={handleBanQuestionClick}
+                          aria-label={t("banQuestion")}
+                          title={t("banQuestion")}
+                          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <ShieldX className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setBanConfirmOpen(true)}
+                          aria-label={t("banParticipant")}
+                          title={t("banParticipant")}
+                          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Ban className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Question body */}
-                  <p className="break-words text-base leading-relaxed text-foreground">
-                    {linkifyText(question.text)}
-                  </p>
+                  {/* Question body — inline edit or display */}
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        rows={Math.max(2, editText.split("\n").length)}
+                        maxLength={500}
+                        className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        autoFocus
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={handleEditCancel}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          {tSession("cancelEdit")}
+                        </button>
+                        <button
+                          onClick={handleEditSave}
+                          disabled={!editText.trim()}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {tSession("saveEdit")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="break-words text-base leading-relaxed text-foreground">
+                      {linkifyText(question.text)}
+                    </p>
+                  )}
 
                   {/* Action row */}
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
-                    {replies.length > 0 && (
+                  {!isEditing && (
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+                      {replies.length > 0 && (
+                        <button
+                          onClick={() => setShowReplies((v) => !v)}
+                          className="flex items-center gap-1 transition-colors hover:text-foreground"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          {tSession("replyCount", { count: replies.length })}
+                        </button>
+                      )}
                       <button
-                        onClick={() => setShowReplies((v) => !v)}
-                        className="flex items-center gap-1 transition-colors hover:text-foreground"
+                        onClick={() => setShowReplyInput((v) => !v)}
+                        className="font-semibold transition-colors hover:text-foreground"
                       >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        {tSession("replyCount", { count: replies.length })}
+                        {tSession("reply")}
                       </button>
-                    )}
-                    <button
-                      onClick={() => setShowReplyInput((v) => !v)}
-                      className="font-semibold transition-colors hover:text-foreground"
-                    >
-                      {tSession("reply")}
-                    </button>
-                  </div>
+                    </div>
+                  )}
 
                   {/* Reaction bar */}
-                  <ReactionBar
-                    sessionCode={question.sessionCode}
-                    targetId={question.id}
-                    targetType="QUESTION"
-                    reactionCounts={question.reactionCounts}
-                    reactionOrder={question.reactionOrder}
-                    fingerprint={fingerprint}
-                    className="mt-2"
-                  />
+                  {!isEditing && (
+                    <ReactionBar
+                      sessionCode={question.sessionCode}
+                      targetId={question.id}
+                      targetType="QUESTION"
+                      reactionCounts={question.reactionCounts}
+                      reactionOrder={question.reactionOrder}
+                      fingerprint={fingerprint}
+                      className="mt-2"
+                    />
+                  )}
 
                   {/* Inline reply input */}
-                  {showReplyInput && (
+                  {showReplyInput && !isEditing && (
                     <div className="mt-4">
                       <div className="relative">
                         <textarea
@@ -360,13 +451,15 @@ export function QuestionCardHost({
                   )}
 
                   {/* Expanded reply list */}
-                  {showReplies && replies.length > 0 && (
+                  {showReplies && replies.length > 0 && !isEditing && (
                     <div className="mt-4">
                       <ReplyList
                         replies={replies}
                         isHost={true}
                         sessionCode={question.sessionCode}
                         fingerprint={fingerprint}
+                        onEditReply={onEditReply}
+                        onDeleteReply={onDeleteReply}
                       />
                     </div>
                   )}
@@ -401,6 +494,37 @@ export function QuestionCardHost({
                   className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
                 >
                   {t("confirmBan")}
+                </button>
+              </div>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* Delete question confirmation dialog */}
+      <Dialog.Root open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+              <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
+                {tSession("confirmDeleteQuestion")}
+              </Dialog.Title>
+              <Dialog.Description className="mb-5 text-sm text-muted-foreground">
+                {tSession("confirmDeleteQuestionDesc")}
+              </Dialog.Description>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirmOpen(false)}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                >
+                  {tCommon("cancel")}
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                >
+                  {tSession("deleteQuestion")}
                 </button>
               </div>
             </div>

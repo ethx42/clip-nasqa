@@ -73,6 +73,17 @@ export function SessionLiveHostPage({
     questionsRef.current = state.questions;
   }, [state.questions]);
 
+  // Keep refs to replies and snippets for host edit/delete rollback
+  const repliesRef = useRef(state.replies);
+  useEffect(() => {
+    repliesRef.current = state.replies;
+  }, [state.replies]);
+
+  const snippetsRef = useRef(state.snippets);
+  useEffect(() => {
+    snippetsRef.current = state.snippets;
+  }, [state.snippets]);
+
   const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionCode, dispatch);
 
   const {
@@ -104,11 +115,18 @@ export function SessionLiveHostPage({
     handleBanQuestion,
     handleBanParticipant,
     handleRestoreQuestion,
+    handleHostEditQuestion,
+    handleHostDeleteQuestion,
+    handleHostEditReply,
+    handleHostDeleteReply,
+    handleEditSnippet,
   } = useHostMutations({
     sessionCode,
     hostSecretHash,
     dispatch,
     questionsRef,
+    repliesRef,
+    snippetsRef,
   });
 
   const { handlePush, handleEditStart, handleEditEnd, handleRetry, handleDismissFailed } =
@@ -147,6 +165,7 @@ export function SessionLiveHostPage({
           onDismissFailed={handleDismissFailed}
           onEditStart={handleEditStart}
           onEditEnd={handleEditEnd}
+          onEditSnippet={handleEditSnippet}
           failedSnippetIds={failedSnippetIds}
         />
       }
@@ -170,6 +189,10 @@ export function SessionLiveHostPage({
           onBanQuestion={handleBanQuestion}
           onBanParticipant={handleBanParticipant}
           onRestore={handleRestoreQuestion}
+          onEditQuestion={handleHostEditQuestion}
+          onDeleteQuestion={handleHostDeleteQuestion}
+          onEditReply={handleHostEditReply}
+          onDeleteReply={handleHostDeleteReply}
           isMutationPending={isMutationPending}
           restoredInputText={restoredInputText}
         />
