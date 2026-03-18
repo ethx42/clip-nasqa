@@ -32,6 +32,10 @@ interface QAPanelProps {
   onBanQuestion?: (questionId: string) => void;
   onBanParticipant?: (fingerprint: string) => void;
   onRestore?: (questionId: string) => void;
+  /** Whether a question/reply submission is in-flight. Controls QAInput spinner. */
+  isMutationPending?: boolean;
+  /** Text to restore in QAInput after a failed submission. */
+  restoredInputText?: string;
 }
 
 const SCROLL_THRESHOLD = 80; // px scrolled down before showing banner
@@ -55,6 +59,8 @@ export function QAPanel({
   onBanQuestion,
   onBanParticipant,
   onRestore,
+  isMutationPending = false,
+  restoredInputText = "",
 }: QAPanelProps) {
   const t = useTranslations("session");
   const prefersReduced = useReducedMotion();
@@ -202,6 +208,8 @@ export function QAPanel({
         isBanned={isUserBanned}
         fingerprint={fingerprint}
         authorName={authorName}
+        isPending={isMutationPending}
+        restoredText={restoredInputText}
       />
     </div>
   );

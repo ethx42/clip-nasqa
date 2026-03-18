@@ -1,15 +1,21 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import type { Question, Reply } from "@nasqa/core";
 
-import { downvoteQuestionAction } from "@/actions/moderation";
-import { addQuestionAction, addReplyAction, upvoteQuestionAction } from "@/actions/qa";
 import type { SessionAction } from "@/hooks/use-session-state";
-import { safeAction } from "@/lib/safe-action";
+import { graphqlMutation } from "@/lib/appsync-client";
+import {
+  ADD_QUESTION,
+  ADD_REPLY,
+  DOWNVOTE_QUESTION,
+  UPVOTE_QUESTION,
+} from "@/lib/graphql/mutations";
+import { reportError } from "@/lib/report-error";
+import { safeClientMutation } from "@/lib/safe-action";
 
 interface UseSessionMutationsParams {
   sessionCode: string;
@@ -36,6 +42,37 @@ interface SessionMutations {
   handleDownvote: (questionId: string, remove: boolean) => Promise<void>;
   handleAddQuestion: (text: string) => Promise<void>;
   handleReply: (questionId: string, text: string) => Promise<void>;
+  isPending: boolean;
+  restoredText: string;
+}
+
+// ── Internal helpers for upvote/downvote with VOTE_CONFLICT silence ────────────
+
+async function callVoteMutation(
+  fn: () => Promise<unknown>,
+): Promise<{ success: true } | { success: false; error: string | "VOTE_CONFLICT" }> {
+  try {
+    await fn();
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("VOTE_CONFLICT")) {
+      return { success: false, error: "VOTE_CONFLICT" };
+    }
+    // One silent retry after 1 second
+    await new Promise<void>((r) => setTimeout(r, 1000));
+    try {
+      await fn();
+      return { success: true };
+    } catch (retryErr) {
+      const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+      if (retryMsg.includes("VOTE_CONFLICT")) {
+        return { success: false, error: "VOTE_CONFLICT" };
+      }
+      reportError(retryErr instanceof Error ? retryErr : new Error(retryMsg));
+      return { success: false, error: retryMsg };
+    }
+  }
 }
 
 export function useSessionMutations({
@@ -45,7 +82,7 @@ export function useSessionMutations({
   dispatch,
   questionsRef,
   votedIds,
-  downvotedIds,
+  downvotedIds: _downvotedIds,
   addVote,
   removeVote,
   addDownvote,
@@ -55,6 +92,9 @@ export function useSessionMutations({
   onReplySuccess,
 }: UseSessionMutationsParams): SessionMutations {
   const tErrors = useTranslations("actionErrors");
+
+  const [isPending, setIsPending] = useState(false);
+  const [restoredText, setRestoredText] = useState("");
 
   const handleUpvote = useCallback(
     async (questionId: string, remove: boolean) => {
@@ -69,14 +109,18 @@ export function useSessionMutations({
         addVote(questionId);
       }
 
-      const result = await safeAction(
-        upvoteQuestionAction({ sessionCode, questionId, fingerprint, remove }),
-        tErrors("networkError"),
+      const result = await callVoteMutation(() =>
+        graphqlMutation("upvoteQuestion", UPVOTE_QUESTION, {
+          sessionCode,
+          questionId,
+          fingerprint,
+          remove,
+        }),
       );
 
       if (!result.success) {
         // VOTE_CONFLICT is a dedup signal — handle silently (not a user error)
-        if (!("error" in result) || result.error !== "VOTE_CONFLICT") {
+        if (result.error !== "VOTE_CONFLICT") {
           dispatch({
             type: "QUESTION_UPDATED",
             payload: { questionId, upvoteDelta: remove ? 1 : -1 },
@@ -86,7 +130,7 @@ export function useSessionMutations({
           } else {
             removeVote(questionId);
           }
-          toast.error(result.error, { duration: 5000 });
+          toast.error(tErrors("clientFailedUpvote"), { duration: 4000 });
         }
       }
     },
@@ -122,30 +166,36 @@ export function useSessionMutations({
         }
       }
 
-      const result = await safeAction(
-        downvoteQuestionAction({ sessionCode, questionId, fingerprint, remove }),
-        tErrors("networkError"),
+      const result = await callVoteMutation(() =>
+        graphqlMutation("downvoteQuestion", DOWNVOTE_QUESTION, {
+          sessionCode,
+          questionId,
+          fingerprint,
+          remove,
+        }),
       );
 
       if (!result.success) {
-        // Rollback — read live questions via ref to avoid stale closure
-        dispatch({
-          type: "QUESTION_UPDATED",
-          payload: {
-            questionId,
-            downvoteCount: (() => {
-              const q = questionsRef.current.find((q) => q.id === questionId);
-              if (!q) return undefined;
-              return remove ? q.downvoteCount + 1 : Math.max(0, q.downvoteCount - 1);
-            })(),
-          },
-        });
-        if (remove) {
-          addDownvote(questionId);
-        } else {
-          removeDownvote(questionId);
+        if (result.error !== "VOTE_CONFLICT") {
+          // Rollback — read live questions via ref to avoid stale closure
+          dispatch({
+            type: "QUESTION_UPDATED",
+            payload: {
+              questionId,
+              downvoteCount: (() => {
+                const q = questionsRef.current.find((q) => q.id === questionId);
+                if (!q) return undefined;
+                return remove ? q.downvoteCount + 1 : Math.max(0, q.downvoteCount - 1);
+              })(),
+            },
+          });
+          if (remove) {
+            addDownvote(questionId);
+          } else {
+            removeDownvote(questionId);
+          }
+          toast.error(tErrors("clientFailedDownvote"), { duration: 4000 });
         }
-        toast.error(result.error, { duration: 5000 });
       }
     },
     [
@@ -163,6 +213,17 @@ export function useSessionMutations({
 
   const handleAddQuestion = useCallback(
     async (text: string) => {
+      // Client-side validation
+      if (text.trim().length === 0 || text.length > 500) {
+        toast.error(
+          text.trim().length === 0 ? tErrors("questionEmpty") : tErrors("questionTooLong"),
+          { duration: 4000 },
+        );
+        return;
+      }
+
+      setIsPending(true);
+
       // Optimistic question with temp id
       const tempId = `_opt_${Date.now()}`;
       const optimisticQuestion: Question = {
@@ -183,22 +244,33 @@ export function useSessionMutations({
 
       dispatch({ type: "ADD_QUESTION_OPTIMISTIC", payload: optimisticQuestion });
 
-      const result = await safeAction(
-        addQuestionAction({
-          sessionCode,
-          text,
-          fingerprint,
-          authorName,
-          isHostQuestion: isHostReply,
-        }),
-        tErrors("networkError"),
-      );
+      try {
+        const result = await safeClientMutation(
+          () =>
+            graphqlMutation("addQuestion", ADD_QUESTION, {
+              sessionCode,
+              text,
+              fingerprint,
+              authorName,
+              isHostQuestion: isHostReply,
+            }),
+          {
+            rateLimitMessage: tErrors("clientRateLimited"),
+            bannedMessage: tErrors("clientBanned"),
+            networkMessage: tErrors("clientNetworkOffline"),
+            serverMessage: tErrors("clientFailedQuestion"),
+          },
+        );
 
-      if (!result.success) {
-        dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-        toast.error(result.error, { duration: 5000 });
-      } else {
-        onSubmitSuccess?.();
+        if (!result.success) {
+          dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
+          setRestoredText(text);
+          // Do NOT call onSubmitSuccess — preserve input text for retry
+        } else {
+          onSubmitSuccess?.();
+        }
+      } finally {
+        setIsPending(false);
       }
     },
     [sessionCode, fingerprint, authorName, isHostReply, dispatch, onSubmitSuccess, tErrors],
@@ -206,6 +278,16 @@ export function useSessionMutations({
 
   const handleReply = useCallback(
     async (questionId: string, text: string) => {
+      // Client-side validation
+      if (text.trim().length === 0 || text.length > 500) {
+        toast.error(text.trim().length === 0 ? tErrors("replyEmpty") : tErrors("replyTooLong"), {
+          duration: 4000,
+        });
+        return;
+      }
+
+      setIsPending(true);
+
       // Optimistic reply with temp id
       const tempId = `_opt_${Date.now()}`;
       const optimisticReply: Reply = {
@@ -222,20 +304,38 @@ export function useSessionMutations({
 
       dispatch({ type: "REPLY_ADDED", payload: optimisticReply });
 
-      const result = await safeAction(
-        addReplyAction({ sessionCode, questionId, text, fingerprint, isHostReply, authorName }),
-        tErrors("networkError"),
-      );
+      try {
+        const result = await safeClientMutation(
+          () =>
+            graphqlMutation("addReply", ADD_REPLY, {
+              sessionCode,
+              questionId,
+              text,
+              fingerprint,
+              isHostReply,
+              authorName,
+            }),
+          {
+            rateLimitMessage: tErrors("clientRateLimited"),
+            bannedMessage: tErrors("clientBanned"),
+            networkMessage: tErrors("clientNetworkOffline"),
+            serverMessage: tErrors("clientFailedReply"),
+          },
+        );
 
-      if (!result.success) {
-        dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
-        toast.error(result.error, { duration: 5000 });
-      } else {
-        onReplySuccess?.();
+        if (!result.success) {
+          dispatch({ type: "REMOVE_OPTIMISTIC", payload: { id: tempId } });
+          setRestoredText(text);
+          // Do NOT call onReplySuccess — preserve input text for retry
+        } else {
+          onReplySuccess?.();
+        }
+      } finally {
+        setIsPending(false);
       }
     },
     [sessionCode, fingerprint, authorName, isHostReply, dispatch, onReplySuccess, tErrors],
   );
 
-  return { handleUpvote, handleDownvote, handleAddQuestion, handleReply };
+  return { handleUpvote, handleDownvote, handleAddQuestion, handleReply, isPending, restoredText };
 }

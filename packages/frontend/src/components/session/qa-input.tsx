@@ -1,6 +1,6 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -17,6 +17,10 @@ interface QAInputProps {
   isBanned?: boolean;
   fingerprint?: string;
   authorName?: string;
+  /** When true, disables the input and shows a spinner on the send button. */
+  isPending?: boolean;
+  /** When truthy, restores this text into the input (e.g. after a failed submission). */
+  restoredText?: string;
 }
 
 export function QAInput({
@@ -25,14 +29,26 @@ export function QAInput({
   isBanned = false,
   fingerprint,
   authorName,
+  isPending = false,
+  restoredText = "",
 }: QAInputProps) {
   const t = useTranslations("moderation");
   const tSession = useTranslations("session");
   const tIdentity = useTranslations("identity");
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevRestoredTextRef = useRef("");
 
-  const isEffectivelyDisabled = disabled || isBanned;
+  const isEffectivelyDisabled = disabled || isBanned || isPending;
+
+  // Restore text when restoredText prop changes to a truthy value (failed submission)
+  useEffect(() => {
+    if (restoredText && restoredText !== prevRestoredTextRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring failed submission text from parent prop change
+      setText(restoredText);
+      prevRestoredTextRef.current = restoredText;
+    }
+  }, [restoredText]);
 
   // Auto-resize textarea between 1-3 rows
   useEffect(() => {
@@ -108,7 +124,7 @@ export function QAInput({
           aria-label={tSession("sendQuestion")}
           className="flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Send className="h-5 w-5" />
+          {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
         </button>
       </div>
 

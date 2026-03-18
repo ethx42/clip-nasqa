@@ -7,7 +7,7 @@ import { appsyncMutation } from "@/lib/appsync-server";
 import {
   BAN_PARTICIPANT,
   BAN_QUESTION,
-  DOWNVOTE_QUESTION,
+  FOCUS_QUESTION,
   RESTORE_QUESTION,
 } from "@/lib/graphql/mutations";
 import { reportError } from "@/lib/report-error";
@@ -18,7 +18,7 @@ function parseRateLimitOrBan(
   fallbackKey: keyof {
     failedBanQuestion: string;
     failedBanParticipant: string;
-    failedDownvote: string;
+    failedFocusQuestion: string;
     failedRestore: string;
   },
 ): { success: false; error: string } {
@@ -66,20 +66,19 @@ export async function banParticipantAction(args: {
   }
 }
 
-export async function downvoteQuestionAction(args: {
+export async function focusQuestionAction(args: {
   sessionCode: string;
-  questionId: string;
-  fingerprint: string;
-  remove?: boolean;
+  hostSecretHash: string;
+  questionId?: string;
 }): Promise<ActionResult> {
   const t = await getTranslations("actionErrors");
 
   try {
-    await appsyncMutation(DOWNVOTE_QUESTION, args);
+    await appsyncMutation(FOCUS_QUESTION, args);
     return { success: true };
   } catch (err) {
     reportError(err instanceof Error ? err : new Error(String(err)));
-    return parseRateLimitOrBan(err, t, "failedDownvote");
+    return parseRateLimitOrBan(err, t, "failedFocusQuestion");
   }
 }
 

@@ -69,7 +69,14 @@ export function SessionLivePage({
 
   const { connectionStatus, lastHostActivity } = useSessionUpdates(sessionCode, dispatch);
 
-  const { handleUpvote, handleDownvote, handleAddQuestion, handleReply } = useSessionMutations({
+  const {
+    handleUpvote,
+    handleDownvote,
+    handleAddQuestion,
+    handleReply,
+    isPending: isMutationPending,
+    restoredText: restoredInputText,
+  } = useSessionMutations({
     sessionCode,
     fingerprint,
     authorName,
@@ -122,6 +129,8 @@ export function SessionLivePage({
             onDownvote={handleDownvote}
             onAddQuestion={handleAddQuestion}
             onReply={handleReply}
+            isMutationPending={isMutationPending}
+            restoredInputText={restoredInputText}
           />
         }
       />

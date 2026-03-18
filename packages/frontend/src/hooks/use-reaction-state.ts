@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EMOJI_KEYS } from "@nasqa/core";
 import type { EmojiKey, ReactionCounts } from "@nasqa/core";
 
-import { reactAction } from "@/actions/reactions";
+import { graphqlMutation } from "@/lib/appsync-client";
+import { REACT } from "@/lib/graphql/mutations";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ interface UseReactionStateResult {
  *
  * - Active emojis are tracked in localStorage and component state.
  * - Tapping an emoji immediately shows the delta (optimistic).
- * - After 300ms, calls reactAction on the server.
+ * - After 300ms, calls graphqlMutation directly from the client.
  * - On server failure, silently reverts (no toast).
  * - On success, pending stays until the subscription updates serverCounts — no flash.
  */
@@ -163,15 +164,20 @@ export function useReactionState({
 
       debounceTimerRef.current = setTimeout(() => {
         void (async () => {
-          const result = await reactAction({
-            sessionCode,
-            targetId,
-            targetType,
-            emoji,
-            fingerprint,
-          });
+          let mutationSuccess = true;
+          try {
+            await graphqlMutation("react", REACT, {
+              sessionCode,
+              targetId,
+              targetType,
+              emoji,
+              fingerprint,
+            });
+          } catch {
+            mutationSuccess = false;
+          }
 
-          if (!result.success && preToggleRef.current) {
+          if (!mutationSuccess && preToggleRef.current) {
             // Silent rollback — revert activeEmojis and clear pending immediately
             const { activeEmojis: prevActiveEmojis } = preToggleRef.current;
             setActiveEmojis(prevActiveEmojis);

@@ -9,9 +9,9 @@ import type { Question } from "@nasqa/core";
 import {
   banParticipantAction,
   banQuestionAction,
+  focusQuestionAction,
   restoreQuestionAction,
 } from "@/actions/moderation";
-import { focusQuestionAction } from "@/actions/qa";
 import { clearClipboardAction, deleteSnippetAction } from "@/actions/snippet";
 import type { SessionAction } from "@/hooks/use-session-state";
 import { safeAction } from "@/lib/safe-action";
