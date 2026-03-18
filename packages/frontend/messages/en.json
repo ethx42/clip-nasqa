@@ -90,7 +90,10 @@
     "sessionNotFound": "Session not found or expired",
     "sessionNotFoundDesc": "This session may have ended or the link is incorrect.",
     "createNewSession": "Create a new session",
-    "copyUrl": "Copy URL"
+    "copyUrl": "Copy URL",
+    "sessionExpired": "This session has ended",
+    "sessionExpiredDesc": "Sessions expire after 24 hours. The content is no longer available.",
+    "backToHome": "Back to home"
   },
   "moderation": {
     "questionRemoved": "This question was removed.",

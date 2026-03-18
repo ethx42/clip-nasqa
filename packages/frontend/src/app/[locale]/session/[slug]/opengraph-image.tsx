@@ -27,21 +27,29 @@ function LogoMark({ size: s, color }: { size: number; color: string }) {
 
 export default async function SessionOGImage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const session = await getSession(slug);
+
+  let session: Awaited<ReturnType<typeof getSession>> = null;
+  try {
+    session = await getSession(slug);
+  } catch {
+    /* DynamoDB or network error — fall through to fallback card */
+  }
 
   if (!session) {
+    const homeQrUrl = "https://clip.nasqa.io";
+
     return new ImageResponse(
       <div
         style={{
           width: "100%",
           height: "100%",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           backgroundColor: "#09090b",
           position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Top accent line */}
         <div
           style={{
             position: "absolute",
@@ -52,36 +60,204 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
             background: "linear-gradient(90deg, #4f46e5 0%, #818cf8 50%, #4f46e5 100%)",
           }}
         />
+
+        {/* Primary glow */}
         <div
           style={{
             position: "absolute",
-            width: 600,
-            height: 600,
+            width: 900,
+            height: 900,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99,102,241,0.20) 0%, rgba(99,102,241,0) 60%)",
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.06) 35%, rgba(99,102,241,0) 60%)",
+            top: "35%",
+            left: "25%",
+            transform: "translate(-50%, -50%)",
           }}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
-          <LogoMark size={80} color="#818cf8" />
-          <span
+
+        {/* Secondary glow — QR zone */}
+        <div
+          style={{
+            position: "absolute",
+            width: 500,
+            height: 500,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(129,140,248,0.14) 0%, rgba(129,140,248,0) 65%)",
+            top: "55%",
+            left: "80%",
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+
+        {/* Left column */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            flex: 1,
+            padding: "52px 0 52px 64px",
+            position: "relative",
+          }}
+        >
+          {/* Brand + tagline */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <LogoMark size={44} color="#818cf8" />
+              <span
+                style={{
+                  fontFamily: "sans-serif",
+                  fontSize: 36,
+                  fontWeight: 800,
+                  color: "#818cf8",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                CLIP
+              </span>
+            </div>
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 16,
+                fontWeight: 500,
+                color: "#71717a",
+                letterSpacing: "0.01em",
+                paddingLeft: 58,
+              }}
+            >
+              Real-time Q&A for live sessions
+            </span>
+          </div>
+
+          {/* Headline */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 620 }}>
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 56,
+                fontWeight: 800,
+                color: "#fafafa",
+                lineHeight: 1.15,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Share snippets & collect questions in real-time
+            </span>
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 19,
+                color: "#a1a1aa",
+                fontWeight: 500,
+              }}
+            >
+              The live session companion for presenters and audiences
+            </span>
+          </div>
+
+          {/* CTA + domain */}
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#6366f1",
+                borderRadius: 14,
+                padding: "14px 32px",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "sans-serif",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                }}
+              >
+                Start a Session →
+              </span>
+            </div>
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 22,
+                color: "#a1a1aa",
+                fontWeight: 600,
+              }}
+            >
+              clip.nasqa.io
+            </span>
+          </div>
+        </div>
+
+        {/* Vertical divider */}
+        <div style={{ display: "flex", alignItems: "center", padding: "80px 0" }}>
+          <div
             style={{
-              fontFamily: "sans-serif",
-              fontSize: 96,
-              fontWeight: 800,
-              color: "#fafafa",
-              letterSpacing: "-0.04em",
+              width: 1,
+              height: "100%",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%)",
+            }}
+          />
+        </div>
+
+        {/* Right column — QR */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "52px 64px 52px 40px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 20,
+              backgroundColor: "rgba(255,255,255,0.03)",
+              borderRadius: 24,
+              border: "1px solid rgba(255,255,255,0.06)",
+              padding: "36px 40px",
             }}
           >
-            CLIP
-          </span>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(homeQrUrl)}&bgcolor=09090b&color=fafafa&format=png`}
+              width={200}
+              height={200}
+              style={{ borderRadius: 12 }}
+            />
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "#a1a1aa",
+                letterSpacing: "0.02em",
+              }}
+            >
+              Scan to Visit
+            </span>
+          </div>
         </div>
       </div>,
       { ...size },
     );
   }
 
-  const { questions } = await getSessionData(slug);
-  const questionCount = questions.length;
+  let questionCount = 0;
+  try {
+    const { questions } = await getSessionData(slug);
+    questionCount = questions.length;
+  } catch {
+    /* best-effort — show 0 if data fetch fails */
+  }
   const statusLabel = session.isActive ? "LIVE" : "ENDED";
   const statusDot = session.isActive ? "#22c55e" : "#71717a";
   const statusText = session.isActive ? "#4ade80" : "#a1a1aa";
@@ -150,19 +326,33 @@ export default async function SessionOGImage({ params }: { params: Promise<{ slu
           position: "relative",
         }}
       >
-        {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <LogoMark size={44} color="#818cf8" />
+        {/* Brand + tagline */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <LogoMark size={44} color="#818cf8" />
+            <span
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: 36,
+                fontWeight: 800,
+                color: "#818cf8",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              CLIP
+            </span>
+          </div>
           <span
             style={{
               fontFamily: "sans-serif",
-              fontSize: 36,
-              fontWeight: 800,
-              color: "#818cf8",
-              letterSpacing: "-0.02em",
+              fontSize: 16,
+              fontWeight: 500,
+              color: "#71717a",
+              letterSpacing: "0.01em",
+              paddingLeft: 58,
             }}
           >
-            CLIP
+            Real-time Q&A for live sessions
           </span>
         </div>
 

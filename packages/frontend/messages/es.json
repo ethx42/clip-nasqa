@@ -90,7 +90,10 @@
     "sessionNotFound": "Sesión no encontrada o expirada",
     "sessionNotFoundDesc": "Esta sesión puede haber terminado o el enlace es incorrecto.",
     "createNewSession": "Crear una nueva sesión",
-    "copyUrl": "Copiar URL"
+    "copyUrl": "Copiar URL",
+    "sessionExpired": "Esta sesión ha finalizado",
+    "sessionExpiredDesc": "Las sesiones expiran después de 24 horas. El contenido ya no está disponible.",
+    "backToHome": "Volver al inicio"
   },
   "moderation": {
     "questionRemoved": "Esta pregunta fue eliminada.",
