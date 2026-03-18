@@ -36,6 +36,7 @@ Requirements for Performance & Instant Operations milestone. Each maps to roadma
 - [ ] **URL-05**: QR code updated to resolve to flat URL format
 - [ ] **URL-06**: DynamoDB key migrated from `SESSION#word-slug` to `SESSION#482913`
 - [ ] **URL-07**: `createSession` Server Action generates 6-digit numeric code with collision check instead of word-pair slug
+- [ ] **URL-08**: Session-specific OG image route relocated from `session/[slug]/opengraph-image.tsx` to `[code]/opengraph-image.tsx` and updated to display numeric code
 
 ### Real-time UX
 
@@ -90,43 +91,44 @@ Deferred to future release. Tracked but not in current roadmap.
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status  |
-| ----------- | ----- | ------- |
-| INFRA-01    | TBD   | Pending |
-| INFRA-02    | TBD   | Pending |
-| INFRA-03    | TBD   | Pending |
-| MUT-01      | TBD   | Pending |
-| MUT-02      | TBD   | Pending |
-| MUT-03      | TBD   | Pending |
-| MUT-04      | TBD   | Pending |
-| MUT-05      | TBD   | Pending |
-| OPT-01      | TBD   | Pending |
-| OPT-02      | TBD   | Pending |
-| OPT-03      | TBD   | Pending |
-| UX-01       | TBD   | Pending |
-| UX-02       | TBD   | Pending |
-| SHIKI-01    | TBD   | Pending |
-| SHIKI-02    | TBD   | Pending |
-| SHIKI-03    | TBD   | Pending |
-| SHIKI-04    | TBD   | Pending |
-| SHIKI-05    | TBD   | Pending |
-| SHIKI-06    | TBD   | Pending |
-| SHIKI-07    | TBD   | Pending |
-| URL-01      | TBD   | Pending |
-| URL-02      | TBD   | Pending |
-| URL-03      | TBD   | Pending |
-| URL-04      | TBD   | Pending |
-| URL-05      | TBD   | Pending |
-| URL-06      | TBD   | Pending |
-| URL-07      | TBD   | Pending |
+| Requirement | Phase    | Status  |
+| ----------- | -------- | ------- |
+| INFRA-01    | Phase 14 | Pending |
+| INFRA-02    | Phase 14 | Pending |
+| INFRA-03    | Phase 14 | Pending |
+| MUT-01      | Phase 15 | Pending |
+| MUT-02      | Phase 15 | Pending |
+| MUT-03      | Phase 15 | Pending |
+| MUT-04      | Phase 15 | Pending |
+| MUT-05      | Phase 15 | Pending |
+| OPT-01      | Phase 16 | Pending |
+| OPT-02      | Phase 16 | Pending |
+| OPT-03      | Phase 16 | Pending |
+| UX-01       | Phase 14 | Pending |
+| UX-02       | Phase 14 | Pending |
+| SHIKI-01    | Phase 16 | Pending |
+| SHIKI-02    | Phase 16 | Pending |
+| SHIKI-03    | Phase 16 | Pending |
+| SHIKI-04    | Phase 16 | Pending |
+| SHIKI-05    | Phase 16 | Pending |
+| SHIKI-06    | Phase 16 | Pending |
+| SHIKI-07    | Phase 16 | Pending |
+| URL-01      | Phase 14 | Pending |
+| URL-02      | Phase 14 | Pending |
+| URL-03      | Phase 14 | Pending |
+| URL-04      | Phase 14 | Pending |
+| URL-05      | Phase 14 | Pending |
+| URL-06      | Phase 14 | Pending |
+| URL-07      | Phase 14 | Pending |
+| URL-08      | Phase 14 | Pending |
 
 **Coverage:**
 
-- v2.0 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27
+- v2.0 requirements: 28 total
+- Mapped to phases: 28
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-03-17_
-_Last updated: 2026-03-17 after initial definition_
+_Last updated: 2026-03-17 after roadmap creation (phases 14-16)_

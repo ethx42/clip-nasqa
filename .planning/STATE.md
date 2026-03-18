@@ -5,14 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.0 Performance & Instant Operations
+**Current focus:** v2.0 Performance & Instant Operations — Phase 14
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-17 — Milestone v2.0 started
+Phase: 14 of 16 (Infrastructure and URL Routing)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-03-17 — v2.0 roadmap created, phases 14-16 defined
+
+Progress: [░░░░░░░░░░] 0% (v2.0 milestone)
 
 ## Performance Metrics
 
@@ -29,16 +31,12 @@ _Updated after each plan completion_
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
 
-- [11-02] Used `useRef + useEffect` for questionsRef (not experimental `useEffectEvent`) — compatible with current React version, same correctness for async rollbacks
-- [11-02] `authorName` typed as `string | undefined` in UseSessionMutationsParams to match `useIdentity` return type without forced non-null assertions at call sites
-- [Phase 11]: Single formatRelativeTime utility with two overloads: short-token for Server Components, i18n-aware for Client Components; week bucket added at >=7d per user decision
-- [Phase 12-02]: SnippetCard extracted as standalone 'use client' component with hero/compact variant prop; replaces both inline definition and legacy server component
-- [Phase 12-02]: snippet-hero.tsx deleted — had zero importers; hero rendering now handled by SnippetCard variant='hero'
-- [12-01]: Debounce stays in QAPanel — sortQuestions receives synthetic Question objects with debounced upvoteCount/isFocused merged in by the consumer; utility remains a pure function with zero React dependency
-- [12-03]: AnimatePresence mode=wait with single string key (banned/hidden/normal) avoids compound key issue; facade pattern in question-card.tsx preserves backward compatibility for all consumers
-- [13-01]: Upvote active state uses solid indigo bg (brand palette) not amber; downvote active uses muted gray (secondary action, not destructive); aria-pressed on toggle buttons for screen reader state announcement
-- [13-02]: Identity row conditionally rendered when fingerprint present (avoids phantom spacing on hydration edge cases); border-l-only accent on own questions — no tint, no badge
+- [v2.0 research]: Participant mutations safe to move client-side (fingerprint auth enforced in Lambda); host mutations must stay as Server Actions — `hostSecretHash` in Network tab is a security risk
+- [v2.0 research]: Lambda memory target is 256MB, not 512MB — AWS August 2025 pricing change bills INIT phase at invocation rate; 512MB doubles cold-start cost vs 128MB
+- [v2.0 research]: QA debounce reduction requires Framer Motion `layout` prop on question cards as a prerequisite — without it, 300ms debounce causes visible card teleporting
+- [v2.0 research]: Client-side Shiki must use `import("shiki/core")` with `createJavaScriptRegexEngine()` inside async callback only — static import adds 695kB gzip to initial bundle
 
 ### Pending Todos
 
@@ -46,10 +44,12 @@ None.
 
 ### Blockers/Concerns
 
-None.
+- [Phase 14]: Verify whether Framer Motion `layout` prop is already on question cards before planning debounce work — if present, no prerequisite animation work needed
+- [Phase 14]: Confirm actual Lambda memory default in `sst.config.ts` before choosing 256MB target (conflicting research: 128MB vs 1024MB default)
+- [Phase 16]: Run `next build` bundle analyzer before implementing client Shiki — confirm it lands in a lazy chunk and initial bundle stays under 100kB gzip
 
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Milestone v2.0 initialized — defining requirements
-Resume at: Continue requirements definition
+Stopped at: v2.0 roadmap defined — phases 14-16 created, all 27 requirements mapped
+Resume at: `/gsd:plan-phase 14`

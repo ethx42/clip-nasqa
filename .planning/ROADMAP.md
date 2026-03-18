@@ -6,6 +6,7 @@
 - ✅ **v1.1 Enterprise Hardening** — Phases 5-8 (shipped 2026-03-17)
 - ✅ **v1.2 Reactions** — Phases 9-10 (shipped 2026-03-17)
 - ✅ **v1.3 Participant & Host UX Refactor** — Phases 11-13 (shipped 2026-03-18)
+- 🚧 **v2.0 Performance & Instant Operations** — Phases 14-16 (in progress)
 
 ## Phases
 
@@ -46,82 +47,77 @@
 
 </details>
 
+### 🚧 v2.0 Performance & Instant Operations (In Progress)
+
+**Milestone Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
+
+- [ ] **Phase 14: Infrastructure and URL Routing** — Lambda memory at 256MB, SSR fetch deduplication, QA sort debounce with layout animations, 6-digit numeric session codes, flat URL structure, /join page
+- [ ] **Phase 15: Mutation Path and Client Utilities** — `graphqlMutation()` and `safeClientMutation()` client utilities, shared error parser, participant mutations execute directly against AppSync, lazy i18n in surviving Server Actions
+- [ ] **Phase 16: Optimistic Snippet Push and Client Shiki** — Host snippet push appears at 0ms via optimistic dispatch with content-fingerprint dedup and rollback, client-side Shiki syntax preview with dynamic import and JS regex engine
+
 ## Phase Details
 
-### Phase 11: Shared Utilities and Hook Extraction
+### Phase 14: Infrastructure and URL Routing
 
-**Goal**: All shared logic lives in canonical locations — `formatRelativeTime` has one implementation consumed everywhere it is used, and `useSessionMutations` is a single hook that gives both page orchestrators their mutation handlers
-**Depends on**: Phase 10
-**Requirements**: STRUC-01, STRUC-02
+**Goal**: Measurable backend and routing improvements are live — cold starts are shorter, SSR reads are halved, QA ordering is smooth and fast, and sessions use short numeric codes accessible via a flat URL or a voice-friendly /join page
+**Depends on**: Phase 13
+**Requirements**: INFRA-01, INFRA-02, INFRA-03, UX-01, UX-02, URL-01, URL-02, URL-03, URL-04, URL-05, URL-06, URL-07, URL-08
 **Success Criteria** (what must be TRUE):
 
-1. Relative timestamps throughout the session view (clipboard items, questions, replies) all format identically — changing the rounding rule in one file updates every timestamp with no visible behavior difference
-2. `SessionLivePage` and `SessionLiveHostPage` each contain no inline mutation handlers — all submit, vote, reply, and moderation callbacks are imported from `useSessionMutations`
-3. Stale closure bugs under concurrent vote events are eliminated — rollback handlers in `useSessionMutations` read current state without capturing a snapshot from the render they were created in
+1. The Lambda resolver returns responses with measurably shorter cold-start latency — `memory: "256 MB"` is visible in `sst.config.ts` and CloudWatch confirms arm64 execution
+2. A session page load triggers at most 2 DynamoDB calls instead of 4 — verifiable by adding a log counter to `getSession`/`getSessionData` and loading the page once
+3. Questions visibly animate into their new sorted position when upvotes change at 300ms debounce — no card teleporting during active voting
+4. A host creates a session and receives a 6-digit numeric URL (e.g., `/en/482913`) — word-pair slugs no longer appear anywhere in the app
+5. A participant can navigate to `/join`, type a 6-digit code, and reach the correct session without needing the full URL
+   **Plans**: TBD
 
-**Plans:** 2/2 plans complete
+### Phase 15: Mutation Path and Client Utilities
 
-Plans:
-
-- [ ] 11-01-PLAN.md — Canonical formatRelativeTime utility with TDD and replacement of all 5 duplicates
-- [ ] 11-02-PLAN.md — useSessionMutations and useHostMutations hooks, page orchestrator refactor
-
-### Phase 12: Component Decomposition
-
-**Goal**: Three monolithic display concerns are split at clean boundaries — `SnippetCard` is independently importable, sort logic for the Q&A feed exists in exactly one place, and `QuestionCard` routes to distinct host and participant variants
-**Depends on**: Phase 11
-**Requirements**: STRUC-03, STRUC-04, STRUC-05
+**Goal**: Participant mutations bypass the Netlify Server Action layer entirely — `addQuestion`, `upvoteQuestion`, `downvoteQuestion`, `react`, and `addReply` call AppSync directly from the browser via shared typed utilities, and surviving Server Actions no longer call `getTranslations()` on every request
+**Depends on**: Phase 14
+**Requirements**: MUT-01, MUT-02, MUT-03, MUT-04, MUT-05
 **Success Criteria** (what must be TRUE):
 
-1. `SnippetCard` can be imported and rendered in a Vitest component test without pulling in `ClipboardPanel`
-2. Questions cannot appear in different orders between the Q&A panel and any derived view — sort logic exists in exactly one location and both consumers call it
-3. `QuestionCard` renders a distinct host variant (with moderation controls) and a distinct participant variant (without them) based on the caller context — the two variants are independently importable
-4. State transitions between question states (normal, hidden, banned) animate correctly — a question moving from visible to hidden plays its exit animation without a layout pop
+1. A participant submitting a question shows no Netlify Server Action network request in DevTools — only a direct AppSync HTTP POST appears
+2. Host mutations (pushSnippet, deleteSnippet, clearClipboard, focusQuestion, banQuestion, banParticipant, restoreQuestion) still execute as Server Actions — no host mutation appears as a browser-originated AppSync request in DevTools
+3. Rate limit errors from AppSync return a localized countdown toast to the user — the raw `RATE_LIMIT_EXCEEDED:N` string is never shown
+4. `lib/appsync-client.ts` exports `graphqlMutation()` and `lib/safe-action.ts` exports `safeClientMutation()` — both are importable and typed against the AppSync schema
+   **Plans**: TBD
 
-**Plans:** 3/3 plans complete
+### Phase 16: Optimistic Snippet Push and Client Shiki
 
-Plans:
-
-- [ ] 12-01-PLAN.md — TDD sortQuestions pure utility extraction from QAPanel
-- [ ] 12-02-PLAN.md — SnippetCard consolidation into standalone component
-- [ ] 12-03-PLAN.md — QuestionCard variant split (host/participant) with shared base and state animations
-
-### Phase 13: UX Polish and Accessibility
-
-**Goal**: Every interactive element in the session view communicates its state honestly — votes show fill when active, participants see their identity before posting, and own questions are spatially recognizable in the feed
-**Depends on**: Phase 12
-**Requirements**: UXINT-01, UXINT-02, UXINT-03, A11Y-01
+**Goal**: The host's clipboard and syntax preview both respond at 0ms — snippet push appears instantly in the clipboard panel before the server confirms, and syntax highlighting updates live as the host types without any server round-trip
+**Depends on**: Phase 15
+**Requirements**: OPT-01, OPT-02, OPT-03, SHIKI-01, SHIKI-02, SHIKI-03, SHIKI-04, SHIKI-05, SHIKI-06, SHIKI-07
 **Success Criteria** (what must be TRUE):
 
-1. Tapping the upvote button on a question fills it visually when the user has voted; tapping again returns it to the unvoted appearance — mutual exclusion with downvote is immediate and smooth
-2. `aria-pressed="true"` is present on the upvote button when the user has voted and `aria-pressed="false"` when they have not — screen readers announce the toggle state on every change
-3. A participant sees their pixel avatar and name (or "Anonymous") inline inside the question input before submitting — the identity is visible without opening any additional panel
-4. A participant's own questions display a visually distinct left-border accent in the feed — they can immediately locate their own contributions among other questions
-
-**Plans:** 2/2 plans complete
-
-Plans:
-
-- [ ] 13-01-PLAN.md — Vote button filled states, aria-pressed, and micro-interactions
-- [ ] 13-02-PLAN.md — Identity chip in QAInput and own-question left-border accent
+1. The host presses push and their snippet appears in the clipboard panel before any network response arrives — no spinner, no delay, no flash
+2. If the push fails, the optimistic snippet disappears and the textarea content is restored — the host can retry without losing their work
+3. Two identical snippets never appear simultaneously in the clipboard panel — the optimistic entry is replaced by the confirmed entry, not duplicated alongside it
+4. Syntax highlighting updates live as the host types in the input — no Server Action round-trip occurs, verifiable by watching the Network tab during typing
+5. The host can open a language dropdown, select from the supported languages list, and see the preview re-highlight immediately with the chosen language
+   **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 11 -> 12 -> 13
+Phases execute in numeric order: 14 -> 15 -> 16
 
-| Phase                                    | Milestone | Plans Complete | Status     | Completed  |
-| ---------------------------------------- | --------- | -------------- | ---------- | ---------- |
-| 1. Infrastructure                        | v1.0      | 3/3            | Complete   | 2026-03-14 |
-| 2. Session and View Shell                | v1.0      | 3/3            | Complete   | 2026-03-14 |
-| 3. Real-Time Core                        | v1.0      | 6/6            | Complete   | 2026-03-14 |
-| 4. Moderation, Identity, and Polish      | v1.0      | 4/4            | Complete   | 2026-03-14 |
-| 5. Code Quality Gates                    | v1.1      | 2/2            | Complete   | 2026-03-15 |
-| 6. Testing and CI                        | v1.1      | 3/3            | Complete   | 2026-03-16 |
-| 7. Error Handling and Observability      | v1.1      | 3/3            | Complete   | 2026-03-16 |
-| 8. SEO and Accessibility                 | v1.1      | 2/2            | Complete   | 2026-03-17 |
-| 9. Reactions Data Model and Backend      | v1.2      | 3/3            | Complete   | 2026-03-17 |
-| 10. Reactions Frontend State and UI      | v1.2      | 2/2            | Complete   | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction | 2/2       | Complete       | 2026-03-17 | -          |
-| 12. Component Decomposition              | 3/3       | Complete       | 2026-03-17 | -          |
-| 13. UX Polish and Accessibility          | 2/2       | Complete       | 2026-03-18 | -          |
+| Phase                                        | Milestone | Plans Complete | Status      | Completed  |
+| -------------------------------------------- | --------- | -------------- | ----------- | ---------- |
+| 1. Infrastructure                            | v1.0      | 3/3            | Complete    | 2026-03-14 |
+| 2. Session and View Shell                    | v1.0      | 3/3            | Complete    | 2026-03-14 |
+| 3. Real-Time Core                            | v1.0      | 6/6            | Complete    | 2026-03-14 |
+| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete    | 2026-03-14 |
+| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete    | 2026-03-15 |
+| 6. Testing and CI                            | v1.1      | 3/3            | Complete    | 2026-03-16 |
+| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete    | 2026-03-16 |
+| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete    | 2026-03-17 |
+| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete    | 2026-03-17 |
+| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete    | 2026-03-17 |
+| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete    | 2026-03-17 |
+| 12. Component Decomposition                  | v1.3      | 3/3            | Complete    | 2026-03-17 |
+| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete    | 2026-03-18 |
+| 14. Infrastructure and URL Routing           | v2.0      | 0/TBD          | Not started | -          |
+| 15. Mutation Path and Client Utilities       | v2.0      | 0/TBD          | Not started | -          |
+| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 0/TBD          | Not started | -          |
