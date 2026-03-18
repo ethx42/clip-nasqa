@@ -17,13 +17,13 @@ Requirements for v1.3 Participant & Host UX Refactor. Each maps to roadmap phase
 
 ### UX Interactions
 
-- [ ] **UXINT-01**: Vote buttons show filled state when user has voted
+- [x] **UXINT-01**: Vote buttons show filled state when user has voted
 - [ ] **UXINT-02**: Identity chip displays current device identity
 - [ ] **UXINT-03**: Own questions visually distinguished from others
 
 ### Accessibility
 
-- [ ] **A11Y-01**: Vote buttons use `aria-pressed` to reflect toggle state
+- [x] **A11Y-01**: Vote buttons use `aria-pressed` to reflect toggle state
 
 ## Future Requirements
 
@@ -54,10 +54,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STRUC-03    | Phase 12 | Complete |
 | STRUC-04    | Phase 12 | Complete |
 | STRUC-05    | Phase 12 | Complete |
-| UXINT-01    | Phase 13 | Pending  |
+| UXINT-01    | Phase 13 | Complete |
 | UXINT-02    | Phase 13 | Pending  |
 | UXINT-03    | Phase 13 | Pending  |
-| A11Y-01     | Phase 13 | Pending  |
+| A11Y-01     | Phase 13 | Complete |
 
 **Coverage:**
 

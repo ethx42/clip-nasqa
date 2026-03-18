@@ -9,22 +9,22 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 
 ## Current Position
 
-Phase: 12 — Component Decomposition
-Plan: 03 of 03 complete
-Status: Phase 12 complete
-Last activity: 2026-03-17 — Phase 12 plan 03 executed (QuestionCard host/participant split + AnimatePresence state transitions)
+Phase: 13 — UX Polish and Accessibility
+Plan: 01 of 01 complete
+Status: Phase 13 in progress (plan 01 complete)
+Last activity: 2026-03-17 — Phase 13 plan 01 executed (VoteColumn filled states, aria-pressed, micro-interactions)
 
-**Progress bar:** Phase 12 of 13 total (phases 11-13 are v1.3 scope)
+**Progress bar:** Phase 13 of 13 total (phases 11-13 are v1.3 scope)
 
 ```
-v1.3: [##########] 1/3 phases complete (phase 12 complete: 3/3 plans)
+v1.3: [###############] 2/3 phases complete (phase 12 complete: 3/3 plans; phase 13: 1/1 plans done)
 ```
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 35 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 4)
+- Total plans completed: 36 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 5)
 - Average duration: 5 min
 - Total execution time: ~2.5 hours
 
@@ -43,6 +43,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 12-02]: snippet-hero.tsx deleted — had zero importers; hero rendering now handled by SnippetCard variant='hero'
 - [12-01]: Debounce stays in QAPanel — sortQuestions receives synthetic Question objects with debounced upvoteCount/isFocused merged in by the consumer; utility remains a pure function with zero React dependency
 - [12-03]: AnimatePresence mode=wait with single string key (banned/hidden/normal) avoids compound key issue; facade pattern in question-card.tsx preserves backward compatibility for all consumers
+- [13-01]: Upvote active state uses solid indigo bg (brand palette) not amber; downvote active uses muted gray (secondary action, not destructive); aria-pressed on toggle buttons for screen reader state announcement
 
 ### Pending Todos
 
@@ -55,5 +56,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 12-03-PLAN.md (QuestionCard host/participant split with AnimatePresence state transitions)
-Resume at: `/gsd:execute-phase 13`
+Stopped at: Completed 13-01-PLAN.md (VoteColumn filled states, aria-pressed, and micro-interactions)
+Resume at: `/gsd:execute-phase 13` (check for remaining plans in phase 13)
