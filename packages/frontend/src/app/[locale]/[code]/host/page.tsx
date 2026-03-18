@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { HostToolbar } from "@/components/session/host-toolbar";
 import { SessionLiveHostPage } from "@/components/session/session-live-host-page";
@@ -12,12 +13,17 @@ export default async function HostPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string; code: string }>;
   searchParams: Promise<{ raw?: string }>;
 }) {
-  const { slug } = await params;
+  const { locale, code } = await params;
   const { raw } = await searchParams;
-  const session = await getSession(slug);
+
+  if (!/^\d{6}$/.test(code)) {
+    notFound();
+  }
+
+  const session = await getSession(code);
 
   if (!session) {
     const t = await getTranslations("pages");
@@ -65,14 +71,14 @@ export default async function HostPage({
     );
   }
 
-  const { snippets, questions, replies } = await getSessionData(slug);
+  const { snippets, questions, replies } = await getSessionData(code);
   const baseUrl = await getBaseUrl();
-  const participantUrl = `${baseUrl}/session/${slug}`;
+  const participantUrl = `${baseUrl}/${locale}/${code}`;
 
   return (
     <SessionLiveHostPage
       session={session}
-      sessionCode={slug}
+      sessionCode={code}
       rawSecret={raw}
       initialSnippets={snippets}
       initialQuestions={questions}

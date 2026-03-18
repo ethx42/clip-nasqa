@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { SessionLivePage } from "@/components/session/session-live-page";
+import { formatCode } from "@/lib/format-code";
 import { getSession, getSessionData } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +12,15 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string; code: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
-  const session = await getSession(slug);
+  const { code } = await params;
+
+  if (!/^\d{6}$/.test(code)) {
+    notFound();
+  }
+
+  const session = await getSession(code);
 
   if (!session) {
     return {
@@ -32,7 +39,7 @@ export async function generateMetadata({
     };
   }
 
-  const { questions } = await getSessionData(slug);
+  const { questions } = await getSessionData(code);
   const questionCount = questions.length;
 
   const status = session.isActive
@@ -40,7 +47,7 @@ export async function generateMetadata({
     : `Ended — ${questionCount} questions`;
 
   return {
-    title: session.title,
+    title: `${session.title} — ${formatCode(code)} | nasqa`,
     description: status,
     robots: { index: false, follow: false },
     openGraph: {
@@ -59,10 +66,15 @@ export async function generateMetadata({
 export default async function SessionPage({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string; code: string }>;
 }) {
-  const { slug } = await params;
-  const session = await getSession(slug);
+  const { code } = await params;
+
+  if (!/^\d{6}$/.test(code)) {
+    notFound();
+  }
+
+  const session = await getSession(code);
 
   if (!session) {
     const t = await getTranslations("pages");
@@ -110,12 +122,12 @@ export default async function SessionPage({
     );
   }
 
-  const { snippets, questions, replies } = await getSessionData(slug);
+  const { snippets, questions, replies } = await getSessionData(code);
 
   return (
     <SessionLivePage
       session={session}
-      sessionCode={slug}
+      sessionCode={code}
       initialSnippets={snippets}
       initialQuestions={questions}
       initialReplies={replies}
