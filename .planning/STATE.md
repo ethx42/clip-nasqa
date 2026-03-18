@@ -5,22 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.1 Edit & Delete — setting up milestone
+**Current focus:** v2.1 Edit & Delete — backend infrastructure complete
 
 ## Current Position
 
-Phase: 16-optimistic-snippet-push-and-client-shiki
-Plan: 02 of 2 complete
-Status: Phase 16 complete
-Last activity: 2026-03-18 — Plan 16-02 complete: client-side Shiki singleton hook, stricter language detection, language dropdown, renderHighlight removed.
+Phase: 17-edit-and-delete
+Plan: 01 of 3 complete
+Status: Phase 17 in progress
+Last activity: 2026-03-18 — Plan 17-01 complete: types/schema/SST config + Lambda resolvers for edit/delete (5 mutations, shared verifyHostSecret, soft-delete filter in getSessionData).
 
-Progress: [██░░░░░░░░] 15% (v2.0 milestone)
+Progress: [██░░░░░░░░] 15% (v2.1 milestone)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 43 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6)
+- Total plans completed: 44 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 1)
 - Average duration: 5 min
 - Total execution time: ~2.6 hours
 
@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - [Phase 16-02]: useShikiHighlight singleton via module-level \_highlighterPromise — highlighter created once, language grammars loaded lazily per-language on first use
 - [Phase 16-02]: All Shiki imports dynamic (inside async functions) — no top-level static import; shiki/core + engine + themes + langs all lazy-loaded
 - [Phase 16-02]: detectLanguage rewritten with multi-signal heuristics; URL-first check before YAML rule; JS requires 2-of-3 signals
+- [Phase 17-01]: verifyHostSecret extracted to resolvers/shared.ts — single source of truth; was duplicated in qa.ts and clipboard.ts
+- [Phase 17-01]: Dual-path auth in single mutation — fingerprint+5min-window for participants, verifyHostSecret for host; no time window for host snippet edits (superuser per EDIT-09)
+- [Phase 17-01]: Soft-delete via deletedAt attribute — getSessionData filter extended to exclude deletedAt items; editedAt mapped in all three content-type projections
 
 ### Pending Todos
 
@@ -60,5 +63,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 16-02-PLAN.md — client-side Shiki hook, language dropdown, renderHighlight removed
-Resume at: Phase 16 complete. Next: run phase 17 or milestone audit.
+Stopped at: Completed 17-01-PLAN.md — types/schema/SST config + Lambda resolvers for edit/delete
+Resume at: Phase 17 plan 02 — frontend mutations and reducer for edit/delete events

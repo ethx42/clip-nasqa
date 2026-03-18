@@ -75,9 +75,9 @@ Requirements for Edit & Delete milestone. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **EDIT-11**: DynamoDB schema supports edit/delete fields (editedAt, deletedAt, editedContent) without migration
-- [ ] **EDIT-12**: GraphQL schema adds editQuestion, editReply, deleteQuestion, deleteReply, editSnippet mutations
-- [ ] **EDIT-13**: Lambda resolvers enforce 5-minute author window and host superuser bypass via fingerprint/hostSecretHash validation
+- [x] **EDIT-11**: DynamoDB schema supports edit/delete fields (editedAt, deletedAt, editedContent) without migration
+- [x] **EDIT-12**: GraphQL schema adds editQuestion, editReply, deleteQuestion, deleteReply, editSnippet mutations
+- [x] **EDIT-13**: Lambda resolvers enforce 5-minute author window and host superuser bypass via fingerprint/hostSecretHash validation
 
 ### Deferred (future milestones)
 
