@@ -2,15 +2,18 @@
 
 import { Check, Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 
 import type { Snippet } from "@nasqa/core";
 
-import { renderHighlight } from "@/actions/snippet";
+import { useShikiHighlight } from "@/hooks/use-shiki-highlight";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 
 import { CopyButton } from "./copy-button";
 
+// Keep SnippetWithHtml for backwards compatibility with ClipboardPanel's prop type.
+// highlightedHtml is no longer used for rendering — useShikiHighlight provides HTML client-side.
 export interface SnippetWithHtml extends Snippet {
   highlightedHtml?: string;
 }
@@ -50,7 +53,8 @@ export function SnippetCard({
   onEditEnd,
 }: SnippetCardProps) {
   const t = useTranslations("session");
-  const [html, setHtml] = useState(snippet.highlightedHtml ?? null);
+  const { resolvedTheme } = useTheme();
+
   const [expanded, setExpanded] = useState(variant === "hero");
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(snippet.content);
@@ -62,13 +66,13 @@ export function SnippetCard({
   const lineCount = snippet.content.split("\n").length;
   const isLong = variant === "compact" && lineCount > 3;
 
-  useEffect(() => {
-    if (!html && isCode && (variant === "hero" || expanded)) {
-      renderHighlight(snippet.content, lang).then((result) => {
-        if (result) setHtml(result);
-      });
-    }
-  }, [snippet.content, lang, isCode, html, variant, expanded]);
+  // Client-side Shiki highlighting — only render when expanded or hero
+  const shouldHighlight = variant === "hero" || expanded;
+  const shikiHtml = useShikiHighlight(
+    shouldHighlight ? snippet.content : "",
+    lang,
+    resolvedTheme === "dark" ? "dark" : "light",
+  );
 
   // Focus the edit textarea when entering edit mode
   useEffect(() => {
@@ -229,10 +233,10 @@ export function SnippetCard({
           onClick={isLong && !expanded ? () => setExpanded(true) : undefined}
         >
           {expanded || !isLong ? (
-            html ? (
+            shikiHtml ? (
               <div
                 className={`shiki-wrapper overflow-x-auto ${textSize} leading-relaxed`}
-                dangerouslySetInnerHTML={{ __html: html }}
+                dangerouslySetInnerHTML={{ __html: shikiHtml }}
               />
             ) : (
               <pre

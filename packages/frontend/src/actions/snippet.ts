@@ -1,34 +1,11 @@
 "use server";
 
 import { getTranslations } from "next-intl/server";
-import { codeToHtml } from "shiki";
-import type { BundledLanguage } from "shiki";
 
 import type { ActionResult } from "@/lib/action-result";
 import { appsyncMutation } from "@/lib/appsync-server";
 import { CLEAR_CLIPBOARD, DELETE_SNIPPET, PUSH_SNIPPET } from "@/lib/graphql/mutations";
 import { reportError } from "@/lib/report-error";
-
-/**
- * Renders Shiki highlighted HTML for the given code and language.
- * Used by HostInput for live preview without putting Shiki in the client bundle.
- */
-export async function renderHighlight(code: string, lang: string): Promise<string> {
-  if (!code.trim() || lang === "text") return "";
-  try {
-    const html = await codeToHtml(code, {
-      lang: lang as BundledLanguage,
-      themes: {
-        light: "github-light",
-        dark: "github-dark",
-      },
-    });
-    return html;
-  } catch {
-    // Unsupported language — return empty, caller falls back to plain text
-    return "";
-  }
-}
 
 function parseRateLimitOrBan(
   err: unknown,
