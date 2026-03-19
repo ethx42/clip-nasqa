@@ -262,8 +262,9 @@ export function QuestionCardParticipant({
 
                   {/* Author edit/delete buttons — only within 5-minute window */}
                   {canEdit && !isEditing && (
-                    <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <div className="flex shrink-0 items-center gap-px opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                       <IconButton
+                        compact
                         tooltip={tSession("editQuestion")}
                         onClick={() => {
                           setEditText(question.text);
@@ -273,6 +274,7 @@ export function QuestionCardParticipant({
                         <Pencil className="h-3.5 w-3.5" />
                       </IconButton>
                       <IconButton
+                        compact
                         tooltip={tSession("deleteQuestion")}
                         onClick={() => setDeleteConfirmOpen(true)}
                         className="hover:bg-destructive/10 hover:text-destructive"
@@ -318,9 +320,9 @@ export function QuestionCardParticipant({
                   </p>
                 )}
 
-                {/* Vote row — horizontal Reddit-style, below question text */}
+                {/* Vote column — vertical Reddit-style, below question text */}
                 {!isEditing && (
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-start gap-2">
                     <VoteRow
                       question={question}
                       isVoted={isVoted}

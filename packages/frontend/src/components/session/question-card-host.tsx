@@ -2,7 +2,17 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { AnimatePresence, motion } from "framer-motion";
-import { Ban, Check, MessageSquare, MicVocal, Pencil, ShieldX, Trash2, X } from "lucide-react";
+import {
+  Ban,
+  Check,
+  Megaphone,
+  MessageSquare,
+  MicVocal,
+  Pencil,
+  ShieldX,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -261,29 +271,12 @@ export function QuestionCardHost({
                   {/* Spacer */}
                   <div className="flex-1" />
 
-                  {/* Host inline moderation icons — ordered: edit, delete, focus, ban-question, ban-participant */}
+                  {/* Host inline moderation icons — semantic order: spotlight, edit, ban-question, ban-participant, delete */}
                   {!isEditing && (
-                    <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                      {/* 1. Edit */}
+                    <div className="flex shrink-0 items-center gap-px opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      {/* 1. Focus/spotlight — primary positive action */}
                       <IconButton
-                        tooltip={tSession("editQuestion")}
-                        onClick={() => {
-                          setEditText(question.text);
-                          setIsEditing(true);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </IconButton>
-                      {/* 2. Delete */}
-                      <IconButton
-                        tooltip={tSession("deleteQuestion")}
-                        onClick={() => setDeleteConfirmOpen(true)}
-                        className="hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </IconButton>
-                      {/* 3. Focus/unfocus */}
-                      <IconButton
+                        compact
                         tooltip={
                           question.isFocused
                             ? tSession("unfocusQuestion")
@@ -294,23 +287,47 @@ export function QuestionCardHost({
                           question.isFocused ? "text-indigo-500 hover:text-indigo-600" : undefined
                         }
                       >
-                        <span className="text-xs font-bold">{question.isFocused ? "●" : "○"}</span>
+                        <Megaphone
+                          className={cn("h-3.5 w-3.5", question.isFocused && "fill-current")}
+                        />
                       </IconButton>
-                      {/* 4. Ban question */}
+                      {/* 2. Edit */}
                       <IconButton
+                        compact
+                        tooltip={tSession("editQuestion")}
+                        onClick={() => {
+                          setEditText(question.text);
+                          setIsEditing(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </IconButton>
+                      {/* 3. Ban question — moderate destructive */}
+                      <IconButton
+                        compact
                         tooltip={t("banQuestion")}
                         onClick={handleBanQuestionClick}
                         className="hover:bg-destructive/10 hover:text-destructive"
                       >
                         <ShieldX className="h-3.5 w-3.5" />
                       </IconButton>
-                      {/* 5. Ban participant */}
+                      {/* 4. Ban participant — severe destructive */}
                       <IconButton
+                        compact
                         tooltip={t("banParticipant")}
                         onClick={() => setBanConfirmOpen(true)}
                         className="hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Ban className="h-3.5 w-3.5" />
+                      </IconButton>
+                      {/* 5. Delete — most destructive, last */}
+                      <IconButton
+                        compact
+                        tooltip={tSession("deleteQuestion")}
+                        onClick={() => setDeleteConfirmOpen(true)}
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </IconButton>
                     </div>
                   )}
@@ -351,9 +368,9 @@ export function QuestionCardHost({
                   </p>
                 )}
 
-                {/* Vote row — horizontal Reddit-style, below question text */}
+                {/* Vote column — vertical Reddit-style, below question text */}
                 {!isEditing && (
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-start gap-2">
                     <VoteRow
                       question={question}
                       isVoted={isVoted}

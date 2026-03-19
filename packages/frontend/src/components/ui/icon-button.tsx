@@ -10,6 +10,8 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
   tooltip: string;
   children: React.ReactNode;
   className?: string;
+  /** Compact mode — smaller padding, no 44px min touch target. Use for dense toolbars. */
+  compact?: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ export function IconButton({
   tooltip,
   children,
   className,
+  compact,
   "aria-label": ariaLabel,
   disabled,
   ...props
@@ -35,12 +38,12 @@ export function IconButton({
               aria-label={ariaLabel ?? tooltip}
               disabled={disabled}
               className={cn(
-                "inline-flex items-center justify-center rounded-lg p-1.5",
+                "inline-flex items-center justify-center rounded-md",
                 "text-muted-foreground transition-colors",
                 "hover:bg-accent hover:text-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50",
-                "min-h-[44px] min-w-[44px]",
                 "disabled:pointer-events-none disabled:opacity-50",
+                compact ? "p-1" : "p-1.5 min-h-[44px] min-w-[44px]",
                 className,
               )}
               {...props}

@@ -1,7 +1,7 @@
 "use client";
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { Question } from "@nasqa/core";
@@ -56,7 +56,7 @@ interface VoteRowProps {
   onDownvoteClick: () => void;
 }
 
-/** Reddit-style horizontal voting: [▲] upvotes · downvotes [▼] */
+/** Reddit-style vertical voting: up arrow, net score, down arrow */
 export function VoteRow({
   question,
   isVoted,
@@ -65,65 +65,54 @@ export function VoteRow({
   onDownvoteClick,
 }: VoteRowProps) {
   const tSession = useTranslations("session");
+  const netScore = question.upvoteCount - question.downvoteCount;
 
   return (
-    <div className="flex flex-row items-center gap-1">
+    <div className="flex flex-col items-center gap-0">
       {/* Upvote */}
       <IconButton
+        compact
         tooltip={isVoted ? tSession("removeUpvote") : tSession("upvoteQuestion")}
         aria-pressed={isVoted}
         onClick={onUpvoteClick}
         className={cn(
-          "transition-all active:scale-95",
-          isVoted
-            ? "bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white dark:bg-indigo-500 dark:hover:bg-indigo-400"
-            : undefined,
+          "transition-all active:scale-90",
+          isVoted ? "text-indigo-600 dark:text-indigo-400" : undefined,
         )}
       >
-        <ChevronUp className="h-4 w-4" />
+        <ArrowBigUp className={cn("h-5 w-5", isVoted && "fill-current")} />
       </IconButton>
 
-      {/* Upvote count */}
+      {/* Net score */}
       <span
         className={cn(
-          "text-sm font-semibold tabular-nums",
-          isVoted ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground",
+          "text-xs font-bold tabular-nums leading-none",
+          isVoted
+            ? "text-indigo-600 dark:text-indigo-400"
+            : isDownvoted
+              ? "text-muted-foreground"
+              : "text-muted-foreground",
         )}
       >
-        {question.upvoteCount}
-      </span>
-
-      {/* Separator */}
-      <span className="text-muted-foreground/40 select-none">·</span>
-
-      {/* Downvote count */}
-      <span
-        className={cn(
-          "text-sm font-semibold tabular-nums",
-          isDownvoted ? "text-foreground" : "text-muted-foreground",
-        )}
-      >
-        {question.downvoteCount}
+        {netScore}
       </span>
 
       {/* Downvote */}
       <IconButton
+        compact
         tooltip={isDownvoted ? tSession("removeDownvote") : tSession("downvoteQuestion")}
         aria-pressed={isDownvoted}
         onClick={onDownvoteClick}
         className={cn(
-          "transition-all active:scale-95",
-          isDownvoted ? "bg-muted text-foreground hover:brightness-110" : undefined,
+          "transition-all active:scale-90",
+          isDownvoted ? "text-foreground" : undefined,
         )}
       >
-        <ChevronDown className="h-4 w-4" />
+        <ArrowBigDown className={cn("h-5 w-5", isDownvoted && "fill-current")} />
       </IconButton>
     </div>
   );
 }
-
-/** @deprecated Use VoteRow — kept for backwards compatibility during transition */
-export const VoteColumn = VoteRow;
 
 // ── BannedTombstone ───────────────────────────────────────────────────────────
 
