@@ -45,18 +45,15 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - ✓ Vote button fill states (Indigo/muted gray), identity chip, own-question accent — v1.3
 - ✓ `aria-pressed` on vote buttons for screen reader toggle state — v1.3
 
+- ✓ Author can edit/delete own question within 5 minutes — v2.1
+- ✓ Author can edit/delete own reply within 5 minutes — v2.1
+- ✓ Host can edit or delete any question, reply, or snippet at any time — v2.1
+- ✓ Edited posts display "(edited)" indicator with timestamp tooltip — v2.1
+- ✓ Edits and deletes broadcast in real-time via subscription — v2.1
+
 ### Active
 
-<!-- v2.1 Edit & Delete -->
-
-- [ ] Author can edit own question within 5 minutes of posting
-- [ ] Author can edit own reply within 5 minutes of posting
-- [ ] Author can delete own question within 5 minutes of posting
-- [ ] Author can delete own reply within 5 minutes of posting
-- [ ] Host can edit any question or reply at any time
-- [ ] Host can delete any question or reply at any time
-- [ ] Edited posts display an "edited" indicator
-- [ ] Edits and deletes broadcast in real-time via subscription
+<!-- v2.2 UX Overhaul -->
 
 ### Out of Scope
 
@@ -71,19 +68,29 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 - E2E tests on every PR — 5-15 min; run on main only
 - WCAG AAA — Level AA is realistic; AAA conflicts with real-time UI
 
-## Current Milestone: v2.1 Edit & Delete
+## Current Milestone: v2.2 UX Overhaul
 
-**Goal:** Authors can edit and delete their own questions and replies within a 5-minute window. The host has superuser powers to edit or delete any post at any time.
+**Goal:** Comprehensive visual and interaction overhaul — Slack-style segments instead of cards, single-bar header with hamburger menu, Reddit-style voting, collapsible Q&A, tooltips on icon buttons, rich text support, and consistent button grouping across the entire app.
 
 **Target features:**
 
-- Authors can edit their own questions and replies within 5 minutes of posting
-- Authors can delete their own questions and replies within 5 minutes of posting
-- Host can edit any question or reply at any time (superuser)
-- Host can delete any question or reply at any time (superuser)
-- Edits are visible in real-time to all participants
-- Edited posts show an "edited" indicator
-- Deletion is soft-delete with visual feedback
+- Slack-style segments (not cards) for Q&A and clipboard items
+- Less rounded corners and reduced padding across cards/segments and buttons
+- Icon buttons consistently grouped in segments and across the app
+- Copy-content buttons: icon only, no text; clipboard number first in hierarchy
+- Single header bar: logo + app name + session name + "Live" (left), hamburger → profile → first name (right)
+- Hamburger menu for theme toggle and language selector
+- Superuser delete removes Q&As from database (not just UI)
+- Rich text (line breaks) in Q&A text
+- Share dialog shows session code alongside QR and link
+- Reddit-style voting: up button, count, down button (consistent layout)
+- Pin and ban icon alignment and behavior fix
+- Tooltips on all icon-only buttons
+- Restore "Clipboard" and "Q&A" headers in audience view
+- Collapsible Q&A in audience view (clipboard priority when collapsed)
+- QA input placeholder: avatar, name, "Ask a question" (only when empty)
+- Cmd+Enter / Ctrl+Enter submit shortcut on all send buttons
+- Form buttons: one word max or icon only
 
 ## Context
 
@@ -133,4 +140,4 @@ The live clipboard and Q&A must work in real-time with sub-200ms latency across 
 
 ---
 
-_Last updated: 2026-03-18 after v2.1 milestone started_
+_Last updated: 2026-03-18 after v2.2 milestone started_

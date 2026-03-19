@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.1 Edit & Delete — COMPLETE (all 3 plans done)
+**Current focus:** v2.2 UX Overhaul
 
 ## Current Position
 
-Phase: 17-edit-and-delete
-Plan: 03 of 3 complete
-Status: Phase 17 COMPLETE
-Last activity: 2026-03-18 — Plan 17-03 complete: inline edit/delete UI for questions, replies, snippets; 5-min auto-hide; Dialog confirmations; edited badges; i18n in en/es/pt.
-
-Progress: [██████████] 100% (v2.1 milestone)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-18 — Milestone v2.2 started
 
 ## Performance Metrics
 
