@@ -172,7 +172,7 @@ export function QAPanel({
             <p className="text-base text-muted-foreground">{t("noQuestions")}</p>
           </div>
         ) : (
-          <div className="space-y-3 p-4">
+          <div className="divide-y divide-border px-3">
             <AnimatePresence initial={false}>
               {sortedQuestions.map((question) => (
                 <motion.div

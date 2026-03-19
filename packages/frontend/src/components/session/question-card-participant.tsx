@@ -183,9 +183,8 @@ export function QuestionCardParticipant({
           >
             <div
               className={cn(
-                "group relative rounded-xl border border-border bg-card p-4 transition-all",
-                question.isFocused &&
-                  "ring-2 ring-indigo-500/50 border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
+                "group relative py-3 px-1 transition-all",
+                question.isFocused && "ring-2 ring-indigo-500/50 bg-indigo-500/5 rounded-lg",
               )}
             >
               {question.isFocused && (
@@ -303,7 +302,7 @@ export function QuestionCardParticipant({
                         onChange={(e) => setEditText(e.target.value)}
                         rows={Math.max(2, editText.split("\n").length)}
                         maxLength={500}
-                        className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full resize-none rounded-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         autoFocus
                       />
                       <div className="flex items-center justify-end gap-2">
@@ -375,7 +374,7 @@ export function QuestionCardParticipant({
                           placeholder={tSession("replyPlaceholder")}
                           rows={2}
                           maxLength={REPLY_CHAR_LIMIT}
-                          className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full resize-none rounded-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                         <div className="mt-2 flex items-center justify-between">
                           {replyText.length >= REPLY_COUNTER_THRESHOLD ? (
@@ -440,7 +439,7 @@ export function QuestionCardParticipant({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
           <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xl">
               <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
                 {tSession("confirmDeleteQuestion")}
               </Dialog.Title>

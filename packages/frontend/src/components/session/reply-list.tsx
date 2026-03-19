@@ -162,7 +162,7 @@ function ReplyRow({
               onChange={(e) => setEditText(e.target.value)}
               rows={Math.max(2, editText.split("\n").length)}
               maxLength={500}
-              className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full resize-none rounded-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               autoFocus
             />
             <div className="flex items-center justify-end gap-2">
@@ -207,7 +207,7 @@ function ReplyRow({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
           <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xl">
               <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
                 {t("confirmDeleteReply")}
               </Dialog.Title>

@@ -123,7 +123,7 @@ export function BannedTombstone() {
   const t = useTranslations("moderation");
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="rounded-lg bg-transparent py-3 px-1">
       <p className="text-sm text-muted-foreground italic">{t("questionRemoved")}</p>
     </div>
   );
@@ -147,7 +147,7 @@ export function HiddenCollapsed({
   const t = useTranslations("moderation");
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-lg py-3 px-1">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span>{t("hiddenByCommunity")}</span>
         <button
