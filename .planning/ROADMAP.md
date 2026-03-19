@@ -246,6 +246,6 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
 | 18. Header and Navigation                    | 2/2       | Complete       | 2026-03-19  | -          |
-| 19. Segments, Visual Overhaul, and Voting    | v2.2      | 0/TBD          | Not started | -          |
+| 19. Segments, Visual Overhaul, and Voting    | 1/2       | In Progress    |             | -          |
 | 20. Functionality and Audience View          | v2.2      | 0/TBD          | Not started | -          |
 | 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |

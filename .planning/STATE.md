@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.2 UX Overhaul — Phase 18: Header and Navigation
+**Current focus:** v2.2 UX Overhaul — Phase 19: Segments Visual Overhaul and Voting
 
 ## Current Position
 
-Phase: 18 of 21 (Header and Navigation)
-Plan: 2 of 2 in current phase (18-02 complete — phase complete)
+Phase: 19 of 21 (Segments Visual Overhaul and Voting)
+Plan: 1 of 3 in current phase (19-01 complete)
 Status: In progress
-Last activity: 2026-03-19 — 18-02 complete: session context wired into AppHeader, profile name display, mobile polish
+Last activity: 2026-03-19 — 19-01 complete: flat segment visual overhaul for Q&A and clipboard panels
 
-Progress: [█████████████████░░░] ~85% (18/21 phases complete)
+Progress: [█████████████████░░░] ~88% (19/21 phases, plan 1/3 in phase 19)
 
 ## Performance Metrics
 
@@ -41,6 +41,8 @@ Recent decisions affecting current work:
 - [Phase 18-01]: Layout dimensions via CSS variables: --header-height: 56px replaces all hardcoded 73px references
 - [Phase 18-02]: Each page renders its own AppHeader instance — cleaner than portals/Context for injecting session-specific header content
 - [Phase 18-02]: SessionLiveHostPage owns HostToolbar rendering; host/page.tsx passes raw participantUrl — removes one layer of prop threading
+- [Phase 19-01]: Flat py-3 px-1 segment wrapper replaces bordered card (rounded-xl border bg-card) — divide-y handles list separation
+- [Phase 19-01]: Snippet number badge moved first in header row — leftmost position establishes creation-order identity as primary visual anchor
 
 ### Pending Todos
 
@@ -54,5 +56,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Completed 18-02-PLAN.md — session context wired into AppHeader, profile name, mobile polish
-Resume at: Phase 19
+Stopped at: Completed 19-01-PLAN.md — flat segment visual overhaul for Q&A and clipboard panels
+Resume at: Phase 19, Plan 2

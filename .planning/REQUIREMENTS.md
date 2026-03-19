@@ -85,11 +85,11 @@ Requirements for UX Overhaul milestone. Each maps to roadmap phases.
 
 ### Visual & Layout
 
-- [ ] **VIS-01**: Q&A and clipboard items render as Slack-style segments (not cards), preserving all existing information and actions
-- [ ] **VIS-02**: Cards/segments and buttons use less rounded corners and less padding
-- [ ] **VIS-03**: All icon buttons (copy, pin, ban, upvote, etc.) are grouped consistently in segments and across the app
-- [ ] **VIS-04**: Copy-content buttons in segments are icon-only (no text) and clearly indicate they copy the link; clipboard number is first in visual hierarchy
-- [ ] **VIS-05**: Button groups are laid out consistently everywhere in the app
+- [x] **VIS-01**: Q&A and clipboard items render as Slack-style segments (not cards), preserving all existing information and actions
+- [x] **VIS-02**: Cards/segments and buttons use less rounded corners and less padding
+- [x] **VIS-03**: All icon buttons (copy, pin, ban, upvote, etc.) are grouped consistently in segments and across the app
+- [x] **VIS-04**: Copy-content buttons in segments are icon-only (no text) and clearly indicate they copy the link; clipboard number is first in visual hierarchy
+- [x] **VIS-05**: Button groups are laid out consistently everywhere in the app
 
 ### Header
 
@@ -193,11 +193,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HDR-02      | Phase 18 | Complete |
 | HDR-03      | Phase 18 | Complete |
 | HDR-04      | Phase 18 | Complete |
-| VIS-01      | Phase 19 | Pending  |
-| VIS-02      | Phase 19 | Pending  |
-| VIS-03      | Phase 19 | Pending  |
-| VIS-04      | Phase 19 | Pending  |
-| VIS-05      | Phase 19 | Pending  |
+| VIS-01      | Phase 19 | Complete |
+| VIS-02      | Phase 19 | Complete |
+| VIS-03      | Phase 19 | Complete |
+| VIS-04      | Phase 19 | Complete |
+| VIS-05      | Phase 19 | Complete |
 | FUNC-04     | Phase 19 | Pending  |
 | FUNC-05     | Phase 19 | Pending  |
 | FUNC-06     | Phase 19 | Pending  |
