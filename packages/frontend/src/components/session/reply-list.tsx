@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import type { Reply } from "@nasqa/core";
 
+import { IconButton } from "@/components/ui/icon-button";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { linkifyText } from "@/lib/linkify";
 import { cn } from "@/lib/utils";
@@ -131,25 +132,22 @@ function ReplyRow({
           {/* Edit/delete buttons */}
           {canEdit && !isEditing && (
             <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-              <button
+              <IconButton
+                tooltip={t("editReply")}
                 onClick={() => {
                   setEditText(reply.text);
                   setIsEditing(true);
                 }}
-                aria-label={t("editReply")}
-                title={t("editReply")}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
+                tooltip={t("deleteReply")}
                 onClick={() => setDeleteConfirmOpen(true)}
-                aria-label={t("deleteReply")}
-                title={t("deleteReply")}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className="hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </div>
           )}
         </div>

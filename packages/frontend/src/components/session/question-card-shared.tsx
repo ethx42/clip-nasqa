@@ -1,11 +1,12 @@
 "use client";
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
-import { ChevronUp, ThumbsDown } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { Question } from "@nasqa/core";
 
+import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ export function formatDisplayName(name: string): string {
   return `${first} ${lastInitial}.`;
 }
 
-interface VoteColumnProps {
+interface VoteRowProps {
   question: Question;
   isVoted: boolean;
   isDownvoted: boolean;
@@ -55,67 +56,74 @@ interface VoteColumnProps {
   onDownvoteClick: () => void;
 }
 
-export function VoteColumn({
+/** Reddit-style horizontal voting: [▲] upvotes · downvotes [▼] */
+export function VoteRow({
   question,
   isVoted,
   isDownvoted,
   onUpvoteClick,
   onDownvoteClick,
-}: VoteColumnProps) {
+}: VoteRowProps) {
   const tSession = useTranslations("session");
 
   return (
-    <div className="flex flex-col items-center gap-1 pt-0.5">
+    <div className="flex flex-row items-center gap-1">
       {/* Upvote */}
-      <button
-        onClick={onUpvoteClick}
-        aria-label={isVoted ? tSession("removeUpvote") : tSession("upvoteQuestion")}
+      <IconButton
+        tooltip={isVoted ? tSession("removeUpvote") : tSession("upvoteQuestion")}
         aria-pressed={isVoted}
+        onClick={onUpvoteClick}
         className={cn(
-          "rounded-lg p-1.5 transition-all active:scale-95",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50",
+          "transition-all active:scale-95",
           isVoted
-            ? "bg-indigo-600 text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-            : "text-muted-foreground hover:bg-accent",
+            ? "bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white dark:bg-indigo-500 dark:hover:bg-indigo-400"
+            : undefined,
         )}
       >
-        <ChevronUp className="h-5 w-5" />
-      </button>
+        <ChevronUp className="h-4 w-4" />
+      </IconButton>
+
+      {/* Upvote count */}
       <span
         className={cn(
-          "text-base font-bold tabular-nums",
+          "text-sm font-semibold tabular-nums",
           isVoted ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground",
         )}
       >
         {question.upvoteCount}
       </span>
 
-      {/* Downvote */}
-      <button
-        onClick={onDownvoteClick}
-        aria-label={isDownvoted ? tSession("removeDownvote") : tSession("downvoteQuestion")}
-        aria-pressed={isDownvoted}
-        className={cn(
-          "mt-1 rounded-lg p-1.5 transition-all active:scale-95",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50",
-          isDownvoted
-            ? "bg-muted text-foreground hover:brightness-110"
-            : "text-muted-foreground hover:bg-accent",
-        )}
-      >
-        <ThumbsDown className="h-4 w-4" />
-      </button>
+      {/* Separator */}
+      <span className="text-muted-foreground/40 select-none">·</span>
+
+      {/* Downvote count */}
       <span
         className={cn(
-          "text-xs font-semibold tabular-nums",
+          "text-sm font-semibold tabular-nums",
           isDownvoted ? "text-foreground" : "text-muted-foreground",
         )}
       >
         {question.downvoteCount}
       </span>
+
+      {/* Downvote */}
+      <IconButton
+        tooltip={isDownvoted ? tSession("removeDownvote") : tSession("downvoteQuestion")}
+        aria-pressed={isDownvoted}
+        onClick={onDownvoteClick}
+        className={cn(
+          "transition-all active:scale-95",
+          isDownvoted ? "bg-muted text-foreground hover:brightness-110" : undefined,
+        )}
+      >
+        <ChevronDown className="h-4 w-4" />
+      </IconButton>
     </div>
   );
 }
+
+/** @deprecated Use VoteRow — kept for backwards compatibility during transition */
+export const VoteColumn = VoteRow;
 
 // ── BannedTombstone ───────────────────────────────────────────────────────────
 
