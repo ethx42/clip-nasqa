@@ -2,6 +2,7 @@
 
 import { Popover } from "@base-ui/react/popover";
 import { Menu } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 
@@ -24,6 +25,7 @@ function getServerSnapshot() {
  * Contains labeled dark mode toggle, inline language switcher, and app version info.
  */
 export function HamburgerMenu() {
+  const t = useTranslations("session");
   const { theme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const isDark = mounted ? theme === "dark" : false;
@@ -44,7 +46,7 @@ export function HamburgerMenu() {
             <div className="space-y-4">
               {/* Dark mode toggle */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Dark mode</span>
+                <span className="text-sm font-medium text-foreground">{t("darkMode")}</span>
                 <button
                   role="switch"
                   aria-checked={isDark}
@@ -67,7 +69,7 @@ export function HamburgerMenu() {
               {/* Language switcher */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Language
+                  {t("language")}
                 </p>
                 <LanguageSwitcher />
               </div>
