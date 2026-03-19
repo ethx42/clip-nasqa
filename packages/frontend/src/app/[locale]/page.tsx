@@ -45,7 +45,7 @@ export default function Home() {
   }, [state]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-73px)] flex-col">
+    <div className="flex min-h-[calc(100dvh-var(--header-height))] flex-col">
       {/* Hero */}
       <section className="relative flex flex-1 flex-col items-center justify-center px-6 py-24 text-center lg:py-32">
         {/* Subtle radial glow behind hero */}

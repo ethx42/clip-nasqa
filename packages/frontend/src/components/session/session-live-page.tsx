@@ -105,13 +105,9 @@ export function SessionLivePage({
         onClose={() => setJoinModalOpen(false)}
       />
       <SessionShell
-        title={session.title}
         sessionCode={sessionCode}
         snippetCount={state.snippets.length}
         questionCount={state.questions.length}
-        liveIndicator={
-          <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
-        }
         clipboardSlot={
           <ClipboardPanel
             sessionCode={sessionCode}

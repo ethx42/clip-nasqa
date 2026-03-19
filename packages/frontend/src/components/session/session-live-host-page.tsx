@@ -142,15 +142,10 @@ export function SessionLiveHostPage({
 
   return (
     <SessionShell
-      title={session.title}
       sessionCode={sessionCode}
       isHost
-      hostToolbar={hostToolbar}
       snippetCount={state.snippets.length}
       questionCount={state.questions.length}
-      liveIndicator={
-        <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
-      }
       clipboardSlot={
         <ClipboardPanel
           isHost

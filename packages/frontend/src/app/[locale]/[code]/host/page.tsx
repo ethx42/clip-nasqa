@@ -29,7 +29,7 @@ export default async function HostPage({
     const t = await getTranslations("pages");
 
     return (
-      <div className="flex min-h-[calc(100dvh-73px)] flex-col items-center justify-center px-6 text-center">
+      <div className="flex min-h-[calc(100dvh-var(--header-height))] flex-col items-center justify-center px-6 text-center">
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute left-1/2 top-1/3 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/8 blur-3xl" />
         </div>

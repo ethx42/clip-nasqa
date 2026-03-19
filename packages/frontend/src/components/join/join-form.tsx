@@ -152,7 +152,7 @@ export function JoinForm({
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-73px)] flex-col items-center justify-center px-6 py-12">
+    <div className="flex min-h-[calc(100dvh-var(--header-height))] flex-col items-center justify-center px-6 py-12">
       {/* Ambient glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-1/3 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/8 blur-3xl" />

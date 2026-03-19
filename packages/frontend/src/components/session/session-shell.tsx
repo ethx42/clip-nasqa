@@ -4,16 +4,11 @@ import { ClipboardList, MessageCircleQuestion } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-import { IdentityEditor } from "@/components/session/identity-editor";
-
 interface SessionShellProps {
-  title: string;
   isHost?: boolean;
   sessionCode?: string;
   clipboardSlot: React.ReactNode;
   qaSlot: React.ReactNode;
-  hostToolbar?: React.ReactNode;
-  liveIndicator?: React.ReactNode;
   snippetCount?: number;
   questionCount?: number;
 }
@@ -21,11 +16,8 @@ interface SessionShellProps {
 type Tab = "clipboard" | "qa";
 
 export function SessionShell({
-  title,
   clipboardSlot,
   qaSlot,
-  hostToolbar,
-  liveIndicator,
   snippetCount = 0,
   questionCount = 0,
 }: SessionShellProps) {
@@ -62,19 +54,7 @@ export function SessionShell({
   const qaBadge = activeTab !== "qa" && questionCount > lastSeenQuestions;
 
   return (
-    <div className="flex h-[calc(100dvh-73px)] flex-col">
-      {/* Header */}
-      <header className="border-b border-border px-5 py-2 lg:px-6">
-        <div className="flex items-center gap-3">
-          <h1 className="truncate text-lg font-bold tracking-tight text-foreground">{title}</h1>
-          {liveIndicator}
-          <div className="ml-auto flex items-center gap-1">
-            {hostToolbar}
-            <IdentityEditor />
-          </div>
-        </div>
-      </header>
-
+    <div className="flex h-[calc(100dvh-var(--header-height))] flex-col">
       {/* Mobile tab bar */}
       <nav aria-label={t("sessionPanels")} className="flex border-b border-border lg:hidden">
         <button
