@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Snippet } from "@nasqa/core";
 
+import { IconButton } from "@/components/ui/icon-button";
 import { useShikiHighlight } from "@/hooks/use-shiki-highlight";
 import { SUPPORTED_LANGUAGES } from "@/lib/detect-language";
 import { formatRelativeTime } from "@/lib/format-relative-time";
@@ -200,54 +201,38 @@ export function SnippetCard({
             !isFailed &&
             !isEditing &&
             ((isOptimistic && onEditStart) || (!isOptimistic && onEditSnippet)) && (
-              <button
-                type="button"
-                title={t("editSnippet")}
-                onClick={handleEditClick}
-                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                aria-label={t("editSnippet")}
-              >
+              <IconButton tooltip={t("editSnippet")} onClick={handleEditClick}>
                 <Pencil className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             )}
 
           {/* Retry button — only for failed snippets */}
           {isFailed && onRetry && (
-            <button
-              type="button"
-              title={t("retryPush")}
-              onClick={onRetry}
-              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label={t("retryPush")}
-            >
+            <IconButton tooltip={t("retryPush")} onClick={onRetry}>
               <RefreshCw className="h-3.5 w-3.5" />
-            </button>
+            </IconButton>
           )}
 
           {/* Delete button — for confirmed host snippets */}
           {isHost && onDelete && !isFailed && (
-            <button
-              type="button"
-              title={t("deleteSnippet")}
+            <IconButton
+              tooltip={t("deleteSnippet")}
               onClick={onDelete}
-              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              aria-label={t("deleteSnippet")}
+              className="hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            </IconButton>
           )}
 
           {/* Dismiss button — for failed snippets */}
           {isFailed && onDismiss && (
-            <button
-              type="button"
-              title={t("dismissFailed")}
+            <IconButton
+              tooltip={t("dismissFailed")}
               onClick={onDismiss}
-              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              aria-label={t("dismissFailed")}
+              className="hover:bg-destructive/10 hover:text-destructive"
             >
               <X className="h-3.5 w-3.5" />
-            </button>
+            </IconButton>
           )}
         </div>
       </div>

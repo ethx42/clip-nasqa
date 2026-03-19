@@ -3,6 +3,8 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
+import { IconButton } from "@/components/ui/icon-button";
+
 export function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -13,17 +15,12 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
   };
 
   return (
-    <button
-      onClick={handleCopy}
-      aria-label={label}
-      title={label}
-      className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-    >
+    <IconButton tooltip={label} onClick={handleCopy}>
       {copied ? (
         <Check className="h-3.5 w-3.5 text-indigo-500" />
       ) : (
         <Copy className="h-3.5 w-3.5" />
       )}
-    </button>
+    </IconButton>
   );
 }

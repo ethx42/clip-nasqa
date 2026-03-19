@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useCallback, useRef, useState } from "react";
 
+import { IconButton } from "@/components/ui/icon-button";
 import { useShikiHighlight } from "@/hooks/use-shiki-highlight";
 import { detectLanguage, SUPPORTED_LANGUAGES } from "@/lib/detect-language";
 
@@ -160,15 +161,11 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
               )}
             </div>
             {/* Copy button in preview mode */}
-            <button
-              type="button"
-              onClick={handleCopyPreview}
-              title={t("copy")}
-              aria-label={t("copy")}
-              className="absolute right-2 top-2 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </button>
+            <div className="absolute right-2 top-2">
+              <IconButton tooltip={t("copy")} onClick={handleCopyPreview}>
+                <Copy className="h-3.5 w-3.5" />
+              </IconButton>
+            </div>
           </div>
         ) : (
           <>
@@ -255,15 +252,13 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
 
           {/* Preview toggle — only when there is text */}
           {value.trim() && (
-            <button
-              type="button"
+            <IconButton
+              tooltip={showPreview ? t("editMode") : t("previewMode")}
               onClick={handleTogglePreview}
-              title={showPreview ? t("editMode") : t("previewMode")}
-              aria-label={showPreview ? t("editMode") : t("previewMode")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="border border-border bg-background px-2.5 py-1.5"
             >
               {showPreview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
+            </IconButton>
           )}
         </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
+import { Tooltip } from "@base-ui/react/tooltip";
 import { Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
@@ -32,13 +33,28 @@ export function HamburgerMenu() {
 
   return (
     <Popover.Root>
-      <Popover.Trigger
-        aria-label="Open menu"
-        className="flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        style={{ minHeight: "44px", minWidth: "44px" }}
-      >
-        <Menu className="h-5 w-5" />
-      </Popover.Trigger>
+      <Tooltip.Provider delay={400}>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <Popover.Trigger
+                aria-label="Open menu"
+                className="flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                style={{ minHeight: "44px", minWidth: "44px" }}
+              />
+            }
+          >
+            <Menu className="h-5 w-5" />
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Positioner sideOffset={6}>
+              <Tooltip.Popup className="rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-md z-50">
+                Menu
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
 
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
