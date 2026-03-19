@@ -179,12 +179,12 @@
 3. All icon buttons within a segment are grouped in one consistent action bar — copy, pin, ban, edit, delete icons appear together in the same layout position across all segment types
 4. Voting controls show up button, numeric count, and down button in that horizontal order — this layout is identical on every question and reply regardless of view (host or participant)
 5. Every icon-only button in the app shows a tooltip on hover explaining its action — no icon button is left without a label accessible via hover
-   **Plans**: TBD
+   **Plans**: 2 plans
 
 Plans:
 
-- [ ] 19-01-PLAN.md — Segment component (replace cards): flat layout, dividers, reduced rounding/padding, icon button grouping, copy-content icon-only
-- [ ] 19-02-PLAN.md — Reddit-style voting component, pin/ban alignment fix, tooltip wrapper on all icon-only buttons
+- [ ] 19-01-PLAN.md — Flat Slack-style segments replacing cards: dividers, reduced rounding/padding, consistent icon button grouping, snippet number first, icon-only copy
+- [ ] 19-02-PLAN.md — Reddit-style horizontal voting, host action bar ordering fix, IconButton with @base-ui Tooltip on all icon-only buttons
 
 ### Phase 20: Functionality and Audience View
 
