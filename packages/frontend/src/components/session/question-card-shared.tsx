@@ -68,7 +68,7 @@ export function VoteRow({
   const netScore = question.upvoteCount - question.downvoteCount;
 
   return (
-    <div className="flex flex-col items-center gap-0">
+    <div className="flex flex-col items-center rounded-lg bg-muted/50 px-0.5 py-0.5">
       {/* Upvote */}
       <IconButton
         compact

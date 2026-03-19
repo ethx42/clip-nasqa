@@ -140,12 +140,12 @@ export function SnippetCard({
   return (
     <div
       ref={cardRef}
-      className={`py-3 px-1 transition-all duration-200 ${
+      className={`group py-3 px-2 -mx-2 rounded-lg transition-all duration-200 ${
         isHighlighted
-          ? "bg-indigo-500/5 rounded-lg ring-2 ring-indigo-500/30 animate-[snippet-highlight_2s_ease-out]"
+          ? "bg-indigo-500/5 ring-2 ring-indigo-500/30 animate-[snippet-highlight_2s_ease-out]"
           : isFailed
-            ? "bg-destructive/5 rounded-lg"
-            : ""
+            ? "bg-destructive/5"
+            : "hover:bg-accent/40"
       }`}
     >
       <div className="mb-3 flex items-center justify-between gap-2">

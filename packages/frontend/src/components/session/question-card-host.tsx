@@ -194,7 +194,7 @@ export function QuestionCardHost({
           >
             <div
               className={cn(
-                "group relative py-3 px-1 transition-all",
+                "group relative py-3 px-2 -mx-2 rounded-lg transition-all hover:bg-accent/40",
                 question.isFocused && "ring-2 ring-indigo-500/50 bg-indigo-500/5 rounded-lg",
               )}
             >
@@ -466,9 +466,9 @@ export function QuestionCardHost({
                   </div>
                 )}
 
-                {/* Expanded reply list */}
+                {/* Expanded reply list — nested under question */}
                 {showReplies && replies.length > 0 && !isEditing && (
-                  <div className="mt-4">
+                  <div className="mt-3 ml-4 border-l-2 border-border/50 pl-4">
                     <ReplyList
                       replies={replies}
                       isHost={true}
