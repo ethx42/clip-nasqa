@@ -2,17 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-17)
+See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.2 UX Overhaul
+**Current focus:** v2.2 UX Overhaul — Phase 18: Header and Navigation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-18 — Milestone v2.2 started
+Phase: 18 of 21 (Header and Navigation)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-03-18 — v2.2 roadmap created (phases 18-21)
+
+Progress: [████████████████░░░░] ~80% (17/21 phases complete)
 
 ## Performance Metrics
 
@@ -31,29 +33,10 @@ _Updated after each plan completion_
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v2.0 research]: Participant mutations safe to move client-side (fingerprint auth enforced in Lambda); host mutations must stay as Server Actions — `hostSecretHash` in Network tab is a security risk
-- [v2.0 research]: Lambda memory target is 256MB, not 512MB — AWS August 2025 pricing change bills INIT phase at invocation rate; 512MB doubles cold-start cost vs 128MB
-- [v2.0 research]: QA debounce reduction requires Framer Motion `layout` prop on question cards as a prerequisite — without it, 300ms debounce causes visible card teleporting
-- [v2.0 research]: Client-side Shiki must use `import("shiki/core")` with `createJavaScriptRegexEngine()` inside async callback only — static import adds 695kB gzip to initial bundle
-- [14-01]: React.cache pattern established for server-side DynamoDB fetch deduplication; layout animation duration aligned to 300ms debounce with useReducedMotion gating
-- [14-02]: Numeric codes use range 100000-999999 (6-digit, 900000 possibilities) for readability; random-word-slugs dependency removed; route param still named "slug" in filesystem routes until URL restructure (plan 03)
-- [14-03]: 6-digit validation guard (/^\d{6}$/) placed in both generateMetadata and page default export; participantUrl uses /${locale}/${code} flat format; OG image shows formatCode(code) badge; robots.ts disallow rules removed in favor of per-page robots metadata
-- [14-04]: /join page renders inside [locale] layout (nav bar visible) — full standalone requires route group restructure not planned; JoinForm extracted as client component for server generateMetadata; paste handler uses /(\d{6})/ to extract codes from URLs
-- [15-01]: VOTE_CONFLICT silent handling in dedicated callVoteMutation() helper outside safeClientMutation to keep shared utility clean; isPending/restoredText threaded through QAPanel as props (QAPanel stays stateless); focusQuestionAction moved to moderation.ts so qa.ts could be deleted entirely
-- [15-02]: getTranslations deferred to error paths only in all 8 host Server Actions — happy-path mutations skip i18n resolution entirely; createSession has 3 independent lazy call sites (validation, DynamoDB catch, code exhaustion)
-- [Phase 16-01]: Deferred push via editingSnippetIds check in executeServerPush; push fires when handleEditEnd is called with final edited content
-- [Phase 16-01]: Content-fingerprint dedup in SNIPPET*ADDED matches sessionCode+content+language+type without optimisticId, auto-removes matched \_opt* ID from failedSnippetIds
-- [Phase 16-02]: useShikiHighlight singleton via module-level \_highlighterPromise — highlighter created once, language grammars loaded lazily per-language on first use
-- [Phase 16-02]: All Shiki imports dynamic (inside async functions) — no top-level static import; shiki/core + engine + themes + langs all lazy-loaded
-- [Phase 16-02]: detectLanguage rewritten with multi-signal heuristics; URL-first check before YAML rule; JS requires 2-of-3 signals
-- [Phase 17-01]: verifyHostSecret extracted to resolvers/shared.ts — single source of truth; was duplicated in qa.ts and clipboard.ts
-- [Phase 17-01]: Dual-path auth in single mutation — fingerprint+5min-window for participants, verifyHostSecret for host; no time window for host snippet edits (superuser per EDIT-09)
-- [Phase 17-01]: Soft-delete via deletedAt attribute — getSessionData filter extended to exclude deletedAt items; editedAt mapped in all three content-type projections
+- [Phase 17-03]: ReplyRow extracted from ReplyList — per-reply state requires component isolation
 - [Phase 17-02]: Participant edit/delete hooks call graphqlMutation directly; host hooks go through Server Actions — transport split preserves hostSecretHash security boundary
-- [Phase 17-02]: handleDeleteReply rollback not attempted for participant path — no repliesRef in useSessionMutations; subscription echo corrects state; repliesRef added as optional param to useHostMutations for Plan 03
-- [Phase 17-03]: useState lazy-init for 5-min window — Date.now() in render body is impure per react-hooks/purity; moved to useState initializer that runs once on mount, expires via setTimeout
-- [Phase 17-03]: ReplyRow extracted from ReplyList — per-reply state (isEditing, deleteConfirmOpen, withinEditWindow) requires component isolation
-- [Phase 17-03]: Confirmed snippet edit coexists with optimistic edit — handleEditSave routes to onEditSnippet or onEditEnd based on isOptimistic; two systems work independently
+- [Phase 16-02]: useShikiHighlight singleton via module-level \_highlighterPromise — all Shiki imports must remain dynamic (no static top-level import)
+- [Phase 15-01]: VOTE_CONFLICT silent handling kept outside safeClientMutation to keep shared utility clean
 
 ### Pending Todos
 
@@ -62,9 +45,10 @@ None.
 ### Blockers/Concerns
 
 - [Phase 16]: Run `next build` bundle analyzer before implementing client Shiki — confirm it lands in a lazy chunk and initial bundle stays under 100kB gzip
+- [v2.2]: Superuser hard delete (FUNC-01) requires a new Server Action — confirm DynamoDB deleteItem replaces existing soft-delete path without breaking subscription broadcast
 
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 17-03-PLAN.md — inline edit/delete UI, 5-min window, Dialog confirmations, edited badges, i18n
-Resume at: Phase 17 COMPLETE — v2.1 Edit & Delete milestone fully implemented
+Stopped at: v2.2 roadmap created — phases 18-21 defined, requirements mapped, files written
+Resume at: Phase 18 ready to plan — run `/gsd:plan-phase 18`

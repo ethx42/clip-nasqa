@@ -176,14 +176,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 | URL-06      | Phase 14 | Complete |
 | URL-07      | Phase 14 | Complete |
 | URL-08      | Phase 14 | Complete |
+| EDIT-01     | Phase 17 | Complete |
+| EDIT-02     | Phase 17 | Complete |
+| EDIT-03     | Phase 17 | Complete |
+| EDIT-04     | Phase 17 | Complete |
+| EDIT-05     | Phase 17 | Complete |
+| EDIT-06     | Phase 17 | Complete |
+| EDIT-07     | Phase 17 | Complete |
+| EDIT-08     | Phase 17 | Complete |
+| EDIT-09     | Phase 17 | Complete |
+| EDIT-10     | Phase 17 | Complete |
+| EDIT-11     | Phase 17 | Complete |
+| EDIT-12     | Phase 17 | Complete |
+| EDIT-13     | Phase 17 | Complete |
+| HDR-01      | Phase 18 | Pending  |
+| HDR-02      | Phase 18 | Pending  |
+| HDR-03      | Phase 18 | Pending  |
+| HDR-04      | Phase 18 | Pending  |
+| VIS-01      | Phase 19 | Pending  |
+| VIS-02      | Phase 19 | Pending  |
+| VIS-03      | Phase 19 | Pending  |
+| VIS-04      | Phase 19 | Pending  |
+| VIS-05      | Phase 19 | Pending  |
+| FUNC-04     | Phase 19 | Pending  |
+| FUNC-05     | Phase 19 | Pending  |
+| FUNC-06     | Phase 19 | Pending  |
+| FUNC-01     | Phase 20 | Pending  |
+| FUNC-02     | Phase 20 | Pending  |
+| FUNC-03     | Phase 20 | Pending  |
+| AUD-01      | Phase 20 | Pending  |
+| AUD-02      | Phase 20 | Pending  |
+| INP-01      | Phase 21 | Pending  |
+| INP-02      | Phase 21 | Pending  |
+| INP-03      | Phase 21 | Pending  |
 
 **Coverage:**
 
-- v2.0 requirements: 28 total
-- Mapped to phases: 28
-- Unmapped: 0
+- v2.0 requirements: 28 total — Mapped to phases: 28 — Unmapped: 0
+- v2.1 requirements: 13 total — Mapped to phases: 13 — Unmapped: 0
+- v2.2 requirements: 20 total — Mapped to phases: 20 — Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-03-17_
-_Last updated: 2026-03-17 after roadmap creation (phases 14-16)_
+_Last updated: 2026-03-18 after roadmap creation (phases 18-21)_

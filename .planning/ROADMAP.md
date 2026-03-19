@@ -7,7 +7,8 @@
 - ✅ **v1.2 Reactions** — Phases 9-10 (shipped 2026-03-17)
 - ✅ **v1.3 Participant & Host UX Refactor** — Phases 11-13 (shipped 2026-03-18)
 - ✅ **v2.0 Performance & Instant Operations** — Phases 14-16 (shipped 2026-03-18)
-- 🚧 **v2.1 Edit & Delete** — Phase 17 (in progress)
+- ✅ **v2.1 Edit & Delete** — Phase 17 (shipped 2026-03-18)
+- 🚧 **v2.2 UX Overhaul** — Phases 18-21 (in progress)
 
 ## Phases
 
@@ -48,19 +49,30 @@
 
 </details>
 
-### v2.0 Performance & Instant Operations (Complete)
-
-**Milestone Goal:** Eliminate all perceived latency — every user action must feel instantaneous with zero flashing, stable layout, and reliable real-time sync.
+<details>
+<summary>✅ v2.0 Performance & Instant Operations (Phases 14-16) — SHIPPED 2026-03-18</summary>
 
 - [x] **Phase 14: Infrastructure and URL Routing** — Lambda memory at 256MB, SSR fetch deduplication, QA sort debounce with layout animations, 6-digit numeric session codes, flat URL structure, /join page (completed 2026-03-18)
 - [x] **Phase 15: Mutation Path and Client Utilities** — `graphqlMutation()` and `safeClientMutation()` client utilities, shared error parser, participant mutations execute directly against AppSync, lazy i18n in surviving Server Actions (completed 2026-03-18)
 - [x] **Phase 16: Optimistic Snippet Push and Client Shiki** — Host snippet push appears at 0ms via optimistic dispatch with content-fingerprint dedup and rollback, client-side Shiki syntax preview with dynamic import and JS regex engine (completed 2026-03-18)
 
-### v2.1 Edit & Delete (In Progress)
+</details>
 
-**Milestone Goal:** Authors can edit and delete their own questions, replies, and clipboard snippets within a 5-minute window. The host has superuser powers to edit or delete any post at any time. All changes broadcast in real-time.
+<details>
+<summary>✅ v2.1 Edit & Delete (Phase 17) — SHIPPED 2026-03-18</summary>
 
 - [x] **Phase 17: Edit & Delete** — Backend mutations + DynamoDB schema, 5-min author window, host superuser, frontend inline editing UI, edited indicators, real-time broadcast (completed 2026-03-18)
+
+</details>
+
+### v2.2 UX Overhaul (In Progress)
+
+**Milestone Goal:** Comprehensive visual and interaction overhaul — Slack-style segments, single-bar header with hamburger menu, Reddit-style voting, collapsible Q&A, tooltips on all icon buttons, rich text support, and consistent button grouping across the entire app.
+
+- [ ] **Phase 18: Header and Navigation** — Single-bar header with logo, session name, live indicator, hamburger menu containing theme toggle and language selector
+- [ ] **Phase 19: Segments, Visual Overhaul, and Voting** — Slack-style segments replacing cards, reduced rounding/padding, consistent icon button grouping, Reddit-style voting, pin/ban alignment, tooltips on all icon-only buttons
+- [ ] **Phase 20: Functionality and Audience View** — Hard delete for superuser, line breaks in Q&A text, session code in share dialog, audience section headers, collapsible Q&A drawer
+- [ ] **Phase 21: Input and Form Polish** — Rich placeholder for QA input, Cmd+Enter submit shortcut on all send buttons, one-word-max button labels
 
 ## Phase Details
 
@@ -138,27 +150,102 @@
 - [ ] 17-02-PLAN.md — Frontend state wiring: mutation strings, reducer actions, subscription handler, participant + host mutation hooks, Server Actions
 - [ ] 17-03-PLAN.md — Frontend UI: inline edit, delete dialogs, 5-min window auto-hide, edited badges, snippet edit, i18n (en/es/pt)
 
+### Phase 18: Header and Navigation
+
+**Goal**: The app shell presents a single unified header bar — one line contains all navigation context (logo, app name, session name, live indicator) and a hamburger menu replaces the second bar, consolidating theme toggle and language selector into a tidy dropdown
+**Depends on**: Phase 17
+**Requirements**: HDR-01, HDR-02, HDR-03, HDR-04
+**Success Criteria** (what must be TRUE):
+
+1. The session page shows exactly one horizontal header bar — the previous two-bar layout is gone on both host and participant views
+2. A user can see the logo, app name, session name, and "Live" indicator simultaneously on the left side of the header without scrolling or expanding anything
+3. A user can click the hamburger menu on the right and toggle the theme or switch language — the same controls that previously lived in the second bar are accessible here
+4. The header profile icon shows the user's first name inline to its right
+   **Plans**: TBD
+
+Plans:
+
+- [ ] 18-01-PLAN.md — Header component restructure: single bar layout, left-side session context, right-side hamburger + profile
+
+### Phase 19: Segments, Visual Overhaul, and Voting
+
+**Goal**: Q&A and clipboard items render as flat Slack-style segments with tighter geometry and systematically grouped icon buttons; voting is laid out Reddit-style (up, count, down) and every icon-only button carries a tooltip — the entire interactive surface is visually consistent
+**Depends on**: Phase 18
+**Requirements**: VIS-01, VIS-02, VIS-03, VIS-04, VIS-05, FUNC-04, FUNC-05, FUNC-06
+**Success Criteria** (what must be TRUE):
+
+1. Q&A questions, replies, and clipboard items render without card borders or elevated shadows — they appear as flat segments separated by dividers, and all existing content and actions are still accessible
+2. Corner radii and padding on all segments and buttons are visibly reduced compared to the previous design — no element has the old "pill" or heavily rounded card appearance
+3. All icon buttons within a segment are grouped in one consistent action bar — copy, pin, ban, edit, delete icons appear together in the same layout position across all segment types
+4. Voting controls show up button, numeric count, and down button in that horizontal order — this layout is identical on every question and reply regardless of view (host or participant)
+5. Every icon-only button in the app shows a tooltip on hover explaining its action — no icon button is left without a label accessible via hover
+   **Plans**: TBD
+
+Plans:
+
+- [ ] 19-01-PLAN.md — Segment component (replace cards): flat layout, dividers, reduced rounding/padding, icon button grouping, copy-content icon-only
+- [ ] 19-02-PLAN.md — Reddit-style voting component, pin/ban alignment fix, tooltip wrapper on all icon-only buttons
+
+### Phase 20: Functionality and Audience View
+
+**Goal**: The superuser delete path removes records from the database, Q&A text preserves line breaks, the share dialog surfaces the session code, the audience view shows section headers, and participants can collapse the Q&A panel to foreground the clipboard
+**Depends on**: Phase 19
+**Requirements**: FUNC-01, FUNC-02, FUNC-03, AUD-01, AUD-02
+**Success Criteria** (what must be TRUE):
+
+1. A host deletes a question using the superuser action and the item no longer appears after a page reload — it is absent from DynamoDB, not just hidden client-side
+2. A participant types a multi-line question using Shift+Enter and the submitted question displays each line break in the feed — other participants see the same formatted text in real-time
+3. The share dialog shows the 6-digit session code as a copyable element alongside the QR code and link
+4. The audience view displays a "Clipboard" heading above the clipboard list and a "Q&A" heading above the question feed — both are visible without any interaction
+5. A participant can collapse the Q&A panel and the clipboard content expands to fill the vacated space — the host's latest snippet remains visible and prominent
+   **Plans**: TBD
+
+Plans:
+
+- [ ] 20-01-PLAN.md — Hard delete Server Action for superuser, line break support in Q&A text (storage + render)
+- [ ] 20-02-PLAN.md — Session code in share dialog, audience section headers, collapsible Q&A drawer
+
+### Phase 21: Input and Form Polish
+
+**Goal**: Every send-action input in the app has a rich placeholder that communicates identity context, responds to Cmd+Enter / Ctrl+Enter for submission, and uses the shortest possible button label — the interaction model is keyboard-friendly and visually minimal
+**Depends on**: Phase 20
+**Requirements**: INP-01, INP-02, INP-03
+**Success Criteria** (what must be TRUE):
+
+1. The Q&A input field shows an avatar, the participant's display name, and translated "Ask a question" text when the field is empty — the placeholder disappears as soon as the user starts typing
+2. A user can press Cmd+Enter (macOS) or Ctrl+Enter (Windows/Linux) in any send-content input (Q&A, reply, clipboard snippet) and the form submits — no mouse click required
+3. All form submit buttons display one word or an icon only — no button label is two or more words
+   **Plans**: TBD
+
+Plans:
+
+- [ ] 21-01-PLAN.md — QA input rich placeholder (avatar + name + translated text), Cmd+Enter shortcut on all send inputs, one-word button label audit and update
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 14 -> 15 -> 16 -> 17
+Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 
-| Phase                                        | Milestone | Plans Complete | Status     | Completed  |
-| -------------------------------------------- | --------- | -------------- | ---------- | ---------- |
-| 1. Infrastructure                            | v1.0      | 3/3            | Complete   | 2026-03-14 |
-| 2. Session and View Shell                    | v1.0      | 3/3            | Complete   | 2026-03-14 |
-| 3. Real-Time Core                            | v1.0      | 6/6            | Complete   | 2026-03-14 |
-| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete   | 2026-03-14 |
-| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete   | 2026-03-15 |
-| 6. Testing and CI                            | v1.1      | 3/3            | Complete   | 2026-03-16 |
-| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete   | 2026-03-16 |
-| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete   | 2026-03-17 |
-| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete   | 2026-03-17 |
-| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete   | 2026-03-17 |
-| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete   | 2026-03-17 |
-| 12. Component Decomposition                  | v1.3      | 3/3            | Complete   | 2026-03-17 |
-| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete   | 2026-03-18 |
-| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete   | 2026-03-18 |
-| 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete   | 2026-03-18 |
-| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete   | 2026-03-18 |
-| 17. Edit & Delete                            | 3/3       | Complete       | 2026-03-18 | -          |
+| Phase                                        | Milestone | Plans Complete | Status      | Completed  |
+| -------------------------------------------- | --------- | -------------- | ----------- | ---------- |
+| 1. Infrastructure                            | v1.0      | 3/3            | Complete    | 2026-03-14 |
+| 2. Session and View Shell                    | v1.0      | 3/3            | Complete    | 2026-03-14 |
+| 3. Real-Time Core                            | v1.0      | 6/6            | Complete    | 2026-03-14 |
+| 4. Moderation, Identity, and Polish          | v1.0      | 4/4            | Complete    | 2026-03-14 |
+| 5. Code Quality Gates                        | v1.1      | 2/2            | Complete    | 2026-03-15 |
+| 6. Testing and CI                            | v1.1      | 3/3            | Complete    | 2026-03-16 |
+| 7. Error Handling and Observability          | v1.1      | 3/3            | Complete    | 2026-03-16 |
+| 8. SEO and Accessibility                     | v1.1      | 2/2            | Complete    | 2026-03-17 |
+| 9. Reactions Data Model and Backend          | v1.2      | 3/3            | Complete    | 2026-03-17 |
+| 10. Reactions Frontend State and UI          | v1.2      | 2/2            | Complete    | 2026-03-17 |
+| 11. Shared Utilities and Hook Extraction     | v1.3      | 2/2            | Complete    | 2026-03-17 |
+| 12. Component Decomposition                  | v1.3      | 3/3            | Complete    | 2026-03-17 |
+| 13. UX Polish and Accessibility              | v1.3      | 2/2            | Complete    | 2026-03-18 |
+| 14. Infrastructure and URL Routing           | v2.0      | 4/4            | Complete    | 2026-03-18 |
+| 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete    | 2026-03-18 |
+| 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete    | 2026-03-18 |
+| 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
+| 18. Header and Navigation                    | v2.2      | 0/TBD          | Not started | -          |
+| 19. Segments, Visual Overhaul, and Voting    | v2.2      | 0/TBD          | Not started | -          |
+| 20. Functionality and Audience View          | v2.2      | 0/TBD          | Not started | -          |
+| 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |
