@@ -50,6 +50,11 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Layout dimensions */
+:root {
+  --header-height: 56px;
+}
+
 /* Nasqa Zinc/Indigo palette — light mode */
 :root {
   --background: oklch(1 0 0); /* White */

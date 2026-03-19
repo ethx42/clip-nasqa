@@ -108,7 +108,12 @@
     "confirmDeleteQuestion": "Delete this question?",
     "confirmDeleteQuestionDesc": "This cannot be undone.",
     "confirmDeleteReply": "Delete this reply?",
-    "confirmDeleteReplyDesc": "This cannot be undone."
+    "confirmDeleteReplyDesc": "This cannot be undone.",
+    "darkMode": "Dark mode",
+    "language": "Language",
+    "leaveSession": "Leave this session?",
+    "leaveConfirm": "Leave",
+    "about": "About"
   },
   "pages": {
     "sessionNotFound": "Session not found or expired",

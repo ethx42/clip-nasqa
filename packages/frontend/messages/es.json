@@ -108,7 +108,12 @@
     "confirmDeleteQuestion": "¿Eliminar esta pregunta?",
     "confirmDeleteQuestionDesc": "Esta acción no se puede deshacer.",
     "confirmDeleteReply": "¿Eliminar esta respuesta?",
-    "confirmDeleteReplyDesc": "Esta acción no se puede deshacer."
+    "confirmDeleteReplyDesc": "Esta acción no se puede deshacer.",
+    "darkMode": "Modo oscuro",
+    "language": "Idioma",
+    "leaveSession": "¿Salir de esta sesion?",
+    "leaveConfirm": "Salir",
+    "about": "Acerca de"
   },
   "pages": {
     "sessionNotFound": "Sesión no encontrada o expirada",

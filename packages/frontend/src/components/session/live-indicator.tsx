@@ -20,14 +20,14 @@ function formatMinutesAgo(
 }
 
 /**
- * Displays live connection status in the session header.
+ * Displays live connection status — vertical stack layout (dot on top, label below).
  *
  * - connected: green pulsing dot + "LIVE"
  * - connecting: yellow dot + "Reconnecting..."
  * - disconnected: grey dot + "Paused"
  *
  * When connected and lastHostActivity is set and more than 2 minutes ago,
- * shows "Last snippet Xm ago" next to the dot.
+ * shows stale activity as a tooltip-style line.
  */
 export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndicatorProps) {
   const t = useTranslations("session");
@@ -45,32 +45,40 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
 
   if (connectionStatus === "connected") {
     return (
-      <div className="flex items-center gap-2">
-        <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-sm font-bold text-green-600 dark:text-green-400">{t("live")}</span>
-        {isStale && lastHostActivity && (
-          <span className="text-[13px] text-muted-foreground">
-            · {t("lastSnippet", { time: formatMinutesAgo(lastHostActivity, t) })}
-          </span>
-        )}
+      <div
+        className="flex flex-col items-center gap-0.5"
+        title={
+          isStale && lastHostActivity
+            ? t("lastSnippet", { time: formatMinutesAgo(lastHostActivity, t) })
+            : undefined
+        }
+      >
+        <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400">
+          {t("live")}
+        </span>
       </div>
     );
   }
 
   if (connectionStatus === "connecting") {
     return (
-      <div className="flex items-center gap-2">
-        <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-        <span className="text-sm font-medium text-warning-foreground">{t("reconnecting")}</span>
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
+        <span className="text-[10px] font-medium uppercase tracking-widest text-warning-foreground">
+          {t("reconnecting")}
+        </span>
       </div>
     );
   }
 
   // disconnected
   return (
-    <div className="flex items-center gap-2">
-      <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
-      <span className="text-sm text-muted-foreground">{t("paused")}</span>
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40" />
+      <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+        {t("paused")}
+      </span>
     </div>
   );
 }

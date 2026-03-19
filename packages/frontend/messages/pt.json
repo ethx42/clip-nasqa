@@ -108,7 +108,13 @@
     "confirmDeleteQuestion": "Excluir esta pergunta?",
     "confirmDeleteQuestionDesc": "Esta ação não pode ser desfeita.",
     "confirmDeleteReply": "Excluir esta resposta?",
-    "confirmDeleteReplyDesc": "Esta ação não pode ser desfeita."
+    "confirmDeleteReplyDesc": "Esta ação não pode ser desfeita.",
+    "cancel": "Cancelar",
+    "darkMode": "Modo escuro",
+    "language": "Idioma",
+    "leaveSession": "Sair desta sessao?",
+    "leaveConfirm": "Sair",
+    "about": "Sobre"
   },
   "pages": {
     "sessionNotFound": "Sessão não encontrada ou expirada",
