@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 18 of 21 (Header and Navigation)
-Plan: 1 of 2 in current phase (18-01 complete)
+Plan: 2 of 2 in current phase (18-02 complete — phase complete)
 Status: In progress
-Last activity: 2026-03-19 — 18-01 complete: unified 56px AppHeader with hamburger menu and CSS variable migration
+Last activity: 2026-03-19 — 18-02 complete: session context wired into AppHeader, profile name display, mobile polish
 
-Progress: [████████████████░░░░] ~80% (17/21 phases complete)
+Progress: [█████████████████░░░] ~85% (18/21 phases complete)
 
 ## Performance Metrics
 
@@ -39,6 +39,8 @@ Recent decisions affecting current work:
 - [Phase 15-01]: VOTE_CONFLICT silent handling kept outside safeClientMutation to keep shared utility clean
 - [Phase 18-01]: AppHeader uses slot-based composition (sessionContext, shareSlot) so session pages inject context in plan 02 without modifying AppHeader
 - [Phase 18-01]: Layout dimensions via CSS variables: --header-height: 56px replaces all hardcoded 73px references
+- [Phase 18-02]: Each page renders its own AppHeader instance — cleaner than portals/Context for injecting session-specific header content
+- [Phase 18-02]: SessionLiveHostPage owns HostToolbar rendering; host/page.tsx passes raw participantUrl — removes one layer of prop threading
 
 ### Pending Todos
 
@@ -52,5 +54,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Completed 18-01-PLAN.md — unified AppHeader, HamburgerMenu, CSS variable migration
-Resume at: Phase 18 plan 02 — wire sessionContext and shareSlot from session pages into AppHeader
+Stopped at: Completed 18-02-PLAN.md — session context wired into AppHeader, profile name, mobile polish
+Resume at: Phase 19

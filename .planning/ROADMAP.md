@@ -69,7 +69,7 @@
 
 **Milestone Goal:** Comprehensive visual and interaction overhaul — Slack-style segments, single-bar header with hamburger menu, Reddit-style voting, collapsible Q&A, tooltips on all icon buttons, rich text support, and consistent button grouping across the entire app.
 
-- [ ] **Phase 18: Header and Navigation** — Single-bar header with logo, session name, live indicator, hamburger menu containing theme toggle and language selector
+- [x] **Phase 18: Header and Navigation** — Single-bar header with logo, session name, live indicator, hamburger menu containing theme toggle and language selector (completed 2026-03-19)
 - [ ] **Phase 19: Segments, Visual Overhaul, and Voting** — Slack-style segments replacing cards, reduced rounding/padding, consistent icon button grouping, Reddit-style voting, pin/ban alignment, tooltips on all icon-only buttons
 - [ ] **Phase 20: Functionality and Audience View** — Hard delete for superuser, line breaks in Q&A text, session code in share dialog, audience section headers, collapsible Q&A drawer
 - [ ] **Phase 21: Input and Form Polish** — Rich placeholder for QA input, Cmd+Enter submit shortcut on all send buttons, one-word-max button labels
@@ -245,7 +245,7 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 | 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
-| 18. Header and Navigation                    | 1/2       | In Progress    |             | -          |
+| 18. Header and Navigation                    | 2/2       | Complete       | 2026-03-19  | -          |
 | 19. Segments, Visual Overhaul, and Voting    | v2.2      | 0/TBD          | Not started | -          |
 | 20. Functionality and Audience View          | v2.2      | 0/TBD          | Not started | -          |
 | 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |

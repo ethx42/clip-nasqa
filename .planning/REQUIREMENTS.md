@@ -94,8 +94,8 @@ Requirements for UX Overhaul milestone. Each maps to roadmap phases.
 ### Header
 
 - [x] **HDR-01**: Single header bar replaces the current two-bar layout
-- [ ] **HDR-02**: Header left side shows: logo, app name, session name, and "Live" indicator on one line
-- [ ] **HDR-03**: Header right side shows (right to left): hamburger menu, profile icon (with current options), user's first name
+- [x] **HDR-02**: Header left side shows: logo, app name, session name, and "Live" indicator on one line
+- [x] **HDR-03**: Header right side shows (right to left): hamburger menu, profile icon (with current options), user's first name
 - [x] **HDR-04**: Hamburger menu contains theme toggle and language selector (and anything else from the removed second bar)
 
 ### Functionality
@@ -190,8 +190,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EDIT-12     | Phase 17 | Complete |
 | EDIT-13     | Phase 17 | Complete |
 | HDR-01      | Phase 18 | Complete |
-| HDR-02      | Phase 18 | Pending  |
-| HDR-03      | Phase 18 | Pending  |
+| HDR-02      | Phase 18 | Complete |
+| HDR-03      | Phase 18 | Complete |
 | HDR-04      | Phase 18 | Complete |
 | VIS-01      | Phase 19 | Pending  |
 | VIS-02      | Phase 19 | Pending  |
