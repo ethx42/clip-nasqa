@@ -245,7 +245,7 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 | 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
-| 18. Header and Navigation                    | v2.2      | 0/2            | In progress | -          |
+| 18. Header and Navigation                    | 1/2       | In Progress    |             | -          |
 | 19. Segments, Visual Overhaul, and Voting    | v2.2      | 0/TBD          | Not started | -          |
 | 20. Functionality and Audience View          | v2.2      | 0/TBD          | Not started | -          |
 | 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |
