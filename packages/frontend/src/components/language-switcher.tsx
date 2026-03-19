@@ -26,27 +26,25 @@ export function LanguageSwitcher() {
   }
 
   return (
-    <div role="group" aria-label="Language" className="flex items-center gap-1 text-sm">
-      {LOCALES.map((l, i) => (
-        <span key={l.code} className="flex items-center gap-1">
-          {i > 0 && (
-            <span aria-hidden="true" className="text-muted-foreground/40">
-              |
-            </span>
-          )}
-          <button
-            onClick={() => handleLocaleChange(l.code)}
-            aria-label={`Switch to ${l.language}`}
-            aria-current={locale === l.code ? "true" : undefined}
-            className={
-              locale === l.code
-                ? "font-semibold text-foreground"
-                : "text-muted-foreground hover:text-foreground transition-colors"
-            }
-          >
-            {l.label}
-          </button>
-        </span>
+    <div
+      role="group"
+      aria-label="Language"
+      className="flex w-full rounded-lg border border-border bg-muted p-0.5 text-sm"
+    >
+      {LOCALES.map((l) => (
+        <button
+          key={l.code}
+          onClick={() => handleLocaleChange(l.code)}
+          aria-label={`Switch to ${l.language}`}
+          aria-current={locale === l.code ? "true" : undefined}
+          className={`flex-1 rounded-md py-1.5 text-center text-sm font-medium transition-colors ${
+            locale === l.code
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {l.label}
+        </button>
       ))}
     </div>
   );

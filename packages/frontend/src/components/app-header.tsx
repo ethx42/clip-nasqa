@@ -96,11 +96,10 @@ export function AppHeader({ sessionContext, shareSlot }: AppHeaderProps) {
           )}
         </div>
 
-        {/* Right: share + hamburger + profile */}
+        {/* Right: share + profile + hamburger (hamburger at the end) */}
         <div className="flex shrink-0 items-center gap-1">
           {shareSlot && <div className="mr-2">{shareSlot}</div>}
-          <HamburgerMenu />
-          <div className="flex items-center gap-1.5 ml-1">
+          <div className="flex items-center gap-1.5">
             {firstName && (
               <span className="hidden text-sm font-medium text-foreground sm:inline">
                 {firstName}
@@ -108,6 +107,7 @@ export function AppHeader({ sessionContext, shareSlot }: AppHeaderProps) {
             )}
             <IdentityEditor />
           </div>
+          <HamburgerMenu />
         </div>
       </header>
 

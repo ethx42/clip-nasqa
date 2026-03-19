@@ -54,7 +54,7 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
         }
       >
         <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400">
+        <span className="hidden text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400 sm:inline">
           {t("live")}
         </span>
       </div>
@@ -65,7 +65,7 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
     return (
       <div className="flex flex-col items-center gap-0.5">
         <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
-        <span className="text-[10px] font-medium uppercase tracking-widest text-warning-foreground">
+        <span className="hidden text-[10px] font-medium uppercase tracking-widest text-warning-foreground sm:inline">
           {t("reconnecting")}
         </span>
       </div>
@@ -76,7 +76,7 @@ export function LiveIndicator({ connectionStatus, lastHostActivity }: LiveIndica
   return (
     <div className="flex flex-col items-center gap-0.5">
       <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40" />
-      <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+      <span className="hidden text-[10px] text-muted-foreground uppercase tracking-widest sm:inline">
         {t("paused")}
       </span>
     </div>
