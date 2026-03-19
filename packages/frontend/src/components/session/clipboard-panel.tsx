@@ -158,7 +158,7 @@ export function ClipboardPanel({
             )}
           </div>
         ) : (
-          <div className="flex flex-col gap-3 px-1">
+          <div className="divide-y divide-border px-1">
             <AnimatePresence mode="popLayout">
               {heroSnippet && (
                 <motion.div
@@ -300,7 +300,7 @@ export function ClipboardPanel({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
           <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xl">
               <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
                 {confirmAction?.type === "clear" ? t("clearAllTitle") : t("deleteSnippetTitle")}
               </Dialog.Title>
@@ -310,7 +310,7 @@ export function ClipboardPanel({
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setConfirmAction(null)}
-                  className="rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
                 >
                   {tCommon("cancel")}
                 </button>
@@ -323,7 +323,7 @@ export function ClipboardPanel({
                     }
                     setConfirmAction(null);
                   }}
-                  className="rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
                 >
                   {confirmAction?.type === "clear" ? t("clearAll") : t("delete")}
                 </button>

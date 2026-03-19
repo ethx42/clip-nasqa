@@ -134,29 +134,22 @@ export function SnippetCard({
   };
 
   const isHero = variant === "hero";
-  const padding = isHero ? "p-5" : "px-4 py-3";
   const textSize = isHero ? "text-[15px]" : "text-sm";
 
   return (
     <div
       ref={cardRef}
-      className={`rounded-2xl border bg-card ${padding} transition-all duration-200 ${
+      className={`py-3 px-1 transition-all duration-200 ${
         isHighlighted
-          ? "border-indigo-500 ring-2 ring-indigo-500/30 animate-[snippet-highlight_2s_ease-out]"
+          ? "bg-indigo-500/5 rounded-lg ring-2 ring-indigo-500/30 animate-[snippet-highlight_2s_ease-out]"
           : isFailed
-            ? "border-destructive hover:border-destructive/80"
-            : "border-border hover:border-indigo-500/20"
+            ? "bg-destructive/5 rounded-lg"
+            : ""
       }`}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          {/* Language badge */}
-          <span
-            className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${isHero ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-muted text-muted-foreground"}`}
-          >
-            {isCode ? lang : t("text")}
-          </span>
-          {/* Snippet number badge — clickable anchor, copies participant-view link */}
+          {/* Snippet number badge FIRST — clickable anchor, copies participant-view link */}
           {snippetNumber !== undefined && (
             <button
               type="button"
@@ -174,6 +167,12 @@ export function SnippetCard({
               #{snippetNumber}
             </button>
           )}
+          {/* Language badge */}
+          <span
+            className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${isHero ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-muted text-muted-foreground"}`}
+          >
+            {isCode ? lang : t("text")}
+          </span>
           {/* Relative time */}
           <span className="text-xs text-muted-foreground">{relativeTime}</span>
           {/* Edited badge */}
@@ -262,7 +261,7 @@ export function SnippetCard({
             onChange={(e) => setEditContent(e.target.value)}
             rows={Math.max(3, editContent.split("\n").length)}
             spellCheck={false}
-            className="w-full resize-none rounded-xl border border-input bg-muted/30 px-4 py-3 font-mono text-[15px] leading-normal text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full resize-none rounded-lg border border-input bg-muted/30 px-4 py-3 font-mono text-[15px] leading-normal text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <div className="flex items-center justify-between gap-2">
             {/* Language selector — only for confirmed snippet edits */}
@@ -308,7 +307,7 @@ export function SnippetCard({
         </div>
       ) : (
         <div
-          className={`overflow-hidden rounded-xl bg-muted/30 ${isLong && !expanded ? "cursor-pointer" : ""}`}
+          className={`overflow-hidden rounded-lg bg-muted/30 ${isLong && !expanded ? "cursor-pointer" : ""}`}
           onClick={isLong && !expanded ? () => setExpanded(true) : undefined}
         >
           {expanded || !isLong ? (
