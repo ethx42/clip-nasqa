@@ -79,6 +79,45 @@ Requirements for Edit & Delete milestone. Each maps to roadmap phases.
 - [x] **EDIT-12**: GraphQL schema adds editQuestion, editReply, deleteQuestion, deleteReply, editSnippet mutations
 - [x] **EDIT-13**: Lambda resolvers enforce 5-minute author window and host superuser bypass via fingerprint/hostSecretHash validation
 
+## v2.2 Requirements
+
+Requirements for UX Overhaul milestone. Each maps to roadmap phases.
+
+### Visual & Layout
+
+- [ ] **VIS-01**: Q&A and clipboard items render as Slack-style segments (not cards), preserving all existing information and actions
+- [ ] **VIS-02**: Cards/segments and buttons use less rounded corners and less padding
+- [ ] **VIS-03**: All icon buttons (copy, pin, ban, upvote, etc.) are grouped consistently in segments and across the app
+- [ ] **VIS-04**: Copy-content buttons in segments are icon-only (no text) and clearly indicate they copy the link; clipboard number is first in visual hierarchy
+- [ ] **VIS-05**: Button groups are laid out consistently everywhere in the app
+
+### Header
+
+- [ ] **HDR-01**: Single header bar replaces the current two-bar layout
+- [ ] **HDR-02**: Header left side shows: logo, app name, session name, and "Live" indicator on one line
+- [ ] **HDR-03**: Header right side shows (right to left): hamburger menu, profile icon (with current options), user's first name
+- [ ] **HDR-04**: Hamburger menu contains theme toggle and language selector (and anything else from the removed second bar)
+
+### Functionality
+
+- [ ] **FUNC-01**: Superuser delete removes Q&As from the database (hard delete, not just UI removal)
+- [ ] **FUNC-02**: Q&A text supports line breaks (rich text / multi-line)
+- [ ] **FUNC-03**: Share dialog shows session code in addition to QR code and link
+- [ ] **FUNC-04**: Voting uses Reddit-style layout: up button, count in the middle, down button (consistent everywhere)
+- [ ] **FUNC-05**: Pin and ban icons and behavior are properly aligned and consistent in Q&A
+- [ ] **FUNC-06**: All icon-only buttons have clear hover tooltips explaining the action
+
+### Audience View
+
+- [ ] **AUD-01**: "Clipboard" and "Q&A" section headers are visible in the audience view
+- [ ] **AUD-02**: Audience can collapse Q&A (e.g., drawer); clipboard from host has priority when Q&A is collapsed
+
+### Inputs & Forms
+
+- [ ] **INP-01**: QA input shows avatar, name, and "Ask a question" (translated) as placeholder when the input is empty
+- [ ] **INP-02**: All "send content" buttons support Cmd+Enter / Ctrl+Enter as submit shortcut
+- [ ] **INP-03**: Form buttons use one word maximum or icon only
+
 ### Deferred (future milestones)
 
 - **BUNDLE-01**: Replace aws-amplify with lighter AppSync WebSocket client (eliminate 68kB)
