@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { AppHeader } from "@/components/app-header";
 import { JoinForm } from "@/components/join/join-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,12 +34,15 @@ export default async function JoinPage({
   const t = await getTranslations("join");
 
   return (
-    <JoinForm
-      locale={locale}
-      tagline={t("tagline")}
-      invalidCodeMessage={t("invalidCode")}
-      sessionEndedMessage={t("sessionEnded")}
-      initialCode={initialCode}
-    />
+    <>
+      <AppHeader />
+      <JoinForm
+        locale={locale}
+        tagline={t("tagline")}
+        invalidCodeMessage={t("invalidCode")}
+        sessionEndedMessage={t("sessionEnded")}
+        initialCode={initialCode}
+      />
+    </>
   );
 }

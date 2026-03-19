@@ -1,8 +1,6 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
-import { AppHeader } from "@/components/app-header";
-
 export default async function LocaleLayout({
   children,
   params,
@@ -37,7 +35,6 @@ export default async function LocaleLayout({
       >
         {t("skipToQaFeed")}
       </a>
-      <AppHeader />
       <main>{children}</main>
     </NextIntlClientProvider>
   );

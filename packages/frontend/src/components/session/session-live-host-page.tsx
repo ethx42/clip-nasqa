@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Question, Reply, Snippet } from "@nasqa/core";
 
+import { AppHeader } from "@/components/app-header";
 import { ClipboardPanel } from "@/components/session/clipboard-panel";
+import { HostToolbar } from "@/components/session/host-toolbar";
 import { LiveIndicator } from "@/components/session/live-indicator";
 import { QAPanel } from "@/components/session/qa-panel";
 import { SessionShell } from "@/components/session/session-shell";
@@ -27,8 +29,8 @@ interface SessionLiveHostPageProps {
   initialSnippets: Snippet[];
   initialQuestions: Question[];
   initialReplies: Reply[];
-  /** Rendered in the SessionShell host toolbar slot. */
-  hostToolbar?: React.ReactNode;
+  /** URL participants use to join — used to render the share popover in the header. */
+  participantUrl: string;
 }
 
 export function SessionLiveHostPage({
@@ -38,7 +40,7 @@ export function SessionLiveHostPage({
   initialSnippets,
   initialQuestions,
   initialReplies,
-  hostToolbar,
+  participantUrl,
 }: SessionLiveHostPageProps) {
   const [hostSecretHash, setHostSecretHash] = useState<string>("");
   const { name: authorName } = useIdentity();
@@ -140,58 +142,71 @@ export function SessionLiveHostPage({
 
   const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
 
+  const sessionContextNode = (
+    <>
+      <h1 className="truncate text-sm font-bold text-foreground">{session.title}</h1>
+      <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
+    </>
+  );
+
   return (
-    <SessionShell
-      sessionCode={sessionCode}
-      isHost
-      snippetCount={state.snippets.length}
-      questionCount={state.questions.length}
-      clipboardSlot={
-        <ClipboardPanel
-          isHost
-          sessionCode={sessionCode}
-          hostSecretHash={hostSecretHash}
-          snippets={state.snippets}
-          connectionStatus={connectionStatus}
-          onDeleteSnippet={handleDeleteSnippet}
-          onClearClipboard={handleClearClipboard}
-          onPush={handlePush}
-          onRetryFailed={handleRetry}
-          onDismissFailed={handleDismissFailed}
-          onEditStart={handleEditStart}
-          onEditEnd={handleEditEnd}
-          onEditSnippet={handleEditSnippet}
-          failedSnippetIds={failedSnippetIds}
-        />
-      }
-      qaSlot={
-        <QAPanel
-          isHost
-          sessionCode={sessionCode}
-          hostSecretHash={hostSecretHash}
-          questions={sortedQuestions}
-          replies={state.replies}
-          fingerprint={fingerprint}
-          authorName={authorName}
-          votedQuestionIds={votedIds}
-          downvotedQuestionIds={downvotedIds}
-          isUserBanned={isUserBanned}
-          onUpvote={handleUpvote}
-          onDownvote={handleDownvote}
-          onAddQuestion={handleAddQuestion}
-          onReply={handleReply}
-          onFocus={handleFocusQuestion}
-          onBanQuestion={handleBanQuestion}
-          onBanParticipant={handleBanParticipant}
-          onRestore={handleRestoreQuestion}
-          onEditQuestion={handleHostEditQuestion}
-          onDeleteQuestion={handleHostDeleteQuestion}
-          onEditReply={handleHostEditReply}
-          onDeleteReply={handleHostDeleteReply}
-          isMutationPending={isMutationPending}
-          restoredInputText={restoredInputText}
-        />
-      }
-    />
+    <>
+      <AppHeader
+        sessionContext={sessionContextNode}
+        shareSlot={<HostToolbar participantUrl={participantUrl} />}
+      />
+      <SessionShell
+        sessionCode={sessionCode}
+        isHost
+        snippetCount={state.snippets.length}
+        questionCount={state.questions.length}
+        clipboardSlot={
+          <ClipboardPanel
+            isHost
+            sessionCode={sessionCode}
+            hostSecretHash={hostSecretHash}
+            snippets={state.snippets}
+            connectionStatus={connectionStatus}
+            onDeleteSnippet={handleDeleteSnippet}
+            onClearClipboard={handleClearClipboard}
+            onPush={handlePush}
+            onRetryFailed={handleRetry}
+            onDismissFailed={handleDismissFailed}
+            onEditStart={handleEditStart}
+            onEditEnd={handleEditEnd}
+            onEditSnippet={handleEditSnippet}
+            failedSnippetIds={failedSnippetIds}
+          />
+        }
+        qaSlot={
+          <QAPanel
+            isHost
+            sessionCode={sessionCode}
+            hostSecretHash={hostSecretHash}
+            questions={sortedQuestions}
+            replies={state.replies}
+            fingerprint={fingerprint}
+            authorName={authorName}
+            votedQuestionIds={votedIds}
+            downvotedQuestionIds={downvotedIds}
+            isUserBanned={isUserBanned}
+            onUpvote={handleUpvote}
+            onDownvote={handleDownvote}
+            onAddQuestion={handleAddQuestion}
+            onReply={handleReply}
+            onFocus={handleFocusQuestion}
+            onBanQuestion={handleBanQuestion}
+            onBanParticipant={handleBanParticipant}
+            onRestore={handleRestoreQuestion}
+            onEditQuestion={handleHostEditQuestion}
+            onDeleteQuestion={handleHostDeleteQuestion}
+            onEditReply={handleHostEditReply}
+            onDeleteReply={handleHostDeleteReply}
+            isMutationPending={isMutationPending}
+            restoredInputText={restoredInputText}
+          />
+        }
+      />
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Question, Reply, Snippet } from "@nasqa/core";
 
+import { AppHeader } from "@/components/app-header";
 import { ClipboardPanel } from "@/components/session/clipboard-panel";
 import { JoinModal, shouldShowJoinModal } from "@/components/session/join-modal";
 import { LiveIndicator } from "@/components/session/live-indicator";
@@ -97,8 +98,16 @@ export function SessionLivePage({
 
   const isUserBanned = fingerprint ? bannedFingerprints.has(fingerprint) : false;
 
+  const sessionContextNode = (
+    <>
+      <h1 className="truncate text-sm font-bold text-foreground">{session.title}</h1>
+      <LiveIndicator connectionStatus={connectionStatus} lastHostActivity={lastHostActivity} />
+    </>
+  );
+
   return (
     <>
+      <AppHeader sessionContext={sessionContextNode} />
       <JoinModal
         sessionCode={sessionCode}
         open={joinModalOpen}
