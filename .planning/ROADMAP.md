@@ -161,11 +161,11 @@
 2. A user can see the logo, app name, session name, and "Live" indicator simultaneously on the left side of the header without scrolling or expanding anything
 3. A user can click the hamburger menu on the right and toggle the theme or switch language — the same controls that previously lived in the second bar are accessible here
 4. The header profile icon shows the user's first name inline to its right
-   **Plans**: TBD
+   **Plans**: 2 plans
+   Plans:
 
-Plans:
-
-- [ ] 18-01-PLAN.md — Header component restructure: single bar layout, left-side session context, right-side hamburger + profile
+- [ ] 18-01-PLAN.md — AppHeader + HamburgerMenu components, LiveIndicator vertical rework, CSS variable, layout.tsx + SessionShell header removal, i18n keys
+- [ ] 18-02-PLAN.md — Session context wiring into AppHeader, profile first-name display, logo-link confirmation dialog, mobile responsive
 
 ### Phase 19: Segments, Visual Overhaul, and Voting
 
@@ -245,7 +245,7 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 | 15. Mutation Path and Client Utilities       | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 16. Optimistic Snippet Push and Client Shiki | v2.0      | 2/2            | Complete    | 2026-03-18 |
 | 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
-| 18. Header and Navigation                    | v2.2      | 0/TBD          | Not started | -          |
+| 18. Header and Navigation                    | v2.2      | 0/2            | In progress | -          |
 | 19. Segments, Visual Overhaul, and Voting    | v2.2      | 0/TBD          | Not started | -          |
 | 20. Functionality and Audience View          | v2.2      | 0/TBD          | Not started | -          |
 | 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |
