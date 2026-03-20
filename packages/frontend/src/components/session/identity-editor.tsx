@@ -60,7 +60,7 @@ export function IdentityEditor() {
                 onChange={(e) => setName(e.target.value.slice(0, 50))}
                 placeholder={t("displayName")}
                 maxLength={50}
-                className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               />
               <input
                 type="email"
@@ -68,14 +68,14 @@ export function IdentityEditor() {
                 onChange={(e) => setEmail(e.target.value.slice(0, 100))}
                 placeholder={t("email")}
                 maxLength={100}
-                className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               />
             </div>
 
             <div className="mt-3 flex gap-2">
               <button
                 onClick={handleSave}
-                className="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="flex-1 rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 {t("save")}
               </button>

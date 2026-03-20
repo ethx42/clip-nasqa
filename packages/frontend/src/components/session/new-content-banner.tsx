@@ -21,7 +21,7 @@ export function NewContentBanner({ message, visible, onTap }: NewContentBannerPr
       onKeyDown={(e) => {
         if (visible && (e.key === "Enter" || e.key === " ")) onTap();
       }}
-      className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white shadow-lg transition-opacity cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 ${
+      className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-lg transition-opacity cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >

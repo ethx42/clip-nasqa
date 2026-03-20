@@ -85,14 +85,14 @@ export default async function SessionPage({
         <AppHeader />
         <div className="flex min-h-[calc(100dvh-var(--header-height))] flex-col items-center justify-center px-6 text-center">
           <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute left-1/2 top-1/3 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/8 blur-3xl" />
+            <div className="absolute left-1/2 top-1/3 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
           </div>
 
           <div className="relative space-y-6">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
               <svg
                 viewBox="100 85 824 855"
-                className="h-8 w-auto text-indigo-500"
+                className="h-8 w-auto text-primary"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={65}
@@ -114,7 +114,7 @@ export default async function SessionPage({
             <div className="pt-4">
               <Link
                 href="/"
-                className="inline-flex items-center rounded-xl bg-indigo-500 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:scale-[1.02] hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:scale-[0.98]"
+                className="inline-flex items-center rounded-md bg-primary px-7 py-3.5 text-base font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:scale-[1.02] hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 active:scale-[0.98]"
                 style={{ minHeight: "44px" }}
               >
                 {t("backToHome")}

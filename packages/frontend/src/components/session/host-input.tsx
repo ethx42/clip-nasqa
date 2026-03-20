@@ -198,7 +198,7 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
               placeholder={t("pasteOrType")}
               rows={3}
               spellCheck={false}
-              className={`relative z-10 w-full resize-none rounded-xl border border-input bg-transparent px-4 py-3 font-mono text-[15px] leading-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 transition caret-foreground ${
+              className={`relative z-10 w-full resize-none rounded-xl border border-input bg-transparent px-4 py-3 font-mono text-[15px] leading-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition caret-foreground ${
                 hasHighlight ? "text-transparent" : "text-foreground"
               }`}
               style={{ minHeight: "80px", maxHeight: "300px" }}
@@ -213,11 +213,11 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
           {/* Language selector — styled as a pill badge */}
           {value.trim() ? (
             <div className="relative inline-flex items-center">
-              <span className="pointer-events-none absolute left-3 h-2 w-2 rounded-full bg-indigo-500" />
+              <span className="pointer-events-none absolute left-3 h-2 w-2 rounded-full bg-primary" />
               <select
                 value={manualLang}
                 onChange={(e) => setManualLang(e.target.value)}
-                className="appearance-none rounded-lg border border-border bg-background py-1.5 pl-7 pr-7 text-sm font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="appearance-none rounded-lg border border-border bg-background py-1.5 pl-7 pr-7 text-sm font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label={t("selectLanguage")}
               >
                 <option value="auto">
@@ -266,7 +266,7 @@ export function HostInput({ onPush, onSnippetPushed }: HostInputProps) {
           type="button"
           onClick={() => void handlePush()}
           disabled={!value.trim() || !onPush}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-base font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           {t("pushSnippet")}
           <kbd className="ml-1 hidden rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-medium sm:inline">

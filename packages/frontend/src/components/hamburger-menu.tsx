@@ -58,44 +58,40 @@ export function HamburgerMenu() {
 
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
-          <Popover.Popup className="z-50 w-64 rounded-2xl border border-border bg-card p-4 shadow-xl">
-            <div className="space-y-4">
-              {/* Dark mode toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">{t("darkMode")}</span>
-                <button
-                  role="switch"
-                  aria-checked={isDark}
-                  onClick={() => setTheme(isDark ? "light" : "dark")}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                    isDark ? "bg-indigo-500" : "bg-muted-foreground/30"
+          <Popover.Popup className="z-50 w-72 rounded-xl border border-border bg-card py-2 shadow-xl">
+            {/* Dark mode toggle */}
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-sm font-medium text-foreground">{t("darkMode")}</span>
+              <button
+                role="switch"
+                aria-checked={isDark}
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  isDark ? "bg-primary" : "bg-muted-foreground/30"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    isDark ? "translate-x-6" : "translate-x-1"
                   }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                      isDark ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-border" />
-
-              {/* Language switcher */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t("language")}
-                </p>
-                <LanguageSwitcher />
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-border" />
-
-              {/* App version */}
-              <p className="text-xs text-muted-foreground/60">clip v2.2</p>
+                />
+              </button>
             </div>
+
+            <div className="mx-4 border-t border-border" />
+
+            {/* Language switcher */}
+            <div className="px-5 py-3 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {t("language")}
+              </p>
+              <LanguageSwitcher />
+            </div>
+
+            <div className="mx-4 border-t border-border" />
+
+            {/* App version */}
+            <p className="px-5 py-2 text-[11px] text-muted-foreground/50">clip v2.2</p>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

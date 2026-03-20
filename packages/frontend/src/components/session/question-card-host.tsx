@@ -1,20 +1,23 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
+import { Popover } from "@base-ui/react/popover";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Ban,
   Check,
+  Ellipsis,
   Megaphone,
   MessageSquare,
   MicVocal,
   Pencil,
+  Reply as ReplyIcon,
   ShieldX,
   Trash2,
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Reply } from "@nasqa/core";
 
@@ -30,6 +33,7 @@ import {
   HiddenCollapsed,
   REPLY_CHAR_LIMIT,
   REPLY_COUNTER_THRESHOLD,
+  ThreadSpine,
   VoteRow,
 } from "./question-card-shared";
 import type { QuestionCardBaseProps } from "./question-card-shared";
@@ -64,9 +68,10 @@ export function QuestionCardHost({
   const tSession = useTranslations("session");
   const tCommon = useTranslations("common");
   const tIdentity = useTranslations("identity");
-  const [showReplies, setShowReplies] = useState(question.isFocused);
-  const [showReplyInput, setShowReplyInput] = useState(false);
+  const [showThread, setShowThread] = useState(question.isFocused);
   const [replyText, setReplyText] = useState("");
+  const [replyActive, setReplyActive] = useState(false);
+  const replyInputRef = useRef<HTMLTextAreaElement>(null);
   const [showHiddenContent, setShowHiddenContent] = useState(false);
   const [banConfirmOpen, setBanConfirmOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -98,13 +103,18 @@ export function QuestionCardHost({
     if (!trimmed || trimmed.length > REPLY_CHAR_LIMIT) return;
     onReply(question.id, trimmed);
     setReplyText("");
-    setShowReplyInput(false);
+    setReplyActive(false);
   }
 
   function handleReplyKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleReplySubmit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setReplyText("");
+      setReplyActive(false);
+      replyInputRef.current?.blur();
     }
   }
 
@@ -194,183 +204,23 @@ export function QuestionCardHost({
           >
             <div
               className={cn(
-                "group relative py-3 px-2 -mx-2 rounded-lg transition-all hover:bg-accent/40",
-                question.isFocused && "ring-2 ring-indigo-500/50 bg-indigo-500/5 rounded-lg",
+                "group relative py-3.5 px-1 transition-colors hover:bg-accent/60",
+                question.isFocused && "ring-2 ring-primary/50 bg-primary/5",
               )}
             >
               {question.isFocused && (
                 <div className="mb-3 flex items-center gap-1.5">
-                  <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-indigo-500">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
                     {tSession("focused")}
                   </span>
                 </div>
               )}
 
-              {/* Single-column Slack-style layout */}
-              <div className="min-w-0">
-                {/* Author row — avatar + name + time + host moderation actions */}
-                <div className="mb-2 flex items-center gap-2.5">
-                  <PixelAvatar
-                    seed={question.fingerprint}
-                    size={28}
-                    className={cn(
-                      "shrink-0 rounded-full",
-                      isOwn &&
-                        "ring-2 ring-indigo-500 dark:ring-amber-400 ring-offset-2 ring-offset-background",
-                    )}
-                  />
-                  <span
-                    title={question.authorName || undefined}
-                    className={cn(
-                      "text-[13px] font-semibold truncate max-w-[10rem]",
-                      isOwn
-                        ? "text-indigo-600 dark:text-amber-400 pl-1"
-                        : question.authorName
-                          ? "text-foreground/80"
-                          : "text-muted-foreground/60",
-                    )}
-                  >
-                    {isOwn
-                      ? tSession("you")
-                      : question.authorName
-                        ? formatDisplayName(question.authorName)
-                        : tIdentity("anonymous")}
-                  </span>
-                  {question.isHostQuestion && (
-                    <MicVocal className="h-3.5 w-3.5 text-indigo-500 dark:text-amber-400 shrink-0" />
-                  )}
-                  <span className="text-[12px] text-muted-foreground/50">
-                    {formatRelativeTime(question.createdAt, tSession)}
-                  </span>
-
-                  {/* Edited badge */}
-                  {question.editedAt && (
-                    <span
-                      className="text-[11px] text-muted-foreground/60"
-                      title={new Date(question.editedAt * 1000).toLocaleString()}
-                    >
-                      {tSession("edited")}
-                    </span>
-                  )}
-
-                  {/* Hidden badge + collapse button (when expanded) */}
-                  {question.isHidden && showHiddenContent && (
-                    <>
-                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
-                        {t("hidden")}
-                      </span>
-                      <button
-                        onClick={() => setShowHiddenContent(false)}
-                        className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-                      >
-                        [{t("hiddenByCommunity")}]
-                      </button>
-                    </>
-                  )}
-
-                  {/* Spacer */}
-                  <div className="flex-1" />
-
-                  {/* Host inline moderation icons — semantic order: spotlight, edit, ban-question, ban-participant, delete */}
-                  {!isEditing && (
-                    <div className="flex shrink-0 items-center gap-px opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                      {/* 1. Focus/spotlight — primary positive action */}
-                      <IconButton
-                        compact
-                        tooltip={
-                          question.isFocused
-                            ? tSession("unfocusQuestion")
-                            : tSession("focusQuestion")
-                        }
-                        onClick={handleFocusToggle}
-                        className={
-                          question.isFocused ? "text-indigo-500 hover:text-indigo-600" : undefined
-                        }
-                      >
-                        <Megaphone
-                          className={cn("h-3.5 w-3.5", question.isFocused && "fill-current")}
-                        />
-                      </IconButton>
-                      {/* 2. Edit */}
-                      <IconButton
-                        compact
-                        tooltip={tSession("editQuestion")}
-                        onClick={() => {
-                          setEditText(question.text);
-                          setIsEditing(true);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </IconButton>
-                      {/* 3. Ban question — moderate destructive */}
-                      <IconButton
-                        compact
-                        tooltip={t("banQuestion")}
-                        onClick={handleBanQuestionClick}
-                        className="hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <ShieldX className="h-3.5 w-3.5" />
-                      </IconButton>
-                      {/* 4. Ban participant — severe destructive */}
-                      <IconButton
-                        compact
-                        tooltip={t("banParticipant")}
-                        onClick={() => setBanConfirmOpen(true)}
-                        className="hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Ban className="h-3.5 w-3.5" />
-                      </IconButton>
-                      {/* 5. Delete — most destructive, last */}
-                      <IconButton
-                        compact
-                        tooltip={tSession("deleteQuestion")}
-                        onClick={() => setDeleteConfirmOpen(true)}
-                        className="hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </IconButton>
-                    </div>
-                  )}
-                </div>
-
-                {/* Question body — inline edit or display */}
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      rows={Math.max(2, editText.split("\n").length)}
-                      maxLength={500}
-                      className="w-full resize-none rounded-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                      autoFocus
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={handleEditCancel}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        {tSession("cancelEdit")}
-                      </button>
-                      <button
-                        onClick={handleEditSave}
-                        disabled={!editText.trim()}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                        {tSession("saveEdit")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="break-words text-base leading-relaxed text-foreground">
-                    {linkifyText(question.text)}
-                  </p>
-                )}
-
-                {/* Vote column — vertical Reddit-style, below question text */}
+              {/* Two-column layout: votes left, content right */}
+              <div className="flex gap-3">
+                {/* Vote column — left side */}
                 {!isEditing && (
-                  <div className="mt-2 flex items-start gap-2">
+                  <div className="shrink-0 self-start pt-1">
                     <VoteRow
                       question={question}
                       isVoted={isVoted}
@@ -381,104 +231,358 @@ export function QuestionCardHost({
                   </div>
                 )}
 
-                {/* Action row */}
-                {!isEditing && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
-                    {replies.length > 0 && (
-                      <button
-                        onClick={() => setShowReplies((v) => !v)}
-                        className="flex items-center gap-1 transition-colors hover:text-foreground"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        {tSession("replyCount", { count: replies.length })}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setShowReplyInput((v) => !v)}
-                      className="font-semibold transition-colors hover:text-foreground"
+                {/* Content column */}
+                <div className="min-w-0 flex-1">
+                  {/* Author row — avatar + name + time + host moderation actions */}
+                  <div className="mb-1 flex items-center gap-2.5">
+                    <PixelAvatar
+                      seed={question.fingerprint}
+                      size={28}
+                      className={cn(
+                        "shrink-0 rounded-full",
+                        isOwn && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                      )}
+                    />
+                    <span
+                      title={question.authorName || undefined}
+                      className={cn(
+                        "text-[13px] font-semibold truncate max-w-[10rem]",
+                        isOwn
+                          ? "text-primary text-[10px] font-bold uppercase rounded-full bg-primary/10 px-1.5 py-0.5 border border-primary/20"
+                          : question.authorName
+                            ? "text-foreground/80"
+                            : "text-muted-foreground/60",
+                      )}
                     >
-                      {tSession("reply")}
-                    </button>
-                  </div>
-                )}
+                      {isOwn
+                        ? tSession("you")
+                        : question.authorName
+                          ? formatDisplayName(question.authorName)
+                          : tIdentity("anonymous")}
+                    </span>
+                    {question.isHostQuestion && (
+                      <span className="inline-flex items-center rounded-full bg-primary/10 p-1 border border-primary/20">
+                        <MicVocal className="h-3 w-3 text-primary shrink-0" />
+                      </span>
+                    )}
+                    <span className="text-[12px] text-muted-foreground/50">
+                      {formatRelativeTime(question.createdAt, tSession)}
+                    </span>
 
-                {/* Reaction bar */}
-                {!isEditing && (
-                  <ReactionBar
-                    sessionCode={question.sessionCode}
-                    targetId={question.id}
-                    targetType="QUESTION"
-                    reactionCounts={question.reactionCounts}
-                    reactionOrder={question.reactionOrder}
-                    fingerprint={fingerprint}
-                    className="mt-2"
-                  />
-                )}
+                    {/* Edited badge */}
+                    {question.editedAt && (
+                      <span
+                        className="text-[11px] text-muted-foreground/60"
+                        title={new Date(question.editedAt * 1000).toLocaleString()}
+                      >
+                        {tSession("edited")}
+                      </span>
+                    )}
 
-                {/* Inline reply input */}
-                {showReplyInput && !isEditing && (
-                  <div className="mt-4">
-                    <div className="relative">
-                      <textarea
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        onKeyDown={handleReplyKeyDown}
-                        placeholder={tSession("replyPlaceholder")}
-                        rows={2}
-                        maxLength={REPLY_CHAR_LIMIT}
-                        className="w-full resize-none rounded-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                      />
-                      <div className="mt-2 flex items-center justify-between">
-                        {replyText.length >= REPLY_COUNTER_THRESHOLD ? (
-                          <span
-                            className={cn(
-                              "text-xs tabular-nums",
-                              replyText.length >= 490
-                                ? "text-destructive"
-                                : "text-muted-foreground",
-                            )}
+                    {/* Hidden badge + collapse button (when expanded) */}
+                    {question.isHidden && showHiddenContent && (
+                      <>
+                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
+                          {t("hidden")}
+                        </span>
+                        <button
+                          onClick={() => setShowHiddenContent(false)}
+                          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                        >
+                          [{t("hiddenByCommunity")}]
+                        </button>
+                      </>
+                    )}
+
+                    {/* Spacer */}
+                    <div className="flex-1" />
+
+                    {/* Host action bar — progressive disclosure: Edit + Delete visible, moderation behind overflow */}
+                    {!isEditing && (
+                      <div className="flex shrink-0 items-center gap-px opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                        {/* Primary: Edit */}
+                        <IconButton
+                          compact
+                          tooltip={tSession("editQuestion")}
+                          onClick={() => {
+                            setEditText(question.text);
+                            setIsEditing(true);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </IconButton>
+                        {/* Primary: Delete */}
+                        <IconButton
+                          compact
+                          tooltip={tSession("deleteQuestion")}
+                          onClick={() => setDeleteConfirmOpen(true)}
+                          className="hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </IconButton>
+                        {/* Overflow: moderation tools */}
+                        <Popover.Root>
+                          <Popover.Trigger
+                            aria-label={t("moreActions")}
+                            className="inline-flex items-center justify-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                           >
-                            {replyText.length}/{REPLY_CHAR_LIMIT}
-                          </span>
-                        ) : (
-                          <span />
-                        )}
-                        <div className="flex gap-2">
+                            <Ellipsis className="h-3.5 w-3.5" />
+                          </Popover.Trigger>
+                          <Popover.Portal>
+                            <Popover.Positioner side="bottom" align="end" sideOffset={4}>
+                              <Popover.Popup className="z-50 min-w-[180px] rounded-md border border-border bg-card py-1 shadow-lg">
+                                {/* Focus/spotlight */}
+                                <button
+                                  onClick={handleFocusToggle}
+                                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                                >
+                                  <Megaphone
+                                    className={cn(
+                                      "h-3.5 w-3.5 shrink-0",
+                                      question.isFocused && "fill-current text-primary",
+                                    )}
+                                  />
+                                  {question.isFocused
+                                    ? tSession("unfocusQuestion")
+                                    : tSession("focusQuestion")}
+                                </button>
+                                <div className="mx-2 border-t border-border" />
+                                {/* Ban question */}
+                                <button
+                                  onClick={handleBanQuestionClick}
+                                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                                >
+                                  <ShieldX className="h-3.5 w-3.5 shrink-0" />
+                                  {t("banQuestion")}
+                                </button>
+                                {/* Ban participant */}
+                                <button
+                                  onClick={() => setBanConfirmOpen(true)}
+                                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                                >
+                                  <Ban className="h-3.5 w-3.5 shrink-0" />
+                                  {t("banParticipant")}
+                                </button>
+                              </Popover.Popup>
+                            </Popover.Positioner>
+                          </Popover.Portal>
+                        </Popover.Root>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Question body — inline edit or display */}
+                  {isEditing ? (
+                    <div className="rounded-md border border-border bg-card p-3 shadow-lg dark:shadow-black/20">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        rows={Math.max(2, editText.split("\n").length)}
+                        maxLength={500}
+                        className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                        autoFocus
+                      />
+                      <div className="mt-2 flex items-center justify-end gap-2">
+                        <button
+                          onClick={handleEditCancel}
+                          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          {tSession("cancelEdit")}
+                        </button>
+                        <button
+                          onClick={handleEditSave}
+                          disabled={!editText.trim()}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {tSession("saveEdit")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="break-words text-base leading-relaxed text-foreground">
+                      {linkifyText(question.text)}
+                    </p>
+                  )}
+
+                  {/* Action row: reply trigger + reply counter + reactions */}
+                  {!isEditing && (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
+                      {/* Reply trigger — always visible */}
+                      <button
+                        onClick={() => {
+                          if (replies.length > 0) setShowThread(true);
+                          setReplyActive(true);
+                          requestAnimationFrame(() => replyInputRef.current?.focus());
+                        }}
+                        className="flex items-center gap-1 rounded-md px-1.5 py-0.5 -ml-1.5 transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        <ReplyIcon className="h-3.5 w-3.5" />
+                        {tSession("reply")}
+                      </button>
+                      {replies.length > 0 && (
+                        <>
+                          <span className="h-3.5 border-l border-border" aria-hidden="true" />
+                          <button
+                            onClick={() => setShowThread((v) => !v)}
+                            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            {tSession("replyCount", { count: replies.length })}
+                          </button>
+                        </>
+                      )}
+                      <span className="h-3.5 border-l border-border" aria-hidden="true" />
+                      <ReactionBar
+                        sessionCode={question.sessionCode}
+                        targetId={question.id}
+                        targetType="QUESTION"
+                        reactionCounts={question.reactionCounts}
+                        reactionOrder={question.reactionOrder}
+                        fingerprint={fingerprint}
+                      />
+                    </div>
+                  )}
+
+                  {/* Intent-based reply input — only visible when activated */}
+                  {replyActive && replies.length === 0 && !isEditing && (
+                    <div className="mt-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <PixelAvatar
+                        seed={fingerprint}
+                        size={24}
+                        className="shrink-0 rounded-full mt-1.5"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <textarea
+                          ref={replyInputRef}
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={handleReplyKeyDown}
+                          onBlur={() => {
+                            if (!replyText.trim()) setReplyActive(false);
+                          }}
+                          placeholder={tSession("replyPlaceholder")}
+                          rows={2}
+                          maxLength={REPLY_CHAR_LIMIT}
+                          className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          {replyText.length >= REPLY_COUNTER_THRESHOLD && (
+                            <span
+                              className={cn(
+                                "mr-auto text-xs tabular-nums",
+                                replyText.length >= 490
+                                  ? "text-destructive"
+                                  : "text-muted-foreground",
+                              )}
+                            >
+                              {replyText.length}/{REPLY_CHAR_LIMIT}
+                            </span>
+                          )}
+                          <kbd className="text-[11px] text-muted-foreground/40 select-none">⌘⏎</kbd>
                           <button
                             onClick={() => {
-                              setShowReplyInput(false);
                               setReplyText("");
+                              setReplyActive(false);
+                              replyInputRef.current?.blur();
                             }}
-                            className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+                            className="rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent"
                           >
                             {tCommon("cancel")}
                           </button>
                           <button
                             onClick={handleReplySubmit}
                             disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
-                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+                            className="rounded-md bg-primary px-2.5 py-1 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             {tSession("send")}
                           </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Expanded reply list — nested under question */}
-                {showReplies && replies.length > 0 && !isEditing && (
-                  <div className="mt-3 ml-4 border-l-2 border-border/50 pl-4">
-                    <ReplyList
-                      replies={replies}
-                      isHost={true}
-                      sessionCode={question.sessionCode}
-                      fingerprint={fingerprint}
-                      onEditReply={onEditReply}
-                      onDeleteReply={onDeleteReply}
-                    />
-                  </div>
-                )}
+                  {/* Thread with replies — input only at bottom when active */}
+                  {replies.length > 0 && showThread && !isEditing && (
+                    <ThreadSpine active={replyActive}>
+                      <ReplyList
+                        replies={replies}
+                        isHost={true}
+                        sessionCode={question.sessionCode}
+                        fingerprint={fingerprint}
+                        onEditReply={onEditReply}
+                        onDeleteReply={onDeleteReply}
+                      />
+                      <div className="flex items-start gap-2 pt-4">
+                        {replyActive && (
+                          <PixelAvatar
+                            seed={fingerprint}
+                            size={24}
+                            className="shrink-0 rounded-full mt-1.5"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <textarea
+                            ref={replyInputRef}
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            onKeyDown={handleReplyKeyDown}
+                            onFocus={() => setReplyActive(true)}
+                            onBlur={() => {
+                              if (!replyText.trim()) setReplyActive(false);
+                            }}
+                            placeholder={tSession("replyPlaceholder")}
+                            rows={replyActive ? 2 : 1}
+                            maxLength={REPLY_CHAR_LIMIT}
+                            className={cn(
+                              "w-full resize-none text-sm leading-relaxed transition-all",
+                              replyActive
+                                ? "rounded-md border border-border bg-background px-3 py-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                : "rounded-md border border-transparent bg-transparent px-3 py-2 placeholder:text-muted-foreground/50 hover:bg-accent/50 cursor-text",
+                            )}
+                          />
+                          {replyActive && (
+                            <div className="mt-2 flex items-center justify-end gap-2 animate-in fade-in duration-150">
+                              {replyText.length >= REPLY_COUNTER_THRESHOLD && (
+                                <span
+                                  className={cn(
+                                    "mr-auto text-xs tabular-nums",
+                                    replyText.length >= 490
+                                      ? "text-destructive"
+                                      : "text-muted-foreground",
+                                  )}
+                                >
+                                  {replyText.length}/{REPLY_CHAR_LIMIT}
+                                </span>
+                              )}
+                              <kbd className="text-[11px] text-muted-foreground/40 select-none">
+                                ⌘⏎
+                              </kbd>
+                              <button
+                                onClick={() => {
+                                  setReplyText("");
+                                  setReplyActive(false);
+                                  replyInputRef.current?.blur();
+                                }}
+                                className="rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent"
+                              >
+                                {tCommon("cancel")}
+                              </button>
+                              <button
+                                onClick={handleReplySubmit}
+                                disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
+                                className="rounded-md bg-primary px-2.5 py-1 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {tSession("send")}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </ThreadSpine>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

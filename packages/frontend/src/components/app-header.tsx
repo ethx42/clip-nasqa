@@ -77,13 +77,11 @@ export function AppHeader({ sessionContext, shareSlot }: AppHeaderProps) {
           <Link
             href="/"
             onClick={handleLogoClick}
-            className="flex shrink-0 items-center gap-2 text-indigo-500 dark:text-amber-400 transition-opacity hover:opacity-80"
+            className="flex shrink-0 items-center gap-2 text-primary transition-opacity hover:opacity-80"
             aria-label="clip — go home"
           >
             <ClipLogo />
-            <span className="hidden font-bold tracking-tight text-indigo-500 dark:text-amber-400 sm:inline">
-              CLIP
-            </span>
+            <span className="hidden font-bold tracking-tight text-primary sm:inline">CLIP</span>
           </Link>
 
           {sessionContext && (
@@ -126,7 +124,7 @@ export function AppHeader({ sessionContext, shareSlot }: AppHeaderProps) {
               <div className="flex gap-2">
                 <button
                   onClick={handleLeaveConfirm}
-                  className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="flex-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Leave
                 </button>

@@ -41,7 +41,7 @@ export function IconButton({
                 "inline-flex items-center justify-center rounded-md",
                 "text-muted-foreground transition-colors",
                 "hover:bg-accent hover:text-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 "disabled:pointer-events-none disabled:opacity-50",
                 compact ? "p-1" : "p-1.5 min-h-[44px] min-w-[44px]",
                 className,

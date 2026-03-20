@@ -155,16 +155,16 @@ export function JoinForm({
     <div className="flex min-h-[calc(100dvh-var(--header-height))] flex-col items-center justify-center px-6 py-12">
       {/* Ambient glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/3 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/8 blur-3xl" />
+        <div className="absolute left-1/2 top-1/3 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
       </div>
 
       <div className="relative flex flex-col items-center gap-10">
         {/* Logo + brand */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <svg
               viewBox="100 85 824 855"
-              className="h-9 w-auto text-indigo-500"
+              className="h-9 w-auto text-primary"
               fill="none"
               stroke="currentColor"
               strokeWidth={65}
@@ -208,7 +208,7 @@ export function JoinForm({
                   onPaste={index === 0 ? handlePaste : undefined}
                   disabled={isLoading}
                   aria-label={`Digit ${index + 1}`}
-                  className="h-14 w-12 rounded-xl border-2 border-border bg-background text-center text-2xl font-bold text-foreground transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:h-16 sm:w-14"
+                  className="h-14 w-12 rounded-md border-2 border-border bg-background text-center text-2xl font-bold text-foreground transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-50 sm:h-16 sm:w-14"
                   style={{ caretColor: "transparent" }}
                 />
               </div>

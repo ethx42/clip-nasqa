@@ -62,14 +62,14 @@ export function SessionShell({
           aria-label={t("clipboard")}
           className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
             activeTab === "clipboard"
-              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <ClipboardList className="h-4 w-4" aria-hidden="true" />
           {t("clipboard")}
           {clipboardBadge && (
-            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true" />
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
           )}
         </button>
         <button
@@ -77,14 +77,14 @@ export function SessionShell({
           aria-label={t("qa")}
           className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
             activeTab === "qa"
-              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <MessageCircleQuestion className="h-4 w-4" aria-hidden="true" />
           {t("qa")}
           {qaBadge && (
-            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true" />
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
           )}
         </button>
       </nav>

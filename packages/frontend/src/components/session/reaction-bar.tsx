@@ -141,7 +141,10 @@ export function ReactionBar({
         onClick={() => setPickerOpen((v) => !v)}
         aria-label={t("addReaction")}
         aria-expanded={pickerOpen}
-        className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/40 transition-colors"
+        className={cn(
+          "rounded-full p-1.5 text-muted-foreground hover:bg-muted/40 transition-colors",
+          activePills.length > 0 && "ml-1",
+        )}
       >
         <SmilePlus className="h-4 w-4" aria-hidden="true" />
       </button>

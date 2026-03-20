@@ -140,9 +140,9 @@ export function SnippetCard({
   return (
     <div
       ref={cardRef}
-      className={`group py-3 px-2 -mx-2 rounded-lg transition-all duration-200 ${
+      className={`group py-3 px-1 rounded-lg transition-colors duration-200 ${
         isHighlighted
-          ? "bg-indigo-500/5 ring-2 ring-indigo-500/30 animate-[snippet-highlight_2s_ease-out]"
+          ? "bg-primary/5 ring-2 ring-primary/30 animate-[snippet-highlight_2s_ease-out]"
           : isFailed
             ? "bg-destructive/5"
             : "hover:bg-accent/40"
@@ -162,7 +162,7 @@ export function SnippetCard({
                   : `${origin}${window.location.pathname}#snippet-${snippetNumber}`;
                 void navigator.clipboard.writeText(url);
               }}
-              className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground transition-colors hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
+              className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary cursor-pointer"
               title={t("copySnippetLink")}
             >
               #{snippetNumber}
@@ -170,7 +170,7 @@ export function SnippetCard({
           )}
           {/* Language badge */}
           <span
-            className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${isHero ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-muted text-muted-foreground"}`}
+            className={`rounded-lg px-2.5 py-0.5 text-xs font-semibold ${isHero ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
           >
             {isCode ? lang : t("text")}
           </span>
@@ -246,7 +246,7 @@ export function SnippetCard({
             onChange={(e) => setEditContent(e.target.value)}
             rows={Math.max(3, editContent.split("\n").length)}
             spellCheck={false}
-            className="w-full resize-none rounded-lg border border-input bg-muted/30 px-4 py-3 font-mono text-[15px] leading-normal text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full resize-none rounded-lg border border-input bg-muted/30 px-4 py-3 font-mono text-[15px] leading-normal text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <div className="flex items-center justify-between gap-2">
             {/* Language selector — only for confirmed snippet edits */}
@@ -254,7 +254,7 @@ export function SnippetCard({
               <select
                 value={editLanguage}
                 onChange={(e) => setEditLanguage(e.target.value)}
-                className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
                 aria-label={t("selectLanguage")}
               >
                 {SUPPORTED_LANGUAGES.map((l) => (
@@ -281,7 +281,7 @@ export function SnippetCard({
                 type="button"
                 title={t("saveEdit")}
                 onClick={handleEditSave}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-600"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 aria-label={t("saveEdit")}
               >
                 <Check className="h-3.5 w-3.5" />
@@ -332,7 +332,7 @@ export function SnippetCard({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="mt-2 text-sm font-semibold text-primary hover:underline"
         >
           {expanded ? t("collapse") : t("showAll")}
         </button>

@@ -1,8 +1,9 @@
 "use client";
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
-import { ArrowBigDown, ArrowBigUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
+import type React from "react";
 
 import type { Question } from "@nasqa/core";
 
@@ -56,7 +57,7 @@ interface VoteRowProps {
   onDownvoteClick: () => void;
 }
 
-/** Reddit-style vertical voting: up arrow, net score, down arrow */
+/** Reddit-style vertical voting: up chevron, net score, down chevron */
 export function VoteRow({
   question,
   isVoted,
@@ -68,7 +69,7 @@ export function VoteRow({
   const netScore = question.upvoteCount - question.downvoteCount;
 
   return (
-    <div className="flex flex-col items-center rounded-lg bg-muted/50 px-0.5 py-0.5">
+    <div className="flex w-8 flex-col items-center gap-y-1 pl-3">
       {/* Upvote */}
       <IconButton
         compact
@@ -76,22 +77,24 @@ export function VoteRow({
         aria-pressed={isVoted}
         onClick={onUpvoteClick}
         className={cn(
-          "transition-all active:scale-90",
-          isVoted ? "text-indigo-600 dark:text-indigo-400" : undefined,
+          "rounded-sm transition-all active:scale-90",
+          isVoted
+            ? "text-primary bg-primary/10"
+            : "text-muted-foreground/60 dark:text-muted-foreground/50 hover:bg-accent",
         )}
       >
-        <ArrowBigUp className={cn("h-5 w-5", isVoted && "fill-current")} />
+        <ChevronUp className="h-4 w-4" strokeWidth={isVoted ? 3 : 2} />
       </IconButton>
 
       {/* Net score */}
       <span
         className={cn(
-          "text-xs font-bold tabular-nums leading-none",
+          "text-xs font-medium tabular-nums leading-none select-none",
           isVoted
-            ? "text-indigo-600 dark:text-indigo-400"
+            ? "text-primary"
             : isDownvoted
               ? "text-muted-foreground"
-              : "text-muted-foreground",
+              : "text-muted-foreground/70 dark:text-muted-foreground/60",
         )}
       >
         {netScore}
@@ -104,12 +107,46 @@ export function VoteRow({
         aria-pressed={isDownvoted}
         onClick={onDownvoteClick}
         className={cn(
-          "transition-all active:scale-90",
-          isDownvoted ? "text-foreground" : undefined,
+          "rounded-sm transition-all active:scale-90",
+          isDownvoted
+            ? "text-muted-foreground bg-muted"
+            : "text-muted-foreground/60 dark:text-muted-foreground/50 hover:bg-accent",
         )}
       >
-        <ArrowBigDown className={cn("h-5 w-5", isDownvoted && "fill-current")} />
+        <ChevronDown className="h-4 w-4" strokeWidth={isDownvoted ? 3 : 2} />
       </IconButton>
+    </div>
+  );
+}
+
+// ── ThreadSpine ──────────────────────────────────────────────────────────────
+// Continuous vertical line that groups a reply thread visually.
+// Aligned with parent avatar center (28px / 2 = 14px) so the spine
+// reads as an extension of the question author.
+
+interface ThreadSpineProps {
+  children: React.ReactNode;
+  /** When true the spine turns indigo (e.g. while the reply input is focused). */
+  active?: boolean;
+}
+
+export function ThreadSpine({ children, active }: ThreadSpineProps) {
+  return (
+    <div className="relative mt-4">
+      {/* Spine — absolute, aligned with avatar center */}
+      <div
+        className={cn(
+          "absolute left-[13px] top-0 bottom-0 w-0.5 rounded-full transition-colors duration-200",
+          active ? "bg-primary/40" : "bg-border",
+        )}
+      />
+      {/* Fade-out tail */}
+      <div
+        className="absolute left-[13px] bottom-0 w-0.5 h-6 rounded-full"
+        style={{ background: "linear-gradient(to bottom, transparent, hsl(var(--background)))" }}
+      />
+      {/* Thread content — offset past the spine */}
+      <div className="pl-8 pb-2">{children}</div>
     </div>
   );
 }
@@ -156,7 +193,7 @@ export function HiddenCollapsed({
         {isHost && (
           <button
             onClick={() => onRestore?.(question.id)}
-            className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/10"
+            className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
           >
             {t("restore")}
           </button>

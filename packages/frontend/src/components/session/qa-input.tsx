@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Send } from "lucide-react";
+import { ArrowUp, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -83,7 +83,7 @@ export function QAInput({
   if (isBanned) {
     return (
       <div className="border-t border-border bg-card px-5 py-4">
-        <div className="rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground cursor-not-allowed select-none">
+        <div className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground cursor-not-allowed select-none">
           {t("blockedFromPosting")}
         </div>
       </div>
@@ -91,29 +91,29 @@ export function QAInput({
   }
 
   return (
-    <div className="border-t border-border bg-card px-5 py-4">
-      {/* Identity row — always visible, purely informational */}
-      {fingerprint && (
-        <div className="flex items-center gap-2 mb-2 px-1">
-          <PixelAvatar seed={fingerprint} size={20} className="rounded-full shrink-0" />
-          <span className="text-xs text-muted-foreground truncate">
-            {authorName || tIdentity("anonymous")}
-          </span>
-        </div>
-      )}
+    <div className="border-t border-border bg-card px-5 py-3">
       <div className="flex items-end gap-3">
         <div className="relative min-w-0 flex-1">
+          {/* Avatar prefix inside input */}
+          {fingerprint && (
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+              <PixelAvatar seed={fingerprint} size={20} className="rounded-full shrink-0" />
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={tSession("askQuestion")}
+            placeholder={
+              authorName ? `${authorName} — ${tSession("askQuestion")}` : tSession("askQuestion")
+            }
             disabled={isEffectivelyDisabled}
             rows={1}
             style={{ resize: "none", overflow: "hidden" }}
             className={cn(
-              "block w-full rounded-xl border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed",
+              "block w-full rounded-md border border-border bg-background py-2 pr-4 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50 disabled:cursor-not-allowed",
+              fingerprint ? "pl-10" : "pl-4",
               isOverLimit && "border-destructive focus:ring-destructive/50",
             )}
           />
@@ -122,9 +122,13 @@ export function QAInput({
           onClick={handleSubmit}
           disabled={!canSubmit}
           aria-label={tSession("sendQuestion")}
-          className="flex-shrink-0 rounded-xl bg-indigo-600 p-3 text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-shrink-0 rounded-md bg-primary p-2 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          {isPending ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <ArrowUp className="h-5 w-5" />
+          )}
         </button>
       </div>
 

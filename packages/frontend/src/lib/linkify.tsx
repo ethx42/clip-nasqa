@@ -21,7 +21,7 @@ export function linkifyText(text: string): React.ReactNode {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-indigo-500 underline underline-offset-2 hover:text-indigo-400 break-all"
+        className="text-primary underline underline-offset-2 hover:text-primary/80 break-all"
       >
         {url}
       </a>,

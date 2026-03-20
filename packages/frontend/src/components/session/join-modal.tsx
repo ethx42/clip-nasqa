@@ -68,7 +68,7 @@ export function JoinModal({ sessionCode, open, onClose }: JoinModalProps) {
                 onChange={(e) => setName(e.target.value.slice(0, 50))}
                 placeholder={t("displayName")}
                 maxLength={50}
-                className="block w-full rounded-xl border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="block w-full rounded-md border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               />
               <input
                 type="email"
@@ -76,14 +76,14 @@ export function JoinModal({ sessionCode, open, onClose }: JoinModalProps) {
                 onChange={(e) => setEmail(e.target.value.slice(0, 100))}
                 placeholder={t("email")}
                 maxLength={100}
-                className="block w-full rounded-xl border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="block w-full rounded-md border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               />
             </div>
 
             <div className="mt-5 flex flex-col gap-2">
               <button
                 onClick={handleJoin}
-                className="w-full rounded-xl bg-indigo-600 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="w-full rounded-md bg-primary py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 {t("joinSession")}
               </button>

@@ -53,6 +53,7 @@
     "replyPlaceholder": "Escreva uma resposta...",
     "submitReply": "Responder",
     "send": "Enviar",
+    "cmdEnterToSend": "⌘Enter para enviar",
     "sendQuestion": "Enviar pergunta",
     "you": "Você",
     "focused": "Em foco",
@@ -136,7 +137,8 @@
     "confirmBanQuestion": "Tem certeza de que deseja banir este participante?",
     "cancel": "Cancelar",
     "restore": "Restaurar",
-    "hidden": "Oculto"
+    "hidden": "Oculto",
+    "moreActions": "Mais ações"
   },
   "errors": {
     "connectionLost": "Conexão perdida",
