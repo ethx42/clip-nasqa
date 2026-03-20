@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, MessageCircleQuestion } from "lucide-react";
+import { ChevronDown, ChevronRight, ClipboardList, MessageCircleQuestion } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -11,6 +11,8 @@ interface SessionShellProps {
   qaSlot: React.ReactNode;
   snippetCount?: number;
   questionCount?: number;
+  /** When true, the Q&A section header becomes a toggle on desktop. Default: false. */
+  allowCollapseQA?: boolean;
 }
 
 type Tab = "clipboard" | "qa";
@@ -20,9 +22,11 @@ export function SessionShell({
   qaSlot,
   snippetCount = 0,
   questionCount = 0,
+  allowCollapseQA = false,
 }: SessionShellProps) {
   const t = useTranslations("session");
   const [activeTab, setActiveTab] = useState<Tab>("clipboard");
+  const [qaCollapsed, setQaCollapsed] = useState(false);
 
   const [lastSeenSnippets, setLastSeenSnippets] = useState(snippetCount);
   const [lastSeenQuestions, setLastSeenQuestions] = useState(questionCount);
@@ -91,19 +95,50 @@ export function SessionShell({
 
       {/* Content */}
       <div className="min-h-0 flex-1 p-4 lg:p-5">
-        {/* Desktop: two columns */}
-        <div className="hidden h-full gap-5 lg:grid lg:grid-cols-2">
-          <section aria-label={t("clipboard")} className="flex min-h-0 flex-col">
+        {/* Desktop: two columns (flex-based for smooth collapse) */}
+        <div className="hidden h-full gap-5 lg:flex">
+          {/* Clipboard section — always visible, expands when Q&A collapsed */}
+          <section
+            aria-label={t("clipboard")}
+            className="flex min-h-0 flex-1 flex-col transition-all duration-200"
+          >
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {t("clipboard")}
             </h2>
             {clipboardSlot}
           </section>
-          <section aria-label={t("qa")} className="flex min-h-0 flex-col">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {t("qa")}
-            </h2>
-            {qaSlot}
+
+          {/* Q&A section — collapsible when allowCollapseQA is true */}
+          <section
+            aria-label={t("qa")}
+            className={`flex min-h-0 flex-col transition-all duration-200 ${
+              allowCollapseQA && qaCollapsed ? "w-auto flex-none" : "flex-1"
+            }`}
+          >
+            {allowCollapseQA ? (
+              <button
+                onClick={() => setQaCollapsed((v) => !v)}
+                aria-expanded={!qaCollapsed}
+                className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {qaCollapsed ? (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+                {t("qa")}
+                {qaCollapsed && questionCount > 0 && (
+                  <span className="text-xs tabular-nums">({questionCount})</span>
+                )}
+              </button>
+            ) : (
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {t("qa")}
+              </h2>
+            )}
+            {(!allowCollapseQA || !qaCollapsed) && (
+              <div className="min-h-0 flex-1 overflow-hidden">{qaSlot}</div>
+            )}
           </section>
         </div>
 

@@ -34,8 +34,10 @@ export interface QuestionCardBaseProps {
   onRestore?: (questionId: string) => void;
   onEdit?: (questionId: string, text: string) => void;
   onDelete?: (questionId: string) => void;
+  onHardDelete?: (questionId: string) => void;
   onEditReply?: (replyId: string, text: string) => void;
   onDeleteReply?: (replyId: string) => void;
+  onHardDeleteReply?: (replyId: string) => void;
 }
 
 // ── Pure utilities ────────────────────────────────────────────────────────────

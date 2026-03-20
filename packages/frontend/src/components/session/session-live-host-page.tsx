@@ -122,6 +122,9 @@ export function SessionLiveHostPage({
     handleHostEditReply,
     handleHostDeleteReply,
     handleEditSnippet,
+    handleHardDeleteQuestion,
+    handleHardDeleteReply,
+    handleHardDeleteSnippet,
   } = useHostMutations({
     sessionCode,
     hostSecretHash,
@@ -200,8 +203,10 @@ export function SessionLiveHostPage({
             onRestore={handleRestoreQuestion}
             onEditQuestion={handleHostEditQuestion}
             onDeleteQuestion={handleHostDeleteQuestion}
+            onHardDeleteQuestion={handleHardDeleteQuestion}
             onEditReply={handleHostEditReply}
             onDeleteReply={handleHostDeleteReply}
+            onHardDeleteReply={handleHardDeleteReply}
             isMutationPending={isMutationPending}
             restoredInputText={restoredInputText}
           />

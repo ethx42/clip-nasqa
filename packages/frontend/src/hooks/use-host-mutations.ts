@@ -14,6 +14,9 @@ import {
   editQuestionAction,
   editReplyAction,
   focusQuestionAction,
+  hardDeleteQuestionAction,
+  hardDeleteReplyAction,
+  hardDeleteSnippetAction,
   restoreQuestionAction,
 } from "@/actions/moderation";
 import { clearClipboardAction, deleteSnippetAction, editSnippetAction } from "@/actions/snippet";
@@ -44,6 +47,9 @@ interface HostMutations {
   handleHostEditReply: (replyId: string, text: string) => Promise<void>;
   handleHostDeleteReply: (replyId: string) => Promise<void>;
   handleEditSnippet: (snippetId: string, content: string, language?: string) => Promise<void>;
+  handleHardDeleteQuestion: (questionId: string) => Promise<void>;
+  handleHardDeleteReply: (replyId: string) => Promise<void>;
+  handleHardDeleteSnippet: (snippetId: string) => Promise<void>;
 }
 
 export function useHostMutations({
@@ -276,6 +282,66 @@ export function useHostMutations({
     [sessionCode, hostSecretHash, dispatch, snippetsRef, tErrors],
   );
 
+  const handleHardDeleteQuestion = useCallback(
+    async (questionId: string) => {
+      const originalQuestion = questionsRef.current.find((q) => q.id === questionId);
+      const originalReplies = repliesRef?.current.filter((r) => r.questionId === questionId) ?? [];
+
+      dispatch({ type: "QUESTION_DELETED", payload: { questionId } });
+      for (const reply of originalReplies) {
+        dispatch({ type: "REPLY_DELETED", payload: { replyId: reply.id } });
+      }
+
+      const result = await safeAction(
+        hardDeleteQuestionAction({ sessionCode, questionId, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        if (originalQuestion) {
+          dispatch({ type: "QUESTION_ADDED", payload: originalQuestion });
+        }
+        for (const reply of originalReplies) {
+          dispatch({ type: "REPLY_ADDED", payload: reply });
+        }
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, questionsRef, repliesRef, tErrors],
+  );
+
+  const handleHardDeleteReply = useCallback(
+    async (replyId: string) => {
+      dispatch({ type: "REPLY_DELETED", payload: { replyId } });
+
+      const result = await safeAction(
+        hardDeleteReplyAction({ sessionCode, replyId, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, tErrors],
+  );
+
+  const handleHardDeleteSnippet = useCallback(
+    async (snippetId: string) => {
+      dispatch({ type: "SNIPPET_DELETED", payload: { snippetId } });
+
+      const result = await safeAction(
+        hardDeleteSnippetAction({ sessionCode, snippetId, hostSecretHash }),
+        tErrors("networkError"),
+      );
+
+      if (!result.success) {
+        toast.error(result.error, { duration: 5000 });
+      }
+    },
+    [sessionCode, hostSecretHash, dispatch, tErrors],
+  );
+
   return {
     handleDeleteSnippet,
     handleClearClipboard,
@@ -288,5 +354,8 @@ export function useHostMutations({
     handleHostEditReply,
     handleHostDeleteReply,
     handleEditSnippet,
+    handleHardDeleteQuestion,
+    handleHardDeleteReply,
+    handleHardDeleteSnippet,
   };
 }

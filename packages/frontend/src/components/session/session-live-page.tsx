@@ -117,6 +117,7 @@ export function SessionLivePage({
         sessionCode={sessionCode}
         snippetCount={state.snippets.length}
         questionCount={state.questions.length}
+        allowCollapseQA
         clipboardSlot={
           <ClipboardPanel
             sessionCode={sessionCode}

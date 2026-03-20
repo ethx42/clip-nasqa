@@ -43,6 +43,7 @@ function ReplyRow({
   fingerprint,
   onEditReply,
   onDeleteReply,
+  onHardDeleteReply,
 }: ReplyRowProps) {
   const t = useTranslations("session");
   const tCommon = useTranslations("common");
@@ -235,6 +236,7 @@ export function ReplyList({
   fingerprint,
   onEditReply,
   onDeleteReply,
+  onHardDeleteReply,
 }: ReplyListProps) {
   return (
     <div className="space-y-0.5">
@@ -247,6 +249,7 @@ export function ReplyList({
           fingerprint={fingerprint}
           onEditReply={onEditReply}
           onDeleteReply={onDeleteReply}
+          onHardDeleteReply={onHardDeleteReply}
         />
       ))}
     </div>
