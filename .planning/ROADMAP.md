@@ -198,11 +198,11 @@ Plans:
 3. The share dialog shows the 6-digit session code as a copyable element alongside the QR code and link
 4. The audience view displays a "Clipboard" heading above the clipboard list and a "Q&A" heading above the question feed — both are visible without any interaction
 5. A participant can collapse the Q&A panel and the clipboard content expands to fill the vacated space — the host's latest snippet remains visible and prominent
-   **Plans**: TBD
+   **Plans**: 2 plans
 
 Plans:
 
-- [ ] 20-01-PLAN.md — Hard delete Server Action for superuser, line break support in Q&A text (storage + render)
+- [ ] 20-01-PLAN.md — Hard delete backend mutations + frontend wiring, basic markdown rendering in Q&A text
 - [ ] 20-02-PLAN.md — Session code in share dialog, audience section headers, collapsible Q&A drawer
 
 ### Phase 21: Input and Form Polish
@@ -247,5 +247,5 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 | 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
 | 18. Header and Navigation                    | 2/2       | Complete       | 2026-03-19  | -          |
 | 19. Segments, Visual Overhaul, and Voting    | v2.2      | 2/2            | Complete    | 2026-03-20 |
-| 20. Functionality and Audience View          | v2.2      | 0/TBD          | Not started | -          |
+| 20. Functionality and Audience View          | v2.2      | 0/2            | Not started | -          |
 | 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |
