@@ -75,6 +75,9 @@ enum SessionEventType {
   REPLY_EDITED
   REPLY_DELETED
   SNIPPET_EDITED
+  QUESTION_HARD_DELETED
+  REPLY_HARD_DELETED
+  SNIPPET_HARD_DELETED
 }
 
 type SessionUpdate {
@@ -113,9 +116,12 @@ type Mutation {
   editReply(sessionCode: String!, replyId: String!, text: String!, fingerprint: String, hostSecretHash: String): SessionUpdate!
   deleteReply(sessionCode: String!, replyId: String!, fingerprint: String, hostSecretHash: String): SessionUpdate!
   editSnippet(sessionCode: String!, snippetId: String!, content: String!, language: String, hostSecretHash: String!): SessionUpdate!
+  hardDeleteQuestion(sessionCode: String!, questionId: String!, hostSecretHash: String!): SessionUpdate!
+  hardDeleteReply(sessionCode: String!, replyId: String!, hostSecretHash: String!): SessionUpdate!
+  hardDeleteSnippet(sessionCode: String!, snippetId: String!, hostSecretHash: String!): SessionUpdate!
 }
 
 type Subscription {
   onSessionUpdate(sessionCode: String!): SessionUpdate
-    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion", "react", "editQuestion", "deleteQuestion", "editReply", "deleteReply", "editSnippet"])
+    @aws_subscribe(mutations: ["_stub", "pushSnippet", "deleteSnippet", "clearClipboard", "addQuestion", "upvoteQuestion", "addReply", "focusQuestion", "banQuestion", "banParticipant", "downvoteQuestion", "restoreQuestion", "react", "editQuestion", "deleteQuestion", "editReply", "deleteReply", "editSnippet", "hardDeleteQuestion", "hardDeleteReply", "hardDeleteSnippet"])
 }

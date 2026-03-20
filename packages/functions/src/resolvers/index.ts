@@ -4,7 +4,13 @@ import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { AppSyncResolverContext, GetSessionDataArgs } from "@nasqa/core";
 import { EMOJI_KEYS } from "@nasqa/core";
 
-import { clearClipboard, deleteSnippet, editSnippet, pushSnippet } from "./clipboard";
+import {
+  clearClipboard,
+  deleteSnippet,
+  editSnippet,
+  hardDeleteSnippet,
+  pushSnippet,
+} from "./clipboard";
 import { logger } from "./logger";
 import {
   handleBanParticipant,
@@ -20,6 +26,8 @@ import {
   editQuestion,
   editReply,
   focusQuestion,
+  hardDeleteQuestion,
+  hardDeleteReply,
   upvoteQuestion,
 } from "./qa";
 import { handleReact } from "./reactions";
@@ -212,6 +220,15 @@ export const handler = async (event: AppSyncResolverContext): Promise<unknown> =
         break;
       case "editSnippet":
         result = await editSnippet(args);
+        break;
+      case "hardDeleteQuestion":
+        result = await hardDeleteQuestion(args);
+        break;
+      case "hardDeleteReply":
+        result = await hardDeleteReply(args);
+        break;
+      case "hardDeleteSnippet":
+        result = await hardDeleteSnippet(args);
         break;
       case "getSessionData":
         result = await getSessionData(args);

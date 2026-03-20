@@ -130,6 +130,9 @@ export enum SessionEventType {
   REPLY_EDITED = "REPLY_EDITED",
   REPLY_DELETED = "REPLY_DELETED",
   SNIPPET_EDITED = "SNIPPET_EDITED",
+  QUESTION_HARD_DELETED = "QUESTION_HARD_DELETED",
+  REPLY_HARD_DELETED = "REPLY_HARD_DELETED",
+  SNIPPET_HARD_DELETED = "SNIPPET_HARD_DELETED",
 }
 
 // SessionUpdate tagged union — mirrors the GraphQL SessionUpdate type
@@ -257,6 +260,23 @@ export interface EditSnippetArgs {
   snippetId: string;
   content: string;
   language?: string;
+  hostSecretHash: string;
+}
+
+// Hard delete mutation argument interfaces (host-only, no time window)
+export interface HardDeleteQuestionArgs {
+  sessionCode: string;
+  questionId: string;
+  hostSecretHash: string;
+}
+export interface HardDeleteReplyArgs {
+  sessionCode: string;
+  replyId: string;
+  hostSecretHash: string;
+}
+export interface HardDeleteSnippetArgs {
+  sessionCode: string;
+  snippetId: string;
   hostSecretHash: string;
 }
 

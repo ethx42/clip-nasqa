@@ -1,5 +1,12 @@
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
-import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  BatchWriteCommand,
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 
 import type {
@@ -10,6 +17,8 @@ import type {
   EditQuestionArgs,
   EditReplyArgs,
   FocusQuestionArgs,
+  HardDeleteQuestionArgs,
+  HardDeleteReplyArgs,
   SessionEventType,
   SessionUpdate,
   UpvoteQuestionArgs,
@@ -359,6 +368,79 @@ export async function deleteReply(args: DeleteReplyArgs): Promise<SessionUpdate>
 
   return {
     eventType: "REPLY_DELETED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ replyId }),
+  };
+}
+
+export async function hardDeleteQuestion(args: HardDeleteQuestionArgs): Promise<SessionUpdate> {
+  const { sessionCode, questionId, hostSecretHash } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
+
+  // Permanently delete the question itself
+  await docClient.send(
+    new DeleteCommand({
+      TableName: tableName(),
+      Key: {
+        PK: `SESSION#${sessionCode}`,
+        SK: `QUESTION#${questionId}`,
+      },
+    }),
+  );
+
+  // Cascade: find and delete all replies belonging to this question
+  const queryResult = await docClient.send(
+    new QueryCommand({
+      TableName: tableName(),
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      FilterExpression: "questionId = :qid",
+      ExpressionAttributeValues: {
+        ":pk": `SESSION#${sessionCode}`,
+        ":prefix": "REPLY#",
+        ":qid": questionId,
+      },
+    }),
+  );
+
+  const replies = queryResult.Items ?? [];
+  for (let i = 0; i < replies.length; i += 25) {
+    const chunk = replies.slice(i, i + 25);
+    await docClient.send(
+      new BatchWriteCommand({
+        RequestItems: {
+          [tableName()]: chunk.map((item) => ({
+            DeleteRequest: {
+              Key: { PK: item.PK, SK: item.SK },
+            },
+          })),
+        },
+      }),
+    );
+  }
+
+  return {
+    eventType: "QUESTION_HARD_DELETED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ questionId }),
+  };
+}
+
+export async function hardDeleteReply(args: HardDeleteReplyArgs): Promise<SessionUpdate> {
+  const { sessionCode, replyId, hostSecretHash } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
+
+  await docClient.send(
+    new DeleteCommand({
+      TableName: tableName(),
+      Key: {
+        PK: `SESSION#${sessionCode}`,
+        SK: `REPLY#${replyId}`,
+      },
+    }),
+  );
+
+  return {
+    eventType: "REPLY_HARD_DELETED" as SessionEventType,
     sessionCode,
     payload: JSON.stringify({ replyId }),
   };

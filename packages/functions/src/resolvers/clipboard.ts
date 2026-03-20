@@ -12,6 +12,7 @@ import type {
   ClearClipboardArgs,
   DeleteSnippetArgs,
   EditSnippetArgs,
+  HardDeleteSnippetArgs,
   PushSnippetArgs,
   SessionEventType,
   SessionUpdate,
@@ -131,6 +132,27 @@ export async function clearClipboard(args: ClearClipboardArgs): Promise<SessionU
     eventType: "CLIPBOARD_CLEARED" as SessionEventType,
     sessionCode,
     payload: JSON.stringify({}),
+  };
+}
+
+export async function hardDeleteSnippet(args: HardDeleteSnippetArgs): Promise<SessionUpdate> {
+  const { sessionCode, snippetId, hostSecretHash } = args;
+  await verifyHostSecret(sessionCode, hostSecretHash);
+
+  await docClient.send(
+    new DeleteCommand({
+      TableName: tableName(),
+      Key: {
+        PK: `SESSION#${sessionCode}`,
+        SK: `SNIPPET#${snippetId}`,
+      },
+    }),
+  );
+
+  return {
+    eventType: "SNIPPET_HARD_DELETED" as SessionEventType,
+    sessionCode,
+    payload: JSON.stringify({ snippetId }),
   };
 }
 
