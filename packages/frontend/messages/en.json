@@ -110,6 +110,10 @@
     "confirmDeleteQuestionDesc": "This cannot be undone.",
     "confirmDeleteReply": "Delete this reply?",
     "confirmDeleteReplyDesc": "This cannot be undone.",
+    "hardDelete": "Permanently Delete",
+    "hardDeleteConfirm": "This will permanently remove this content and cannot be undone.",
+    "hardDeleteQuestion": "Permanently delete question",
+    "hardDeleteReply": "Permanently delete reply",
     "darkMode": "Dark mode",
     "language": "Language",
     "leaveSession": "Leave this session?",
@@ -181,7 +185,8 @@
     "failedEditReply": "Failed to edit reply",
     "failedDeleteReply": "Failed to delete reply",
     "failedEditSnippet": "Failed to edit snippet",
-    "editWindowExpired": "The 5-minute edit window has expired."
+    "editWindowExpired": "The 5-minute edit window has expired.",
+    "failedHardDelete": "Failed to permanently delete content"
   },
   "identity": {
     "whatsYourName": "What's your name?",

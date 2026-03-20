@@ -48,7 +48,10 @@ export type SessionAction =
   | {
       type: "SNIPPET_EDITED";
       payload: { snippetId: string; content: string; language?: string; editedAt: number };
-    };
+    }
+  | { type: "QUESTION_HARD_DELETED"; payload: { questionId: string } }
+  | { type: "REPLY_HARD_DELETED"; payload: { replyId: string } }
+  | { type: "SNIPPET_HARD_DELETED"; payload: { snippetId: string } };
 
 // ── State shape ───────────────────────────────────────────────────────────────
 
@@ -355,6 +358,30 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
               }
             : s,
         ),
+      };
+    }
+
+    case "QUESTION_HARD_DELETED": {
+      const { questionId } = action.payload;
+      return {
+        ...state,
+        questions: state.questions.filter((q) => q.id !== questionId),
+        // Cascade: remove all replies belonging to this question
+        replies: state.replies.filter((r) => r.questionId !== questionId),
+      };
+    }
+
+    case "REPLY_HARD_DELETED": {
+      return {
+        ...state,
+        replies: state.replies.filter((r) => r.id !== action.payload.replyId),
+      };
+    }
+
+    case "SNIPPET_HARD_DELETED": {
+      return {
+        ...state,
+        snippets: state.snippets.filter((s) => s.id !== action.payload.snippetId),
       };
     }
 

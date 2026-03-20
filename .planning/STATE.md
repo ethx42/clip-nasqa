@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Real-time clipboard and Q&A with sub-200ms latency across all connected devices
-**Current focus:** v2.2 UX Overhaul — Phase 19: Segments Visual Overhaul and Voting
+**Current focus:** v2.2 UX Overhaul — Phase 20: Functionality and Audience View
 
 ## Current Position
 
-Phase: 19 of 21 (Segments Visual Overhaul and Voting) — COMPLETE
-Plan: 2 of 2 in current phase (all plans complete)
-Status: Phase complete
-Last activity: 2026-03-20 — 19-02 complete: enterprise UX overhaul (IconButton, voting, spine, input anatomy)
+Phase: 20 of 21 (Functionality and Audience View) — IN PROGRESS
+Plan: 2 of 2 in current phase (plan 02 complete)
+Status: Phase 20 plan 02 complete
+Last activity: 2026-03-20 — 20-02 complete: session code chip, section headers, collapsible Q&A, hard delete threading
 
-Progress: [██████████████████░░] ~90% (19/21 phases complete)
+Progress: [████████████████████░] ~95% (20/21 phases in progress)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 47 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 3, v2.2: 1)
+- Total plans completed: 49 (v1.0: 16, v1.1: 10, v1.2: 5, v1.3: 6, v2.0: 6, v2.1: 3, v2.2: 3)
 - Average duration: 5 min
-- Total execution time: ~2.7 hours
+- Total execution time: ~2.8 hours
 
 _Updated after each plan completion_
 
@@ -47,6 +47,8 @@ Recent decisions affecting current work:
 - [Phase 19-02]: ThreadSpine: absolute div w-[1.5px] at left-[6px], no border-left or gradient fade
 - [Phase 19-02]: Progressive disclosure for host tools — Edit+Delete primary, moderation behind Popover overflow
 - [Phase 19-02]: Avatar-inside-input reply anatomy — 20px PixelAvatar as left-prefix inside border container
+- [Phase 20-02]: allowCollapseQA boolean prop (default false) gates Q&A collapse per view — participant sets it true, host never does
+- [Phase 20-02]: flex layout with flex-1/w-auto replaces grid-cols-2 for desktop two-column to support smooth Q&A collapse
 
 ### Pending Todos
 
@@ -55,10 +57,10 @@ None.
 ### Blockers/Concerns
 
 - [Phase 16]: Run `next build` bundle analyzer before implementing client Shiki — confirm it lands in a lazy chunk and initial bundle stays under 100kB gzip
-- [v2.2]: Superuser hard delete (FUNC-01) requires a new Server Action — confirm DynamoDB deleteItem replaces existing soft-delete path without breaking subscription broadcast
+- [v2.2 resolved]: Superuser hard delete (FUNC-01) server actions exist; hard delete handlers wired in phase 20-02
 
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Phase 19 complete — all plans executed and approved
-Resume at: Phase 20 (Functionality and Audience View)
+Stopped at: Phase 20 plan 02 complete — session code chip, section headers, collapsible Q&A, hard delete prop threading
+Resume at: Phase 21 (if any) or project complete

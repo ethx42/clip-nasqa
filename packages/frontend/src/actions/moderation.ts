@@ -12,6 +12,9 @@ import {
   EDIT_QUESTION,
   EDIT_REPLY,
   FOCUS_QUESTION,
+  HARD_DELETE_QUESTION,
+  HARD_DELETE_REPLY,
+  HARD_DELETE_SNIPPET,
   RESTORE_QUESTION,
 } from "@/lib/graphql/mutations";
 import { reportError } from "@/lib/report-error";
@@ -28,6 +31,7 @@ function parseRateLimitOrBan(
     failedDeleteQuestion: string;
     failedEditReply: string;
     failedDeleteReply: string;
+    failedHardDelete: string;
   },
 ): { success: false; error: string } {
   const message = err instanceof Error ? err.message : String(err);
@@ -161,5 +165,50 @@ export async function deleteReplyAction(args: {
     const t = await getTranslations("actionErrors");
     reportError(err instanceof Error ? err : new Error(String(err)));
     return parseRateLimitOrBan(err, t, "failedDeleteReply");
+  }
+}
+
+export async function hardDeleteQuestionAction(args: {
+  sessionCode: string;
+  questionId: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(HARD_DELETE_QUESTION, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedHardDelete");
+  }
+}
+
+export async function hardDeleteReplyAction(args: {
+  sessionCode: string;
+  replyId: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(HARD_DELETE_REPLY, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedHardDelete");
+  }
+}
+
+export async function hardDeleteSnippetAction(args: {
+  sessionCode: string;
+  snippetId: string;
+  hostSecretHash: string;
+}): Promise<ActionResult> {
+  try {
+    await appsyncMutation(HARD_DELETE_SNIPPET, args);
+    return { success: true };
+  } catch (err) {
+    const t = await getTranslations("actionErrors");
+    reportError(err instanceof Error ? err : new Error(String(err)));
+    return parseRateLimitOrBan(err, t, "failedHardDelete");
   }
 }

@@ -80,6 +80,7 @@ export function QuestionCardHost({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(question.text);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
 
   const isVoted = votedQuestionIds.has(question.id);
   const isDownvoted = downvotedQuestionIds.has(question.id);
@@ -153,6 +154,11 @@ export function QuestionCardHost({
   function handleConfirmDelete() {
     setDeleteConfirmOpen(false);
     onDelete?.(question.id);
+  }
+
+  function handleConfirmHardDelete() {
+    setHardDeleteConfirmOpen(false);
+    onHardDelete?.(question.id);
   }
 
   // Determine visual state key for AnimatePresence
@@ -365,6 +371,15 @@ export function QuestionCardHost({
                                 >
                                   <Ban className="h-3.5 w-3.5 shrink-0" />
                                   {t("banParticipant")}
+                                </button>
+                                <div className="mx-2 border-t border-border" />
+                                {/* Permanently delete */}
+                                <button
+                                  onClick={() => setHardDeleteConfirmOpen(true)}
+                                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                  {tSession("hardDelete")}
                                 </button>
                               </Popover.Popup>
                             </Popover.Positioner>
@@ -672,6 +687,37 @@ export function QuestionCardHost({
                   className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
                 >
                   {tSession("deleteQuestion")}
+                </button>
+              </div>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* Permanently delete question confirmation dialog */}
+      <Dialog.Root open={hardDeleteConfirmOpen} onOpenChange={setHardDeleteConfirmOpen}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+          <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-lg border border-destructive/30 bg-card p-6 shadow-xl">
+              <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
+                {tSession("hardDeleteQuestion")}
+              </Dialog.Title>
+              <Dialog.Description className="mb-5 text-sm text-muted-foreground">
+                {tSession("hardDeleteConfirm")}
+              </Dialog.Description>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setHardDeleteConfirmOpen(false)}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                >
+                  {tCommon("cancel")}
+                </button>
+                <button
+                  onClick={handleConfirmHardDelete}
+                  className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                >
+                  {tSession("hardDelete")}
                 </button>
               </div>
             </div>

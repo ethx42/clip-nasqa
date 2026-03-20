@@ -168,6 +168,36 @@ export const EDIT_SNIPPET = `
   }
 `;
 
+export const HARD_DELETE_QUESTION = `
+  mutation HardDeleteQuestion($sessionCode: String!, $questionId: String!, $hostSecretHash: String!) {
+    hardDeleteQuestion(sessionCode: $sessionCode, questionId: $questionId, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
+export const HARD_DELETE_REPLY = `
+  mutation HardDeleteReply($sessionCode: String!, $replyId: String!, $hostSecretHash: String!) {
+    hardDeleteReply(sessionCode: $sessionCode, replyId: $replyId, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
+export const HARD_DELETE_SNIPPET = `
+  mutation HardDeleteSnippet($sessionCode: String!, $snippetId: String!, $hostSecretHash: String!) {
+    hardDeleteSnippet(sessionCode: $sessionCode, snippetId: $snippetId, hostSecretHash: $hostSecretHash) {
+      eventType
+      sessionCode
+      payload
+    }
+  }
+`;
+
 export const GET_SESSION_DATA = `
   query GetSessionData($sessionCode: String!) {
     getSessionData(sessionCode: $sessionCode) {

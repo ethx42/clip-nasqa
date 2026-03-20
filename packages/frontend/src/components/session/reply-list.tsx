@@ -51,6 +51,7 @@ function ReplyRow({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(reply.text);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
 
   const isOwn = reply.fingerprint === fingerprint;
 
@@ -86,6 +87,11 @@ function ReplyRow({
   function handleConfirmDelete() {
     setDeleteConfirmOpen(false);
     onDeleteReply?.(reply.id);
+  }
+
+  function handleConfirmHardDelete() {
+    setHardDeleteConfirmOpen(false);
+    onHardDeleteReply?.(reply.id);
   }
 
   const authorName = isOwn ? t("you") : reply.authorName || tIdentity("anonymous");
@@ -142,6 +148,16 @@ function ReplyRow({
               >
                 <Trash2 className="h-3 w-3" />
               </IconButton>
+              {isHost && (
+                <IconButton
+                  compact
+                  tooltip={t("hardDeleteReply")}
+                  onClick={() => setHardDeleteConfirmOpen(true)}
+                  className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </IconButton>
+              )}
             </div>
           )}
         </div>
@@ -225,6 +241,39 @@ function ReplyRow({
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* Permanently delete reply confirmation dialog — host only */}
+      {isHost && (
+        <Dialog.Root open={hardDeleteConfirmOpen} onOpenChange={setHardDeleteConfirmOpen}>
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+            <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="w-full max-w-sm rounded-lg border border-destructive/30 bg-card p-6 shadow-xl">
+                <Dialog.Title className="mb-2 text-lg font-bold text-foreground">
+                  {t("hardDeleteReply")}
+                </Dialog.Title>
+                <Dialog.Description className="mb-5 text-sm text-muted-foreground">
+                  {t("hardDeleteConfirm")}
+                </Dialog.Description>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setHardDeleteConfirmOpen(false)}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
+                  >
+                    {tCommon("cancel")}
+                  </button>
+                  <button
+                    onClick={handleConfirmHardDelete}
+                    className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-destructive/90"
+                  >
+                    {t("hardDelete")}
+                  </button>
+                </div>
+              </div>
+            </Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
     </>
   );
 }
