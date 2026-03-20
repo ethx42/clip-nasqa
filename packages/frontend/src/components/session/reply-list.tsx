@@ -9,7 +9,7 @@ import type { Reply } from "@nasqa/core";
 
 import { IconButton } from "@/components/ui/icon-button";
 import { formatRelativeTime } from "@/lib/format-relative-time";
-import { linkifyText } from "@/lib/linkify";
+import { renderMarkdown } from "@/lib/render-markdown";
 import { cn } from "@/lib/utils";
 
 import { ReactionBar } from "./reaction-bar";
@@ -23,6 +23,7 @@ interface ReplyListProps {
   fingerprint: string;
   onEditReply?: (replyId: string, text: string) => void;
   onDeleteReply?: (replyId: string) => void;
+  onHardDeleteReply?: (replyId: string) => void;
 }
 
 interface ReplyRowProps {
@@ -32,6 +33,7 @@ interface ReplyRowProps {
   fingerprint: string;
   onEditReply?: (replyId: string, text: string) => void;
   onDeleteReply?: (replyId: string) => void;
+  onHardDeleteReply?: (replyId: string) => void;
 }
 
 function ReplyRow({
@@ -174,7 +176,7 @@ function ReplyRow({
           </div>
         ) : (
           <p className="mt-0.5 break-words text-[13px] leading-snug text-foreground/80">
-            {linkifyText(reply.text)}
+            {renderMarkdown(reply.text)}
           </p>
         )}
 

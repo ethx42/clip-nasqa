@@ -19,7 +19,7 @@ import type { Reply } from "@nasqa/core";
 
 import { IconButton } from "@/components/ui/icon-button";
 import { formatRelativeTime } from "@/lib/format-relative-time";
-import { linkifyText } from "@/lib/linkify";
+import { renderMarkdown } from "@/lib/render-markdown";
 import { cn } from "@/lib/utils";
 
 import { PixelAvatar } from "./pixel-avatar";
@@ -348,7 +348,7 @@ export function QuestionCardParticipant({
                     </div>
                   ) : (
                     <p className="break-words text-base leading-relaxed text-foreground">
-                      {linkifyText(question.text)}
+                      {renderMarkdown(question.text)}
                     </p>
                   )}
 

@@ -24,7 +24,7 @@ import type { Reply } from "@nasqa/core";
 
 import { IconButton } from "@/components/ui/icon-button";
 import { formatRelativeTime } from "@/lib/format-relative-time";
-import { linkifyText } from "@/lib/linkify";
+import { renderMarkdown } from "@/lib/render-markdown";
 import { cn } from "@/lib/utils";
 
 import { PixelAvatar } from "./pixel-avatar";
@@ -62,8 +62,10 @@ export function QuestionCardHost({
   onRestore,
   onEdit,
   onDelete,
+  onHardDelete,
   onEditReply,
   onDeleteReply,
+  onHardDeleteReply,
 }: QuestionCardHostProps) {
   const t = useTranslations("moderation");
   const tSession = useTranslations("session");
@@ -403,7 +405,7 @@ export function QuestionCardHost({
                     </div>
                   ) : (
                     <p className="break-words text-base leading-relaxed text-foreground">
-                      {linkifyText(question.text)}
+                      {renderMarkdown(question.text)}
                     </p>
                   )}
 
@@ -529,6 +531,7 @@ export function QuestionCardHost({
                         fingerprint={fingerprint}
                         onEditReply={onEditReply}
                         onDeleteReply={onDeleteReply}
+                        onHardDeleteReply={onHardDeleteReply}
                       />
                       <div className="pt-1">
                         <div
