@@ -165,7 +165,7 @@ export function QAPanel({
         id="qa-feed"
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto"
+        className="flex flex-1 flex-col overflow-y-auto"
       >
         {/* New question notification banner */}
         <NewContentBanner message={bannerMessage} visible={showNewBanner} onTap={scrollToTop} />

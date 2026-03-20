@@ -11,8 +11,6 @@ interface SessionShellProps {
   qaSlot: React.ReactNode;
   snippetCount?: number;
   questionCount?: number;
-  /** When true, the Q&A section header becomes a toggle on desktop. Default: false. */
-  allowCollapseQA?: boolean;
 }
 
 type Tab = "clipboard" | "qa";
@@ -22,7 +20,6 @@ export function SessionShell({
   qaSlot,
   snippetCount = 0,
   questionCount = 0,
-  allowCollapseQA = false,
 }: SessionShellProps) {
   const t = useTranslations("session");
   const [activeTab, setActiveTab] = useState<Tab>("clipboard");
@@ -94,50 +91,48 @@ export function SessionShell({
       </nav>
 
       {/* Content */}
-      <div className="min-h-0 flex-1 p-4 lg:p-5">
+      <div className="flex min-h-0 flex-1 flex-col p-4 lg:p-5">
         {/* Desktop: two columns (flex-based for smooth collapse) */}
-        <div className="hidden h-full gap-5 lg:flex">
+        <div className="hidden min-h-0 flex-1 gap-5 lg:flex">
           {/* Clipboard section — always visible, expands when Q&A collapsed */}
           <section
             aria-label={t("clipboard")}
-            className="flex min-h-0 flex-1 flex-col transition-all duration-200"
+            className="flex min-h-0 min-w-0 flex-1 flex-col transition-all duration-200"
           >
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {t("clipboard")}
             </h2>
-            {clipboardSlot}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{clipboardSlot}</div>
           </section>
 
-          {/* Q&A section — collapsible when allowCollapseQA is true */}
+          {/* Q&A section — always collapsible on desktop */}
           <section
             aria-label={t("qa")}
-            className={`flex min-h-0 flex-col transition-all duration-200 ${
-              allowCollapseQA && qaCollapsed ? "w-auto flex-none" : "flex-1"
+            className={`flex min-h-0 min-w-0 flex-col transition-all duration-200 ${
+              qaCollapsed ? "w-auto flex-none" : "flex-1"
             }`}
           >
-            {allowCollapseQA ? (
-              <button
-                onClick={() => setQaCollapsed((v) => !v)}
-                aria-expanded={!qaCollapsed}
-                className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {qaCollapsed ? (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-                {t("qa")}
-                {qaCollapsed && questionCount > 0 && (
-                  <span className="text-xs tabular-nums">({questionCount})</span>
-                )}
-              </button>
-            ) : (
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {t("qa")}
-              </h2>
-            )}
-            {(!allowCollapseQA || !qaCollapsed) && (
-              <div className="min-h-0 flex-1 overflow-hidden">{qaSlot}</div>
+            <button
+              onClick={() => setQaCollapsed((v) => !v)}
+              aria-expanded={!qaCollapsed}
+              className={`mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors hover:text-foreground ${
+                qaCollapsed
+                  ? "rounded-md bg-muted/60 px-3 py-2 text-muted-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {qaCollapsed ? (
+                <ChevronRight className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              {t("qa")}
+              {qaCollapsed && questionCount > 0 && (
+                <span className="text-xs tabular-nums">({questionCount})</span>
+              )}
+            </button>
+            {!qaCollapsed && (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{qaSlot}</div>
             )}
           </section>
         </div>
@@ -145,7 +140,7 @@ export function SessionShell({
         {/* Mobile: single panel */}
         <section
           aria-label={activeTab === "clipboard" ? t("clipboard") : t("qa")}
-          className="flex h-full w-full lg:hidden"
+          className="flex min-h-0 flex-1 w-full lg:hidden"
         >
           {activeTab === "clipboard" ? clipboardSlot : qaSlot}
         </section>
