@@ -115,7 +115,8 @@
     "language": "Idioma",
     "leaveSession": "Sair desta sessao?",
     "leaveConfirm": "Sair",
-    "about": "Sobre"
+    "about": "Sobre",
+    "sessionCode": "Codigo da sessao"
   },
   "pages": {
     "sessionNotFound": "Sessão não encontrada ou expirada",

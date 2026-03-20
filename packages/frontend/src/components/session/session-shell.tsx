@@ -94,9 +94,15 @@ export function SessionShell({
         {/* Desktop: two columns */}
         <div className="hidden h-full gap-5 lg:grid lg:grid-cols-2">
           <section aria-label={t("clipboard")} className="flex min-h-0 flex-col">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("clipboard")}
+            </h2>
             {clipboardSlot}
           </section>
           <section aria-label={t("qa")} className="flex min-h-0 flex-col">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("qa")}
+            </h2>
             {qaSlot}
           </section>
         </div>

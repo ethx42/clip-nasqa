@@ -114,7 +114,8 @@
     "language": "Language",
     "leaveSession": "Leave this session?",
     "leaveConfirm": "Leave",
-    "about": "About"
+    "about": "About",
+    "sessionCode": "Session Code"
   },
   "pages": {
     "sessionNotFound": "Session not found or expired",

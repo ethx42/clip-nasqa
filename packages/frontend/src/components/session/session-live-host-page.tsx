@@ -153,7 +153,7 @@ export function SessionLiveHostPage({
     <>
       <AppHeader
         sessionContext={sessionContextNode}
-        shareSlot={<HostToolbar participantUrl={participantUrl} />}
+        shareSlot={<HostToolbar participantUrl={participantUrl} sessionCode={sessionCode} />}
       />
       <SessionShell
         sessionCode={sessionCode}
