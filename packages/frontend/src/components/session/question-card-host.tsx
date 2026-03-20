@@ -523,7 +523,7 @@ export function QuestionCardHost({
                         onEditReply={onEditReply}
                         onDeleteReply={onDeleteReply}
                       />
-                      <div className="flex items-start gap-2 pt-4">
+                      <div className={cn("pt-3", replyActive ? "flex items-start gap-2" : "")}>
                         {replyActive && (
                           <PixelAvatar
                             seed={fingerprint}
@@ -552,7 +552,7 @@ export function QuestionCardHost({
                             )}
                           />
                           {replyActive && (
-                            <div className="mt-2 flex items-center justify-end gap-2 animate-in fade-in duration-150">
+                            <div className="mt-2 mb-4 flex items-center justify-end gap-2 animate-in fade-in duration-150">
                               {replyText.length >= REPLY_COUNTER_THRESHOLD && (
                                 <span
                                   className={cn(

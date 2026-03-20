@@ -144,7 +144,7 @@ export function ThreadSpine({ children, active }: ThreadSpineProps) {
         style={{ background: "linear-gradient(to bottom, transparent, hsl(var(--background)))" }}
       />
       {/* Thread content — offset past the spine */}
-      <div className="pl-8 pb-2">{children}</div>
+      <div className="pl-8 pb-8">{children}</div>
     </div>
   );
 }
