@@ -71,7 +71,7 @@
 
 - [x] **Phase 18: Header and Navigation** — Single-bar header with logo, session name, live indicator, hamburger menu containing theme toggle and language selector (completed 2026-03-19)
 - [x] **Phase 19: Segments, Visual Overhaul, and Voting** — Slack-style segments replacing cards, reduced rounding/padding, consistent icon button grouping, Reddit-style voting, pin/ban alignment, tooltips on all icon-only buttons (completed 2026-03-20)
-- [ ] **Phase 20: Functionality and Audience View** — Hard delete for superuser, line breaks in Q&A text, session code in share dialog, audience section headers, collapsible Q&A drawer
+- [x] **Phase 20: Functionality and Audience View** — Hard delete for superuser, line breaks in Q&A text, session code in share dialog, audience section headers, collapsible Q&A drawer (completed 2026-03-20)
 - [ ] **Phase 21: Input and Form Polish** — Rich placeholder for QA input, Cmd+Enter submit shortcut on all send buttons, one-word-max button labels
 
 ## Phase Details
@@ -247,5 +247,5 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
 | 17. Edit & Delete                            | v2.1      | 3/3            | Complete    | 2026-03-18 |
 | 18. Header and Navigation                    | 2/2       | Complete       | 2026-03-19  | -          |
 | 19. Segments, Visual Overhaul, and Voting    | v2.2      | 2/2            | Complete    | 2026-03-20 |
-| 20. Functionality and Audience View          | v2.2      | 0/2            | Not started | -          |
+| 20. Functionality and Audience View          | 2/2       | Complete       | 2026-03-20  | -          |
 | 21. Input and Form Polish                    | v2.2      | 0/TBD          | Not started | -          |

@@ -100,8 +100,8 @@ Requirements for UX Overhaul milestone. Each maps to roadmap phases.
 
 ### Functionality
 
-- [ ] **FUNC-01**: Superuser delete removes Q&As from the database (hard delete, not just UI removal)
-- [ ] **FUNC-02**: Q&A text supports line breaks (rich text / multi-line)
+- [x] **FUNC-01**: Superuser delete removes Q&As from the database (hard delete, not just UI removal)
+- [x] **FUNC-02**: Q&A text supports line breaks (rich text / multi-line)
 - [ ] **FUNC-03**: Share dialog shows session code in addition to QR code and link
 - [ ] **FUNC-04**: Voting uses Reddit-style layout: up button, count in the middle, down button (consistent everywhere)
 - [ ] **FUNC-05**: Pin and ban icons and behavior are properly aligned and consistent in Q&A
@@ -201,8 +201,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FUNC-04     | Phase 19 | Pending  |
 | FUNC-05     | Phase 19 | Pending  |
 | FUNC-06     | Phase 19 | Pending  |
-| FUNC-01     | Phase 20 | Pending  |
-| FUNC-02     | Phase 20 | Pending  |
+| FUNC-01     | Phase 20 | Complete |
+| FUNC-02     | Phase 20 | Complete |
 | FUNC-03     | Phase 20 | Pending  |
 | AUD-01      | Phase 20 | Pending  |
 | AUD-02      | Phase 20 | Pending  |

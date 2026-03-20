@@ -47,6 +47,9 @@ Recent decisions affecting current work:
 - [Phase 19-02]: ThreadSpine: absolute div w-[1.5px] at left-[6px], no border-left or gradient fade
 - [Phase 19-02]: Progressive disclosure for host tools — Edit+Delete primary, moderation behind Popover overflow
 - [Phase 19-02]: Avatar-inside-input reply anatomy — 20px PixelAvatar as left-prefix inside border container
+- [Phase 20-01]: Hard delete uses DeleteCommand (permanent) not UpdateCommand with deletedAt — no recovery path by design
+- [Phase 20-01]: renderMarkdown hand-rolled (no library) to minimize bundle impact — single-pass regex tokenizer
+- [Phase 20-01]: QUESTION_HARD_DELETED reducer cascades to filter all replies with matching questionId client-side
 - [Phase 20-02]: allowCollapseQA boolean prop (default false) gates Q&A collapse per view — participant sets it true, host never does
 - [Phase 20-02]: flex layout with flex-1/w-auto replaces grid-cols-2 for desktop two-column to support smooth Q&A collapse
 
