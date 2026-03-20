@@ -69,7 +69,7 @@ export function VoteRow({
   const netScore = question.upvoteCount - question.downvoteCount;
 
   return (
-    <div className="flex w-8 flex-col items-center gap-y-1 pl-3">
+    <div className="flex h-16 w-8 flex-col items-center justify-between pl-3">
       {/* Upvote */}
       <IconButton
         compact
@@ -78,12 +78,10 @@ export function VoteRow({
         onClick={onUpvoteClick}
         className={cn(
           "rounded-sm transition-all active:scale-90",
-          isVoted
-            ? "text-primary bg-primary/10"
-            : "text-muted-foreground/60 dark:text-muted-foreground/50 hover:bg-accent",
+          isVoted ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:bg-accent",
         )}
       >
-        <ChevronUp className="h-4 w-4" strokeWidth={isVoted ? 3 : 2} />
+        <ChevronUp className="h-4 w-4" strokeWidth={2} />
       </IconButton>
 
       {/* Net score */}
@@ -94,7 +92,7 @@ export function VoteRow({
             ? "text-primary"
             : isDownvoted
               ? "text-muted-foreground"
-              : "text-muted-foreground/70 dark:text-muted-foreground/60",
+              : "text-muted-foreground/50",
         )}
       >
         {netScore}
@@ -110,10 +108,10 @@ export function VoteRow({
           "rounded-sm transition-all active:scale-90",
           isDownvoted
             ? "text-muted-foreground bg-muted"
-            : "text-muted-foreground/60 dark:text-muted-foreground/50 hover:bg-accent",
+            : "text-muted-foreground/50 hover:bg-accent",
         )}
       >
-        <ChevronDown className="h-4 w-4" strokeWidth={isDownvoted ? 3 : 2} />
+        <ChevronDown className="h-4 w-4" strokeWidth={2} />
       </IconButton>
     </div>
   );
@@ -132,7 +130,7 @@ interface ThreadSpineProps {
 
 export function ThreadSpine({ children, active }: ThreadSpineProps) {
   return (
-    <div className="relative mt-4">
+    <div className="relative mt-3">
       {/* Spine — absolute, aligned with avatar center */}
       <div
         className={cn(

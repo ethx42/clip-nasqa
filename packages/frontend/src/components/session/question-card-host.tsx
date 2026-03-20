@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Ban,
   Check,
+  ChevronUp,
   Ellipsis,
   Megaphone,
   MessageSquare,
@@ -408,27 +409,35 @@ export function QuestionCardHost({
 
                   {/* Action row: reply trigger + reply counter + reactions */}
                   {!isEditing && (
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
-                      {/* Reply trigger — always visible */}
-                      <button
-                        onClick={() => {
-                          if (replies.length > 0) setShowThread(true);
-                          setReplyActive(true);
-                          requestAnimationFrame(() => replyInputRef.current?.focus());
-                        }}
-                        className="flex items-center gap-1 rounded-md px-1.5 py-0.5 -ml-1.5 transition-colors hover:bg-accent hover:text-foreground"
-                      >
-                        <ReplyIcon className="h-3.5 w-3.5" />
-                        {tSession("reply")}
-                      </button>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
+                      {/* Reply trigger — hidden when thread is expanded (bottom input visible) */}
+                      {!showThread && (
+                        <button
+                          onClick={() => {
+                            if (replies.length > 0) setShowThread(true);
+                            setReplyActive(true);
+                            requestAnimationFrame(() => replyInputRef.current?.focus());
+                          }}
+                          className="flex items-center gap-1 rounded-md px-1.5 py-0.5 -ml-1.5 transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          <ReplyIcon className="h-3.5 w-3.5" />
+                          {tSession("reply")}
+                        </button>
+                      )}
                       {replies.length > 0 && (
                         <>
-                          <span className="h-3.5 border-l border-border" aria-hidden="true" />
+                          {!showThread && (
+                            <span className="h-3.5 border-l border-border" aria-hidden="true" />
+                          )}
                           <button
                             onClick={() => setShowThread((v) => !v)}
-                            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
+                            className="flex items-center gap-1 rounded-md px-1.5 py-0.5 -ml-1.5 transition-colors hover:bg-accent hover:text-foreground"
                           >
-                            <MessageSquare className="h-3.5 w-3.5" />
+                            {showThread ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            )}
                             {tSession("replyCount", { count: replies.length })}
                           </button>
                         </>
@@ -447,7 +456,7 @@ export function QuestionCardHost({
 
                   {/* Intent-based reply input — only visible when activated */}
                   {replyActive && replies.length === 0 && !isEditing && (
-                    <div className="mt-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="mt-2 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
                       <PixelAvatar
                         seed={fingerprint}
                         size={24}
