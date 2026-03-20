@@ -89,7 +89,7 @@ function ReplyRow({
 
   return (
     <>
-      <div className="group py-1.5">
+      <div className="group pb-2">
         {/* Author line — no avatar, compact */}
         <div className="flex items-center gap-2">
           <span

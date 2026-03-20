@@ -4,8 +4,8 @@ import { Dialog } from "@base-ui/react/dialog";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
+  ChevronDown,
   ChevronUp,
-  MessageSquare,
   MicVocal,
   Pencil,
   Reply as ReplyIcon,
@@ -380,7 +380,7 @@ export function QuestionCardParticipant({
                             {showThread ? (
                               <ChevronUp className="h-3.5 w-3.5" />
                             ) : (
-                              <MessageSquare className="h-3.5 w-3.5" />
+                              <ChevronDown className="h-3.5 w-3.5" />
                             )}
                             {tSession("replyCount", { count: replies.length })}
                           </button>
@@ -400,58 +400,65 @@ export function QuestionCardParticipant({
 
                   {/* Intent-based reply input — only visible when activated */}
                   {replyActive && replies.length === 0 && !isEditing && (
-                    <div className="mt-2 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <PixelAvatar
-                        seed={fingerprint}
-                        size={24}
-                        className="shrink-0 rounded-full mt-1.5"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <textarea
-                          ref={replyInputRef}
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          onKeyDown={handleReplyKeyDown}
-                          onBlur={() => {
-                            if (!replyText.trim()) setReplyActive(false);
-                          }}
-                          placeholder={tSession("replyPlaceholder")}
-                          rows={2}
-                          maxLength={REPLY_CHAR_LIMIT}
-                          className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="flex items-start gap-2 rounded-md border border-border bg-background focus-within:ring-1 focus-within:ring-primary">
+                        <PixelAvatar
+                          seed={fingerprint}
+                          size={20}
+                          className="shrink-0 rounded-full ml-2.5 mt-2.5"
                         />
-                        <div className="mt-2 flex items-center justify-end gap-2">
-                          {replyText.length >= REPLY_COUNTER_THRESHOLD && (
-                            <span
-                              className={cn(
-                                "mr-auto text-xs tabular-nums",
-                                replyText.length >= 490
-                                  ? "text-destructive"
-                                  : "text-muted-foreground",
-                              )}
-                            >
-                              {replyText.length}/{REPLY_CHAR_LIMIT}
-                            </span>
-                          )}
-                          <kbd className="text-[11px] text-muted-foreground/40 select-none">⌘⏎</kbd>
-                          <button
-                            onClick={() => {
-                              setReplyText("");
-                              setReplyActive(false);
-                              replyInputRef.current?.blur();
+                        <div className="min-w-0 flex-1">
+                          <textarea
+                            ref={replyInputRef}
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            onKeyDown={handleReplyKeyDown}
+                            onBlur={() => {
+                              if (!replyText.trim()) setReplyActive(false);
                             }}
-                            className="rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent"
-                          >
-                            {tCommon("cancel")}
-                          </button>
-                          <button
-                            onClick={handleReplySubmit}
-                            disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
-                            className="rounded-md bg-primary px-2.5 py-1 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            {tSession("send")}
-                          </button>
+                            placeholder={tSession("replyPlaceholder")}
+                            rows={2}
+                            maxLength={REPLY_CHAR_LIMIT}
+                            className="w-full resize-none bg-transparent px-2 py-2 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none"
+                          />
                         </div>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-end gap-2">
+                        {replyText.length >= REPLY_COUNTER_THRESHOLD && (
+                          <span
+                            className={cn(
+                              "mr-auto text-xs tabular-nums",
+                              replyText.length >= 490
+                                ? "text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {replyText.length}/{REPLY_CHAR_LIMIT}
+                          </span>
+                        )}
+                        <kbd className="text-[11px] text-muted-foreground select-none">⌘⏎</kbd>
+                        <button
+                          onClick={() => {
+                            setReplyText("");
+                            setReplyActive(false);
+                            replyInputRef.current?.blur();
+                          }}
+                          className="rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent"
+                        >
+                          {tCommon("cancel")}
+                        </button>
+                        <button
+                          onClick={handleReplySubmit}
+                          disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
+                          className={cn(
+                            "rounded-md px-2.5 py-1 text-sm font-semibold transition-colors",
+                            replyText.trim()
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                              : "bg-muted text-muted-foreground cursor-not-allowed",
+                          )}
+                        >
+                          {tSession("send")}
+                        </button>
                       </div>
                     </div>
                   )}
@@ -467,71 +474,80 @@ export function QuestionCardParticipant({
                         onEditReply={onEditReply}
                         onDeleteReply={onDeleteReply}
                       />
-                      <div className={cn("pt-3", replyActive ? "flex items-start gap-2" : "")}>
-                        {replyActive && (
+                      <div className="pt-1">
+                        <div
+                          className={cn(
+                            "flex rounded-md transition-all",
+                            replyActive
+                              ? "items-start border border-border bg-background ring-1 ring-primary"
+                              : "items-center border border-transparent hover:bg-accent/50 cursor-text",
+                          )}
+                          onClick={() => !replyActive && replyInputRef.current?.focus()}
+                        >
                           <PixelAvatar
                             seed={fingerprint}
-                            size={24}
-                            className="shrink-0 rounded-full mt-1.5"
-                          />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <textarea
-                            ref={replyInputRef}
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            onKeyDown={handleReplyKeyDown}
-                            onFocus={() => setReplyActive(true)}
-                            onBlur={() => {
-                              if (!replyText.trim()) setReplyActive(false);
-                            }}
-                            placeholder={tSession("replyPlaceholder")}
-                            rows={replyActive ? 2 : 1}
-                            maxLength={REPLY_CHAR_LIMIT}
+                            size={20}
                             className={cn(
-                              "w-full resize-none text-sm leading-relaxed transition-all",
-                              replyActive
-                                ? "rounded-md border border-border bg-background px-3 py-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                                : "rounded-md border border-transparent bg-transparent px-3 py-2 placeholder:text-muted-foreground/50 hover:bg-accent/50 cursor-text",
+                              "shrink-0 rounded-full ml-2.5",
+                              replyActive ? "mt-2.5" : "",
                             )}
                           />
-                          {replyActive && (
-                            <div className="mt-2 mb-4 flex items-center justify-end gap-2 animate-in fade-in duration-150">
-                              {replyText.length >= REPLY_COUNTER_THRESHOLD && (
-                                <span
-                                  className={cn(
-                                    "mr-auto text-xs tabular-nums",
-                                    replyText.length >= 490
-                                      ? "text-destructive"
-                                      : "text-muted-foreground",
-                                  )}
-                                >
-                                  {replyText.length}/{REPLY_CHAR_LIMIT}
-                                </span>
-                              )}
-                              <kbd className="text-[11px] text-muted-foreground/40 select-none">
-                                ⌘⏎
-                              </kbd>
-                              <button
-                                onClick={() => {
-                                  setReplyText("");
-                                  setReplyActive(false);
-                                  replyInputRef.current?.blur();
-                                }}
-                                className="rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent"
-                              >
-                                {tCommon("cancel")}
-                              </button>
-                              <button
-                                onClick={handleReplySubmit}
-                                disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
-                                className="rounded-md bg-primary px-2.5 py-1 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {tSession("send")}
-                              </button>
-                            </div>
-                          )}
+                          <div className="min-w-0 flex-1">
+                            <textarea
+                              ref={replyInputRef}
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              onKeyDown={handleReplyKeyDown}
+                              onFocus={() => setReplyActive(true)}
+                              onBlur={() => {
+                                if (!replyText.trim()) setReplyActive(false);
+                              }}
+                              placeholder={tSession("replyPlaceholder")}
+                              rows={replyActive ? 2 : 1}
+                              maxLength={REPLY_CHAR_LIMIT}
+                              className="w-full resize-none bg-transparent px-2 py-2 text-sm leading-relaxed placeholder:text-muted-foreground/50 focus:outline-none focus:placeholder:text-muted-foreground"
+                            />
+                          </div>
                         </div>
+                        {replyActive && (
+                          <div className="mt-1.5 flex items-center justify-end gap-2 animate-in fade-in duration-150">
+                            {replyText.length >= REPLY_COUNTER_THRESHOLD && (
+                              <span
+                                className={cn(
+                                  "mr-auto text-xs tabular-nums",
+                                  replyText.length >= 490
+                                    ? "text-destructive"
+                                    : "text-muted-foreground",
+                                )}
+                              >
+                                {replyText.length}/{REPLY_CHAR_LIMIT}
+                              </span>
+                            )}
+                            <kbd className="text-[11px] text-muted-foreground select-none">⌘⏎</kbd>
+                            <button
+                              onClick={() => {
+                                setReplyText("");
+                                setReplyActive(false);
+                                replyInputRef.current?.blur();
+                              }}
+                              className="rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent"
+                            >
+                              {tCommon("cancel")}
+                            </button>
+                            <button
+                              onClick={handleReplySubmit}
+                              disabled={!replyText.trim() || replyText.length > REPLY_CHAR_LIMIT}
+                              className={cn(
+                                "rounded-md px-2.5 py-1 text-sm font-semibold transition-colors",
+                                replyText.trim()
+                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                              )}
+                            >
+                              {tSession("send")}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </ThreadSpine>
                   )}

@@ -130,21 +130,16 @@ interface ThreadSpineProps {
 
 export function ThreadSpine({ children, active }: ThreadSpineProps) {
   return (
-    <div className="relative mt-3">
-      {/* Spine — absolute, aligned with avatar center */}
+    <div className="relative mt-2">
+      {/* Spine — absolute div, centered on parent avatar (28px / 2 = 14px) */}
       <div
         className={cn(
-          "absolute left-[13px] top-0 bottom-0 w-0.5 rounded-full transition-colors duration-200",
+          "absolute left-[6px] top-0 bottom-2 w-[1.5px] transition-colors duration-200",
           active ? "bg-primary/40" : "bg-border",
         )}
       />
-      {/* Fade-out tail */}
-      <div
-        className="absolute left-[13px] bottom-0 w-0.5 h-6 rounded-full"
-        style={{ background: "linear-gradient(to bottom, transparent, hsl(var(--background)))" }}
-      />
       {/* Thread content — offset past the spine */}
-      <div className="pl-8 pb-8">{children}</div>
+      <div className="pl-8 pb-2">{children}</div>
     </div>
   );
 }

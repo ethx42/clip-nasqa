@@ -75,8 +75,8 @@
   --warning: oklch(0.769 0.188 70.08);
   --warning-foreground: oklch(0.555 0.163 48.998);
   --success: oklch(0.723 0.219 142.495);
-  --border: oklch(0.92 0.005 240);
-  --input: oklch(0.92 0.005 240);
+  --border: oklch(0.9 0.005 240); /* Quiet but visible spine/dividers */
+  --input: oklch(0.9 0.005 240);
   --ring: oklch(0.6 0.18 260); /* Match primary */
   --chart-1: oklch(0.6 0.18 260);
   --chart-2: oklch(0.68 0.16 260);
